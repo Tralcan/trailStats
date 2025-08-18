@@ -37,7 +37,11 @@ struct AdvancedSearchView: View {
                             Text("\(km) km").tag(Double(km * 1000) as Double?)
                         }
                     } label: {
-                        Label("Minimum Distance (km)", systemImage: "figure.walk")
+                        HStack {
+                            Image(systemName: "figure.walk")
+                                .foregroundColor(.red)
+                            Text("Minimum Distance (km)")
+                        }
                     }
                     
                     Picker(selection: $viewModel.elevation) {
@@ -47,7 +51,11 @@ struct AdvancedSearchView: View {
                             Text("\(elevation) m").tag(Double(elevation) as Double?)
                         }
                     } label: {
-                        Label("Minimum Elevation (m)", systemImage: "mountain.2")
+                        HStack {
+                            Image(systemName: "mountain.2")
+                                .foregroundColor(.green)
+                            Text("Minimum Elevation (m)")
+                        }
                     }
                 }
                 
@@ -59,14 +67,14 @@ struct AdvancedSearchView: View {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(red: 1.0, green: 0.55, blue: 0.0))
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Search") {
                         viewModel.performSearch()
                         dismiss()
                     }
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(red: 1.0, green: 0.55, blue: 0.0))
                 }
             }
         }
