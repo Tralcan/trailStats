@@ -38,7 +38,6 @@ struct AdvancedSearchView: View {
                         }
                     } label: {
                         Label("Minimum Distance (km)", systemImage: "figure.walk")
-                            .foregroundColor(.red)
                     }
                     
                     Picker(selection: $viewModel.elevation) {
@@ -49,26 +48,27 @@ struct AdvancedSearchView: View {
                         }
                     } label: {
                         Label("Minimum Elevation (m)", systemImage: "mountain.2")
-                            .foregroundColor(.green)
                     }
                 }
                 
-                VStack {
+                }
+            .navigationTitle("Advanced Search")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(.orange)
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button("Search") {
                         viewModel.performSearch()
                         dismiss()
                     }
-                    .buttonStyle(.plain)
-                    
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .buttonStyle(.plain)
+                    .foregroundColor(.orange)
                 }
-                .frame(maxWidth: .infinity)
             }
-            .navigationTitle("Advanced Search")
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
