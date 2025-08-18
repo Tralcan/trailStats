@@ -5,6 +5,8 @@ import CoreLocation
 
 // MARK: - API Configuration
 
+
+
 enum StravaAPIDefinition {
     case getActivities(page: Int, perPage: Int)
     case getActivityStreams(activityId: Int)
@@ -38,6 +40,11 @@ enum StravaAPIDefinition {
 struct Stream: Decodable {
     let type: String
     let data: [Double?]
+
+    enum CodingKeys: String, CodingKey {
+        case type = "series_type"
+        case data
+    }
 }
 
 // MARK: - Strava Service
@@ -58,7 +65,9 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
         }
 
         authSession = ASWebAuthenticationSession(url: authURL, callbackURLScheme: "trailStats") { [weak self] callbackURL, error in
-            guard let self = self else { return }
+            guard let self = self else {
+                return
+            }
 
             if let error = error {
                 if let authError = error as? ASWebAuthenticationSessionError {
@@ -135,7 +144,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
         }.resume()
     }
     
-    func getActivityStreams(activityId: Int, completion: @escaping (Result<[Stream], Error>) -> Void) {
+    func getActivityStreams(activityId: Int, completion: @escaping (Result<[String: Stream], Error>) -> Void) {
         guard let url = StravaAPIDefinition.getActivityStreams(activityId: activityId).url else {
             completion(.failure(StravaAuthError.invalidAPIRequestURL))
             return
@@ -160,11 +169,17 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
                 return
             }
 
+            // Print raw JSON data for debugging
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Raw Strava Streams JSON: \(jsonString)")
+            }
+
             do {
-                let streams = try JSONDecoder().decode([Stream].self, from: data)
+                let streams = try JSONDecoder().decode([String: Stream].self, from: data)
                 completion(.success(streams))
             } catch {
                 print("Decoding error for streams: \(error)")
+                print("Error details: \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }.resume()
@@ -214,7 +229,9 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            guard let self = self else { return }
+            guard let self = self else {
+                return
+            }
 
             if let error = error {
                 self.completionHandler?(.failure(error))

@@ -34,7 +34,6 @@ struct TimeSeriesChartView: View {
                 AxisMarks(position: .leading)
             }
             .frame(height: 200)
-            .padding()
         }
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
