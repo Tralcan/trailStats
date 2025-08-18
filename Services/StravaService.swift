@@ -26,7 +26,7 @@ enum StravaAPIDefinition {
         case .getActivityStreams(let activityId):
             components.path = "/api/v3/activities/\(activityId)/streams"
             components.queryItems = [
-                URLQueryItem(name: "keys", value: "time,heartrate,cadence,watts,altitude"),
+                URLQueryItem(name: "keys", value: "time,heartrate,cadence,watts,altitude,distance"),
                 URLQueryItem(name: "key_by_type", value: "true")
             ]
         }
@@ -37,7 +37,7 @@ enum StravaAPIDefinition {
 
 // MARK: - Stream Model
 
-struct Stream: Decodable {
+struct Stream: Decodable, Encodable { // Added Encodable conformance
     let type: String
     let data: [Double?]
 
@@ -53,6 +53,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
 
     private var authSession: ASWebAuthenticationSession?
     private var completionHandler: ((Result<Void, Error>) -> Void)?
+    private let cacheManager = CacheManager() // Instantiate CacheManager
 
     // MARK: - Public Methods
 
@@ -145,6 +146,12 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
     }
     
     func getActivityStreams(activityId: Int, completion: @escaping (Result<[String: Stream], Error>) -> Void) {
+        // Try to load from cache first
+        if let cachedStreams = cacheManager.loadActivityStreams(activityId: activityId) {
+            completion(.success(cachedStreams))
+            return
+        }
+
         guard let url = StravaAPIDefinition.getActivityStreams(activityId: activityId).url else {
             completion(.failure(StravaAuthError.invalidAPIRequestURL))
             return
@@ -158,7 +165,8 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
         var request = URLRequest(url: url)
         request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self else { return }
             if let error = error {
                 completion(.failure(error))
                 return
@@ -176,6 +184,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
 
             do {
                 let streams = try JSONDecoder().decode([String: Stream].self, from: data)
+                self.cacheManager.saveActivityStreams(activityId: activityId, streams: streams) // Save to cache
                 completion(.success(streams))
             } catch {
                 print("Decoding error for streams: \(error)")

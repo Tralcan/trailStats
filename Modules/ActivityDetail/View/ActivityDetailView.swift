@@ -53,6 +53,38 @@ struct ActivityDetailView: View {
                         yAxisLabel: "SPM",
                         color: .blue
                     )
+
+                    // Vertical Energy Cost (Cvert) Chart
+                    TimeSeriesChartView(
+                        data: viewModel.cvertData,
+                        title: "Vertical Energy Cost",
+                        yAxisLabel: "W/m",
+                        color: .brown
+                    )
+
+                    // Vertical Speed Chart
+                    TimeSeriesChartView(
+                        data: viewModel.verticalSpeedData,
+                        title: "Vertical Speed",
+                        yAxisLabel: "km/h",
+                        color: .cyan
+                    )
+
+                    // Stride Length Chart
+                    TimeSeriesChartView(
+                        data: viewModel.strideLengthData,
+                        title: "Stride Length",
+                        yAxisLabel: "m",
+                        color: .orange
+                    )
+
+                    // Pace Chart
+                    TimeSeriesChartView(
+                        data: viewModel.paceData,
+                        title: "Pace",
+                        yAxisLabel: "minutos",
+                        color: .purple
+                    )
                 }
                 
                 Spacer()

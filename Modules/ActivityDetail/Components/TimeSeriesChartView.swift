@@ -19,8 +19,16 @@ struct TimeSeriesChartView: View {
     
     var averageValue: Double {
         guard !data.isEmpty else { return 0.0 }
-        let total = data.reduce(0.0) { $0 + $1.value }
-        return total / Double(data.count)
+
+        if title == "Vertical Speed" {
+            let positiveValues = data.filter { $0.value > 0 }.map { $0.value }
+            guard !positiveValues.isEmpty else { return 0.0 }
+            let total = positiveValues.reduce(0.0) { $0 + $1 }
+            return total / Double(positiveValues.count)
+        } else {
+            let total = data.reduce(0.0) { $0 + $1.value }
+            return total / Double(data.count)
+        }
     }
 
     var unit: String {
@@ -31,6 +39,14 @@ struct TimeSeriesChartView: View {
             return "W"
         case "Heart Rate":
             return "BPM"
+        case "Vertical Energy Cost":
+            return "W/m"
+        case "Vertical Speed":
+            return "km/h"
+        case "Stride Length":
+            return "m"
+        case "Pace":
+            return "min/km"
         default:
             return ""
         }
@@ -43,9 +59,15 @@ struct TimeSeriesChartView: View {
                     .font(.headline)
                 Spacer()
                 if showAverage {
-                    Text("Avg: \(averageValue, specifier: "%.0f") \(unit)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    if title == "Vertical Speed" || title == "Stride Length" || title == "Pace" {
+                        Text("Avg: \(averageValue, specifier: "%.2f") \(unit)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Avg: \(averageValue, specifier: "%.0f") \(unit)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             .padding(.horizontal)
