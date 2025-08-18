@@ -50,7 +50,24 @@ struct ActivityDetailView: View {
                         data: viewModel.altitudeData,
                         title: "Elevation",
                         yAxisLabel: "Meters",
-                        color: .purple
+                        color: .purple,
+                        showAverage: false
+                    )
+
+                    // Stride Length Chart
+                    TimeSeriesChartView(
+                        data: viewModel.strideLengthData,
+                        title: "Stride Length",
+                        yAxisLabel: "Meters",
+                        color: .orange
+                    )
+
+                    // Ground Contact Time Chart
+                    TimeSeriesChartView(
+                        data: viewModel.groundContactTimeData,
+                        title: "Ground Contact Time",
+                        yAxisLabel: "ms",
+                        color: .teal
                     )
                 }
                 
@@ -69,8 +86,12 @@ struct ActivityDetailView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Distance")
-                    .font(.subheadline).foregroundColor(.secondary)
+                HStack {
+                    Image(systemName: "location.fill") // Red icon for distance
+                        .foregroundColor(.red)
+                    Text("Distance")
+                        .font(.subheadline).foregroundColor(.secondary)
+                }
                 Text(viewModel.activity.formattedDistance)
                     .font(.title2).fontWeight(.bold)
             }
@@ -78,8 +99,12 @@ struct ActivityDetailView: View {
             Spacer()
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Elevation")
-                    .font(.subheadline).foregroundColor(.secondary)
+                HStack {
+                    Image(systemName: "mountain.2.fill") // Green icon for elevation
+                        .foregroundColor(.green)
+                    Text("Elevation")
+                        .font(.subheadline).foregroundColor(.secondary)
+                }
                 Text(viewModel.activity.formattedElevation)
                     .font(.title2).fontWeight(.bold)
             }
@@ -87,8 +112,12 @@ struct ActivityDetailView: View {
             Spacer()
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Time")
-                    .font(.subheadline).foregroundColor(.secondary)
+                HStack {
+                    Image(systemName: "clock.fill") // Blue clock icon for time
+                        .foregroundColor(.blue)
+                    Text("Time")
+                        .font(.subheadline).foregroundColor(.secondary)
+                }
                 Text(viewModel.activity.formattedDuration)
                     .font(.title2).fontWeight(.bold)
             }
