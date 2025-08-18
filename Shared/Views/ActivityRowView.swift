@@ -7,27 +7,44 @@ struct ActivityRowView: View {
     let activity: Activity
     
     var body: some View {
-        HStack(spacing: 15) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(activity.name)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                
-                Text(activity.formattedDate)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            Text(activity.name)
+                .font(.headline)
+                .fontWeight(.semibold)
             
-            Spacer()
+            Text(activity.formattedDate)
+                .font(.caption)
+                .foregroundColor(.gray)
             
-            VStack(alignment: .trailing, spacing: 5) {
-                Text(activity.formattedDistance)
-                    .font(.headline)
-                    .fontWeight(.medium)
+            HStack(spacing: 15) {
+                // Distance
+                HStack(spacing: 4) {
+                    Image(systemName: "figure.walk")
+                        .foregroundColor(.red)
+                    Text(activity.formattedDistance)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
                 
-                Text(activity.formattedElevation)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                // Elevation
+                HStack(spacing: 4) {
+                    Image(systemName: "mountain.2")
+                        .foregroundColor(.green)
+                    Text(activity.formattedElevation)
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+                
+                // Duration
+                HStack(spacing: 4) {
+                    Image(systemName: "hourglass")
+                        .foregroundColor(.blue)
+                    Text(activity.formattedDuration)
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                
+                Spacer()
             }
         }
         .padding(.vertical, 8)
