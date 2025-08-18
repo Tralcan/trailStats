@@ -92,6 +92,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
                 let activities = try decoder.decode([Activity].self, from: data)
                 completion(.success(activities))
             } catch {
+                print("Decoding error: \(error)")
                 completion(.failure(error))
             }
         }.resume()

@@ -15,9 +15,9 @@ struct Activity: Identifiable, Codable {
     let elevationGain: Double // In meters
     
     // Advanced Metrics
-    let averageHeartRate: Int?
-    let averageCadence: Int?
-    let averagePower: Int?
+    let averageHeartRate: Double?
+    let averageCadence: Double?
+    let averagePower: Double?
     
     // Data for Charts
     let heartRateData: [DataPoint]
@@ -56,9 +56,9 @@ struct Activity: Identifiable, Codable {
         distance = try container.decode(Double.self, forKey: .distance)
         duration = try container.decode(TimeInterval.self, forKey: .duration)
         elevationGain = try container.decode(Double.self, forKey: .elevationGain)
-        averageHeartRate = try container.decodeIfPresent(Int.self, forKey: .averageHeartRate)
-        averageCadence = try container.decodeIfPresent(Int.self, forKey: .averageCadence)
-        averagePower = try container.decodeIfPresent(Int.self, forKey: .averagePower)
+        averageHeartRate = try container.decodeIfPresent(Double.self, forKey: .averageHeartRate)
+        averageCadence = try container.decodeIfPresent(Double.self, forKey: .averageCadence)
+        averagePower = try container.decodeIfPresent(Double.self, forKey: .averagePower)
         
         if let latlng = try container.decodeIfPresent([Double].self, forKey: .startCoordinate), latlng.count == 2 {
             startCoordinate = CLLocationCoordinate2D(latitude: latlng[0], longitude: latlng[1])
