@@ -7,6 +7,18 @@ import CoreLocation
 
 
 
+// MARK: - Strava Error Response
+struct StravaErrorResponse: Decodable {
+    let message: String
+    let errors: [StravaErrorDetail]?
+}
+
+struct StravaErrorDetail: Decodable {
+    let resource: String?
+    let field: String?
+    let code: String?
+}
+
 enum StravaAPIDefinition {
     case getActivities(page: Int, perPage: Int)
     case getActivityStreams(activityId: Int)
@@ -183,13 +195,22 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
             }
 
             do {
-                let streams = try JSONDecoder().decode([String: Stream].self, from: data)
+                let decoder = JSONDecoder()
+                // Attempt to decode as streams
+                let streams = try decoder.decode([String: Stream].self, from: data)
                 self.cacheManager.saveActivityStreams(activityId: activityId, streams: streams) // Save to cache
                 completion(.success(streams))
-            } catch {
-                print("Decoding error for streams: \(error)")
-                print("Error details: \(error.localizedDescription)")
-                completion(.failure(error))
+            } catch let decodingError {
+                // If decoding as streams fails, attempt to decode as an error response
+                if let stravaError = try? JSONDecoder().decode(StravaErrorResponse.self, from: data) {
+                    let errorMessage = stravaError.message + (stravaError.errors?.first?.code.map { " (\($0))" } ?? "")
+                    completion(.failure(StravaAuthError.apiError(message: errorMessage)))
+                } else {
+                    // If it's not a Strava error response, then it's a true decoding error
+                    print("Decoding error for streams: \(decodingError)")
+                    print("Error details: \(decodingError.localizedDescription)")
+                    completion(.failure(decodingError))
+                }
             }
         }.resume()
     }
@@ -291,6 +312,7 @@ enum StravaAuthError: Error, LocalizedError {
     case invalidAPIRequestURL
     case missingAccessToken
     case noDataInAPIResponse
+    case apiError(message: String)
 
     var errorDescription: String? {
         switch self {
@@ -316,6 +338,8 @@ enum StravaAuthError: Error, LocalizedError {
             return "The Strava access token is missing from the Keychain."
         case .noDataInAPIResponse:
             return "No data was received from the Strava API."
+        case .apiError(let message):
+            return "Strava API Error: \(message)"
         }
     }
 }

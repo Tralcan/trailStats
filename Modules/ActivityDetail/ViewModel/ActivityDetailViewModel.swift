@@ -13,6 +13,7 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var paceData: [DataPoint] = []
     @Published var distanceData: [DataPoint] = [] // New: Add distanceData as a published property
     @Published var isLoading = false
+    @Published var errorMessage: String? = nil // New: Add errorMessage property
     
     private let stravaService = StravaService()
     
@@ -30,6 +31,11 @@ class ActivityDetailViewModel: ObservableObject {
                 case .success(let streamsDictionary):
                     self?.process(streamsDictionary: streamsDictionary)
                 case .failure(let error):
+                    if let stravaAuthError = error as? StravaAuthError, case .apiError(let message) = stravaAuthError {
+                        self?.errorMessage = message
+                    } else {
+                        self?.errorMessage = "Failed to fetch activity streams: \(error.localizedDescription)"
+                    }
                     print("Failed to fetch activity streams: \(error.localizedDescription)")
                 }
             }

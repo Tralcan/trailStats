@@ -16,75 +16,96 @@ struct ActivityDetailView: View {
                 // Header with main stats
                 headerView
                 
-                if viewModel.isLoading {
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .padding()
+                        .multilineTextAlignment(.center)
+                } else if viewModel.isLoading {
                     ProgressView("Loading chart data...")
                         .frame(height: 200)
                         .frame(maxWidth: .infinity)
                 } else {
                     // Elevation Chart
-                    TimeSeriesChartView(
-                        data: viewModel.altitudeData,
-                        title: "Elevation",
-                        yAxisLabel: "Meters",
-                        color: .purple,
-                        showAverage: false
-                    )
+                    if !viewModel.altitudeData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.altitudeData,
+                            title: "Elevation",
+                            yAxisLabel: "Meters",
+                            color: .purple,
+                            showAverage: false
+                        )
+                    }
 
                     // Vertical Energy Cost Chart
-                    TimeSeriesChartView(
-                        data: viewModel.cvertData,
-                        title: "Vertical Energy Cost",
-                        yAxisLabel: "W/m",
-                        color: .brown
-                    )
+                    if !viewModel.cvertData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.cvertData,
+                            title: "Vertical Energy Cost",
+                            yAxisLabel: "W/m",
+                            color: .brown
+                        )
+                    }
 
                     // Vertical Speed Chart
-                    TimeSeriesChartView(
-                        data: viewModel.verticalSpeedData,
-                        title: "Vertical Speed",
-                        yAxisLabel: "km/h",
-                        color: .cyan
-                    )
+                    if !viewModel.verticalSpeedData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.verticalSpeedData,
+                            title: "Vertical Speed",
+                            yAxisLabel: "km/h",
+                            color: .cyan
+                        )
+                    }
 
                     // Heart Rate Chart
-                    TimeSeriesChartView(
-                        data: viewModel.heartRateData,
-                        title: "Heart Rate",
-                        yAxisLabel: "BPM",
-                        color: .red
-                    )
+                    if !viewModel.heartRateData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.heartRateData,
+                            title: "Heart Rate",
+                            yAxisLabel: "BPM",
+                            color: .red
+                        )
+                    }
 
                     // Power Chart
-                    TimeSeriesChartView(
-                        data: viewModel.powerData,
-                        title: "Power",
-                        yAxisLabel: "Watts",
-                        color: .green
-                    )
+                    if !viewModel.powerData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.powerData,
+                            title: "Power",
+                            yAxisLabel: "Watts",
+                            color: .green
+                        )
+                    }
 
                     // Pace Chart
-                    TimeSeriesChartView(
-                        data: viewModel.paceData,
-                        title: "Pace",
-                        yAxisLabel: "minutos",
-                        color: .purple
-                    )
+                    if !viewModel.paceData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.paceData,
+                            title: "Pace",
+                            yAxisLabel: "minutos",
+                            color: .purple
+                        )
+                    }
 
                     // Stride Length Chart
-                    TimeSeriesChartView(
-                        data: viewModel.strideLengthData,
-                        title: "Stride Length",
-                        yAxisLabel: "m",
-                        color: .orange
-                    )
+                    if !viewModel.strideLengthData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.strideLengthData,
+                            title: "Stride Length",
+                            yAxisLabel: "m",
+                            color: .orange
+                        )
+                    }
 
                     // Cadence Chart
-                    TimeSeriesChartView(
-                        data: viewModel.cadenceData,
-                        title: "Cadence",
-                        yAxisLabel: "SPM",
-                        color: .blue
-                    )
+                    if !viewModel.cadenceData.isEmpty {
+                        TimeSeriesChartView(
+                            data: viewModel.cadenceData,
+                            title: "Cadence",
+                            yAxisLabel: "SPM",
+                            color: .blue
+                        )
+                    }
                 }
                 
                 Spacer()
@@ -109,7 +130,7 @@ struct ActivityDetailView: View {
                         .font(.subheadline).foregroundColor(.secondary)
                 }
                 Text(viewModel.activity.formattedDistance)
-                    .font(.title2).fontWeight(.bold)
+                    .font(.title3).fontWeight(.bold)
             }
             
             Spacer()
@@ -122,7 +143,7 @@ struct ActivityDetailView: View {
                         .font(.subheadline).foregroundColor(.secondary)
                 }
                 Text(viewModel.activity.formattedElevation)
-                    .font(.title2).fontWeight(.bold)
+                    .font(.title3).fontWeight(.bold)
             }
             
             Spacer()
@@ -135,7 +156,7 @@ struct ActivityDetailView: View {
                         .font(.subheadline).foregroundColor(.secondary)
                 }
                 Text(viewModel.activity.formattedDuration)
-                    .font(.title2).fontWeight(.bold)
+                    .font(.title3).fontWeight(.bold)
             }
         }
         .padding()
