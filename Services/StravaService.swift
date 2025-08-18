@@ -3,6 +3,45 @@ import AuthenticationServices
 import Combine
 import CoreLocation
 
+// MARK: - API Configuration
+
+enum StravaAPIDefinition {
+    case getActivities(page: Int, perPage: Int)
+    case getActivityStreams(activityId: Int)
+    
+    var url: URL? {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "www.strava.com"
+        
+        switch self {
+        case .getActivities(let page, let perPage):
+            components.path = "/api/v3/athlete/activities"
+            components.queryItems = [
+                URLQueryItem(name: "page", value: "\(page)"),
+                URLQueryItem(name: "per_page", value: "\(perPage)")
+            ]
+        case .getActivityStreams(let activityId):
+            components.path = "/api/v3/activities/\(activityId)/streams"
+            components.queryItems = [
+                URLQueryItem(name: "keys", value: "time,heartrate,cadence,watts,altitude"),
+                URLQueryItem(name: "key_by_type", value: "true")
+            ]
+        }
+        
+        return components.url
+    }
+}
+
+// MARK: - Stream Model
+
+struct Stream: Decodable {
+    let type: String
+    let data: [Double?]
+}
+
+// MARK: - Strava Service
+
 class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
 
     private var authSession: ASWebAuthenticationSession?
@@ -51,18 +90,16 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
     }
 
     func isAuthenticated() -> Bool {
-        // Check if access token exists in Keychain
         return KeychainHelper.read(service: "strava", account: "accessToken") != nil
     }
 
     func logout() {
         _ = KeychainHelper.delete(service: "strava", account: "accessToken")
         _ = KeychainHelper.delete(service: "strava", account: "refreshToken")
-        // Optionally, revoke token on Strava's side if needed
     }
     
     func getActivities(page: Int, perPage: Int, completion: @escaping (Result<[Activity], Error>) -> Void) {
-        guard let url = StravaAPI.getActivities(page: page, perPage: perPage).url else {
+        guard let url = StravaAPIDefinition.getActivities(page: page, perPage: perPage).url else {
             completion(.failure(StravaAuthError.invalidAPIRequestURL))
             return
         }
@@ -97,6 +134,41 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
             }
         }.resume()
     }
+    
+    func getActivityStreams(activityId: Int, completion: @escaping (Result<[Stream], Error>) -> Void) {
+        guard let url = StravaAPIDefinition.getActivityStreams(activityId: activityId).url else {
+            completion(.failure(StravaAuthError.invalidAPIRequestURL))
+            return
+        }
+
+        guard let accessTokenData = KeychainHelper.read(service: "strava", account: "accessToken"), let accessToken = String(data: accessTokenData, encoding: .utf8) else {
+            completion(.failure(StravaAuthError.missingAccessToken))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(StravaAuthError.noDataInAPIResponse))
+                return
+            }
+
+            do {
+                let streams = try JSONDecoder().decode([Stream].self, from: data)
+                completion(.success(streams))
+            } catch {
+                print("Decoding error for streams: \(error)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 
     // MARK: - Private Methods
 
@@ -107,7 +179,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "redirect_uri", value: StravaConfig.redirectURI),
             URLQueryItem(name: "approval_prompt", value: "auto"),
-            URLQueryItem(name: "scope", value: "activity:read_all,profile:read_all") // Request necessary scopes
+            URLQueryItem(name: "scope", value: "activity:read_all,profile:read_all")
         ]
         return components?.url
     }
@@ -175,7 +247,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
     // MARK: - ASWebAuthenticationPresentationContextProviding
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        return ASPresentationAnchor() // Use default window
+        return ASPresentationAnchor()
     }
 }
 
@@ -221,8 +293,3 @@ enum StravaAuthError: Error, LocalizedError {
         }
     }
 }
-
-
-
-
-// MARK: - Activity Codable

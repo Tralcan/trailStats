@@ -62,7 +62,7 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            .listStyle(InsetGroupedListStyle())
+            .listStyle(.plain)
         }
     }
     

@@ -16,29 +16,43 @@ struct ActivityDetailView: View {
                 // Header with main stats
                 headerView
                 
-                // Cadence Chart
-                TimeSeriesChartView(
-                    data: viewModel.activity.cadenceData,
-                    title: "Cadence",
-                    yAxisLabel: "SPM",
-                    color: .blue
-                )
-                
-                // Power Chart
-                TimeSeriesChartView(
-                    data: viewModel.activity.powerData,
-                    title: "Power",
-                    yAxisLabel: "Watts",
-                    color: .green
-                )
-                
-                // Heart Rate Chart
-                TimeSeriesChartView(
-                    data: viewModel.activity.heartRateData,
-                    title: "Heart Rate",
-                    yAxisLabel: "BPM",
-                    color: .red
-                )
+                if viewModel.isLoading {
+                    ProgressView("Loading chart data...")
+                        .frame(height: 200)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    // Cadence Chart
+                    TimeSeriesChartView(
+                        data: viewModel.cadenceData,
+                        title: "Cadence",
+                        yAxisLabel: "SPM",
+                        color: .blue
+                    )
+                    
+                    // Power Chart
+                    TimeSeriesChartView(
+                        data: viewModel.powerData,
+                        title: "Power",
+                        yAxisLabel: "Watts",
+                        color: .green
+                    )
+                    
+                    // Heart Rate Chart
+                    TimeSeriesChartView(
+                        data: viewModel.heartRateData,
+                        title: "Heart Rate",
+                        yAxisLabel: "BPM",
+                        color: .red
+                    )
+                    
+                    // Altitude Chart
+                    TimeSeriesChartView(
+                        data: viewModel.altitudeData,
+                        title: "Elevation",
+                        yAxisLabel: "Meters",
+                        color: .purple
+                    )
+                }
                 
                 Spacer()
             }
@@ -47,6 +61,9 @@ struct ActivityDetailView: View {
         .navigationTitle(viewModel.activity.name)
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemGroupedBackground))
+        .onAppear {
+            viewModel.fetchActivityStreams()
+        }
     }
     
     private var headerView: some View {
