@@ -118,6 +118,7 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
     func logout() {
         _ = KeychainHelper.delete(service: "strava", account: "accessToken")
         _ = KeychainHelper.delete(service: "strava", account: "refreshToken")
+        cacheManager.clearAllCaches()
     }
     
     func getActivities(page: Int, perPage: Int, completion: @escaping (Result<[Activity], Error>) -> Void) {

@@ -122,4 +122,22 @@ class CacheManager {
             print("Error clearing activity cache: \(error.localizedDescription)")
         }
     }
+
+    /// Deletes all local caches, including activities and activity streams.
+    func clearAllCaches() {
+        clearCache() // Clear activities cache
+
+        guard let streamsURL = streamsDirectoryURL, FileManager.default.fileExists(atPath: streamsURL.path) else {
+            print("Activity streams cache directory does not exist.")
+            return
+        }
+
+        do {
+            try FileManager.default.removeItem(at: streamsURL)
+            print("Successfully cleared all activity streams cache.")
+        } catch {
+            print("Error clearing activity streams cache: \(error.localizedDescription)")
+        }
+    }
 }
+
