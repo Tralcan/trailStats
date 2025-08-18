@@ -17,34 +17,52 @@ struct HomeView: View {
                 }
             }
             .navigationTitle(viewModel.isAuthenticated ? "Activities" : "Welcome")
+            .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Logout") {
+                        viewModel.logout()
+                    }
+                }
+                
+            }
+            .sheet(isPresented: $isShowingAdvancedSearch) {
+                AdvancedSearchView(viewModel: AdvancedSearchViewModel(onSearch: { name, date, distance, elevation, duration in
+                    viewModel.applyAdvancedSearch(name: name, date: date, distance: distance, elevation: elevation, duration: duration)
+                }))
+            }
         }
     }
     
+    @State private var isShowingAdvancedSearch = false
+    
     private var activityList: some View {
-        List {
-            ForEach(viewModel.activities) { activity in
-                NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                    ActivityRowView(activity: activity)
-                        .onAppear {
-                            if activity.id == viewModel.activities.last?.id {
-                                viewModel.fetchActivities()
+        VStack {
+            HStack {
+                Spacer()
+                Button("Advanced Search") {
+                    isShowingAdvancedSearch = true
+                }
+                .padding(.horizontal)
+            }
+            List {
+                ForEach(viewModel.filteredActivities) { activity in
+                    NavigationLink(destination: ActivityDetailView(activity: activity)) {
+                        ActivityRowView(activity: activity)
+                            .onAppear {
+                                if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
+                                    viewModel.fetchActivities()
+                                }
                             }
-                        }
+                    }
+                }
+                
+                if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            
-            if viewModel.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, alignment: .center)
-            }
-        }
-        .listStyle(InsetGroupedListStyle())
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Logout") {
-                    viewModel.logout()
-                }
-            }
+            .listStyle(InsetGroupedListStyle())
         }
     }
     
