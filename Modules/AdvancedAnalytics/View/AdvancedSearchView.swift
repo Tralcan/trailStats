@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct AdvancedSearchView: View {
@@ -38,12 +37,8 @@ struct AdvancedSearchView: View {
                             Text("\(km) km").tag(Double(km * 1000) as Double?)
                         }
                     } label: {
-                        HStack {
-                            Image(systemName: "figure.walk")
-                                .foregroundColor(.red)
-                            Text("Minimum Distance (km)")
-                                .foregroundColor(.red)
-                        }
+                        Label("Minimum Distance (km)", systemImage: "figure.walk")
+                            .foregroundColor(.red)
                     }
                     
                     Picker(selection: $viewModel.elevation) {
@@ -53,52 +48,27 @@ struct AdvancedSearchView: View {
                             Text("\(elevation) m").tag(Double(elevation) as Double?)
                         }
                     } label: {
-                        HStack {
-                            Image(systemName: "mountain.2")
-                                .foregroundColor(.green)
-                            Text("Minimum Elevation (m)")
-                                .foregroundColor(.green)
-                        }
-                    }
-                    
-                    Picker(selection: $viewModel.duration) {
-                        Text("None").tag(nil as TimeInterval?)
-                        ForEach(0..<49) { i in
-                            let minutes = i * 30
-                            let hours = minutes / 60
-                            let remainingMinutes = minutes % 60
-                            let durationString: String
-                            if hours > 0 {
-                                durationString = "\(hours)h \(remainingMinutes)m"
-                            } else {
-                                durationString = "\(remainingMinutes)m"
-                            }
-                            Text(durationString).tag(TimeInterval(minutes * 60) as TimeInterval?)
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "hourglass")
-                                .foregroundColor(.blue)
-                            Text("Minimum Duration")
-                                .foregroundColor(.blue)
-                        }
+                        Label("Minimum Elevation (m)", systemImage: "mountain.2")
+                            .foregroundColor(.green)
                     }
                 }
                 
-                Button("Search") {
-                    viewModel.performSearch()
-                    dismiss()
-                }
-            }
-            .navigationTitle("Advanced Search")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                VStack {
+                    Button("Search") {
+                        viewModel.performSearch()
+                        dismiss()
+                    }
+                    .buttonStyle(.plain)
+                    
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(.plain)
                 }
+                .frame(maxWidth: .infinity)
             }
+            .navigationTitle("Advanced Search")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

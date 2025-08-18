@@ -7,7 +7,6 @@ class AdvancedSearchViewModel: ObservableObject {
     @Published var date: Date? = nil
     @Published var distance: Double? = nil
     @Published var elevation: Double? = nil
-    @Published var duration: TimeInterval? = nil
     
     var onSearch: ((String, Date?, Double?, Double?, TimeInterval?) -> Void)?
     
@@ -16,7 +15,7 @@ class AdvancedSearchViewModel: ObservableObject {
     }
     
     func performSearch() {
-        onSearch?(name, date, distance, elevation, duration)
+        onSearch?(name, date, distance, elevation, nil)
     }
 }
 
