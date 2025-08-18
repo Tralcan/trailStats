@@ -222,12 +222,6 @@ enum StravaAuthError: Error, LocalizedError {
 }
 
 
-// MARK: - StravaConfig
 
-struct StravaConfig {
-    static let clientId = "126562"
-    static let clientSecret = "d55653a435f4a86a8633833652f6f33143517585"
-    static let redirectURI = "trailStats://localhost"
-}
 
 // MARK: - Activity Codable

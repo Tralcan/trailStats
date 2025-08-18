@@ -34,7 +34,4 @@ struct ActivityRowView: View {
     }
 }
 
-#Preview {
-    ActivityRowView(activity: MockDataService.generateActivities().first!)
-        .padding()
-}
+

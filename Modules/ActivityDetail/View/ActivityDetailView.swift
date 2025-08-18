@@ -82,8 +82,4 @@ struct ActivityDetailView: View {
     }
 }
 
-#Preview {
-    NavigationView {
-        ActivityDetailView(activity: MockDataService.generateActivities().first!)
-    }
-}
+

@@ -41,12 +41,4 @@ struct TimeSeriesChartView: View {
     }
 }
 
-#Preview {
-    TimeSeriesChartView(
-        data: MockDataService.generateActivities().first!.cadenceData,
-        title: "Cadence",
-        yAxisLabel: "SPM",
-        color: .blue
-    )
-    .padding()
-}
+
