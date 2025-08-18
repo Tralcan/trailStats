@@ -17,6 +17,7 @@ class HomeViewModel: ObservableObject {
     @Published var advancedSearchDuration: TimeInterval? = nil
     
     private let stravaService = StravaService()
+    private let cacheManager = CacheManager()
     private var currentPage = 1
     private var canLoadMoreActivities = true
     
@@ -68,7 +69,11 @@ class HomeViewModel: ObservableObject {
     init() {
         _isAuthenticated = Published(initialValue: stravaService.isAuthenticated())
         if isAuthenticated {
-            fetchActivities()
+            if let cachedActivities = cacheManager.loadActivities(), !cachedActivities.isEmpty {
+                self.activities = cachedActivities
+            } else {
+                fetchActivities()
+            }
         }
     }
     
@@ -91,6 +96,7 @@ class HomeViewModel: ObservableObject {
     
     func logout() {
         stravaService.logout()
+        cacheManager.clearCache()
         isAuthenticated = false
         activities = [] // Clear activities on logout
     }
@@ -110,6 +116,7 @@ class HomeViewModel: ObservableObject {
                         self.canLoadMoreActivities = false
                     } else {
                         self.activities.append(contentsOf: newActivities.filter { $0.sportType == "TrailRun" })
+                        self.cacheManager.saveActivities(self.activities)
                         self.currentPage += 1
                     }
                 case .failure(let error):
