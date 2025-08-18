@@ -57,6 +57,19 @@ struct AdvancedSearchView: View {
                             Text("Minimum Elevation (m)")
                         }
                     }
+                    
+                    Picker(selection: $viewModel.duration) {
+                        Text("None").tag(nil as TimeInterval?)
+                        ForEach(durationOptions, id: \.self) { duration in
+                            Text(format(duration: duration)).tag(duration as TimeInterval?)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "clock")
+                                .foregroundColor(.blue)
+                            Text("Minimum Duration")
+                        }
+                    }
                 }
                 
                 }
@@ -78,6 +91,22 @@ struct AdvancedSearchView: View {
                 }
             }
         }
+    }
+    
+    private var durationOptions: [TimeInterval] {
+        var options: [TimeInterval] = []
+        // From 30 minutes to 24 hours in 30-minute increments
+        for i in 1...48 {
+            options.append(TimeInterval(i * 30 * 60))
+        }
+        return options
+    }
+
+    private func format(duration: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute]
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: duration) ?? ""
     }
 }
 

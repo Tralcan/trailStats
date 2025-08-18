@@ -14,6 +14,7 @@ class HomeViewModel: ObservableObject {
     @Published var advancedSearchDate: Date? = nil
     @Published var advancedSearchDistance: Double? = nil
     @Published var advancedSearchElevation: Double? = nil
+    @Published var advancedSearchDuration: TimeInterval? = nil
     
     private let stravaService = StravaService()
     private var currentPage = 1
@@ -23,7 +24,7 @@ class HomeViewModel: ObservableObject {
         var filtered = activities
         
         // Apply basic name search if advanced search is not active
-        if advancedSearchName.isEmpty && advancedSearchDate == nil && advancedSearchDistance == nil && advancedSearchElevation == nil {
+        if advancedSearchName.isEmpty && advancedSearchDate == nil && advancedSearchDistance == nil && advancedSearchElevation == nil && advancedSearchDuration == nil {
             if !searchText.isEmpty {
                 filtered = filtered.filter { $0.name.lowercased().contains(searchText.lowercased()) }
             }
@@ -45,6 +46,10 @@ class HomeViewModel: ObservableObject {
             if let searchElevation = advancedSearchElevation {
                 filtered = filtered.filter { $0.elevationGain >= searchElevation }
             }
+            
+            if let searchDuration = advancedSearchDuration {
+                filtered = filtered.filter { $0.duration >= searchDuration }
+            }
         }
         
         return filtered
@@ -55,6 +60,7 @@ class HomeViewModel: ObservableObject {
         self.advancedSearchDate = date
         self.advancedSearchDistance = distance
         self.advancedSearchElevation = elevation
+        self.advancedSearchDuration = duration
         // Clear basic search text when advanced search is applied
         self.searchText = ""
     }
