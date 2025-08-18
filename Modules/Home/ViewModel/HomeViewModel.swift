@@ -8,11 +8,17 @@ class HomeViewModel: ObservableObject {
     
     @Published var isAuthenticated: Bool
     @Published var activities: [Activity] = []
+    @Published var isLoading: Bool = false
     
     private let stravaService = StravaService()
+    private var currentPage = 1
+    private var canLoadMoreActivities = true
     
     init() {
         _isAuthenticated = Published(initialValue: stravaService.isAuthenticated())
+        if isAuthenticated {
+            fetchActivities()
+        }
     }
     
     func connectToStrava() {
@@ -39,8 +45,26 @@ class HomeViewModel: ObservableObject {
     }
     
     func fetchActivities() {
-        // In the future, this will fetch from a repository.
-        // For now, we use the mock service.
-        self.activities = MockDataService.generateActivities()
+        guard !isLoading, canLoadMoreActivities else { return }
+        
+        isLoading = true
+        stravaService.getActivities(page: currentPage, perPage: 10) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                self.isLoading = false
+                switch result {
+                case .success(let newActivities):
+                    if newActivities.isEmpty {
+                        self.canLoadMoreActivities = false
+                    } else {
+                        self.activities.append(contentsOf: newActivities.filter { $0.sportType == "TrailRun" })
+                        self.currentPage += 1
+                    }
+                case .failure(let error):
+                    print("Failed to fetch activities: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }

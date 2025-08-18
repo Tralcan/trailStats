@@ -21,9 +21,21 @@ struct HomeView: View {
     }
     
     private var activityList: some View {
-        List(viewModel.activities) { activity in
-            NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                ActivityRowView(activity: activity)
+        List {
+            ForEach(viewModel.activities) { activity in
+                NavigationLink(destination: ActivityDetailView(activity: activity)) {
+                    ActivityRowView(activity: activity)
+                        .onAppear {
+                            if activity.id == viewModel.activities.last?.id {
+                                viewModel.fetchActivities()
+                            }
+                        }
+                }
+            }
+            
+            if viewModel.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .listStyle(InsetGroupedListStyle())

@@ -1,7 +1,7 @@
-
 import Foundation
 import AuthenticationServices
 import Combine
+import CoreLocation
 
 class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
 
@@ -59,6 +59,42 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
         _ = KeychainHelper.delete(service: "strava", account: "accessToken")
         _ = KeychainHelper.delete(service: "strava", account: "refreshToken")
         // Optionally, revoke token on Strava's side if needed
+    }
+    
+    func getActivities(page: Int, perPage: Int, completion: @escaping (Result<[Activity], Error>) -> Void) {
+        guard let url = StravaAPI.getActivities(page: page, perPage: perPage).url else {
+            completion(.failure(StravaAuthError.invalidAPIRequestURL))
+            return
+        }
+
+        guard let accessTokenData = KeychainHelper.read(service: "strava", account: "accessToken"), let accessToken = String(data: accessTokenData, encoding: .utf8) else {
+            completion(.failure(StravaAuthError.missingAccessToken))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(StravaAuthError.noDataInAPIResponse))
+                return
+            }
+
+            do {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                let activities = try decoder.decode([Activity].self, from: data)
+                completion(.success(activities))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
     }
 
     // MARK: - Private Methods
@@ -153,6 +189,9 @@ enum StravaAuthError: Error, LocalizedError {
     case noDataInTokenExchange
     case invalidTokenResponse
     case failedToStartAuthSession
+    case invalidAPIRequestURL
+    case missingAccessToken
+    case noDataInAPIResponse
 
     var errorDescription: String? {
         switch self {
@@ -172,6 +211,23 @@ enum StravaAuthError: Error, LocalizedError {
             return "The token exchange response was invalid or missing tokens."
         case .failedToStartAuthSession:
             return "Failed to start the web authentication session."
+        case .invalidAPIRequestURL:
+            return "The Strava API request URL could not be constructed."
+        case .missingAccessToken:
+            return "The Strava access token is missing from the Keychain."
+        case .noDataInAPIResponse:
+            return "No data was received from the Strava API."
         }
     }
 }
+
+
+// MARK: - StravaConfig
+
+struct StravaConfig {
+    static let clientId = "126562"
+    static let clientSecret = "d55653a435f4a86a8633833652f6f33143517585"
+    static let redirectURI = "trailStats://localhost"
+}
+
+// MARK: - Activity Codable
