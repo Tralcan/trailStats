@@ -1,0 +1,9 @@
+
+# Strava Credentials
+Core/StravaConfig.swift
+
+# Xcode
+.DS_Store
+/build/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/

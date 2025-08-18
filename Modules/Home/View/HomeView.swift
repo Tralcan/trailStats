@@ -27,6 +27,13 @@ struct HomeView: View {
             }
         }
         .listStyle(InsetGroupedListStyle())
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Logout") {
+                    viewModel.logout()
+                }
+            }
+        }
     }
     
     private var authenticationPrompt: some View {
