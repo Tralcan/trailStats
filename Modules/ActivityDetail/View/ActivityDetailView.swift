@@ -21,7 +21,7 @@ struct ActivityDetailView: View {
                         .frame(height: 200)
                         .frame(maxWidth: .infinity)
                 } else {
-                    // Altitude Chart (Elevation) - First
+                    // Elevation Chart
                     TimeSeriesChartView(
                         data: viewModel.altitudeData,
                         title: "Elevation",
@@ -30,31 +30,7 @@ struct ActivityDetailView: View {
                         showAverage: false
                     )
 
-                    // Heart Rate Chart - Second
-                    TimeSeriesChartView(
-                        data: viewModel.heartRateData,
-                        title: "Heart Rate",
-                        yAxisLabel: "BPM",
-                        color: .red
-                    )
-
-                    // Power Chart - Third
-                    TimeSeriesChartView(
-                        data: viewModel.powerData,
-                        title: "Power",
-                        yAxisLabel: "Watts",
-                        color: .green
-                    )
-
-                    // Cadence Chart - Fourth
-                    TimeSeriesChartView(
-                        data: viewModel.cadenceData,
-                        title: "Cadence",
-                        yAxisLabel: "SPM",
-                        color: .blue
-                    )
-
-                    // Vertical Energy Cost (Cvert) Chart
+                    // Vertical Energy Cost Chart
                     TimeSeriesChartView(
                         data: viewModel.cvertData,
                         title: "Vertical Energy Cost",
@@ -70,12 +46,20 @@ struct ActivityDetailView: View {
                         color: .cyan
                     )
 
-                    // Stride Length Chart
+                    // Heart Rate Chart
                     TimeSeriesChartView(
-                        data: viewModel.strideLengthData,
-                        title: "Stride Length",
-                        yAxisLabel: "m",
-                        color: .orange
+                        data: viewModel.heartRateData,
+                        title: "Heart Rate",
+                        yAxisLabel: "BPM",
+                        color: .red
+                    )
+
+                    // Power Chart
+                    TimeSeriesChartView(
+                        data: viewModel.powerData,
+                        title: "Power",
+                        yAxisLabel: "Watts",
+                        color: .green
                     )
 
                     // Pace Chart
@@ -84,6 +68,22 @@ struct ActivityDetailView: View {
                         title: "Pace",
                         yAxisLabel: "minutos",
                         color: .purple
+                    )
+
+                    // Stride Length Chart
+                    TimeSeriesChartView(
+                        data: viewModel.strideLengthData,
+                        title: "Stride Length",
+                        yAxisLabel: "m",
+                        color: .orange
+                    )
+
+                    // Cadence Chart
+                    TimeSeriesChartView(
+                        data: viewModel.cadenceData,
+                        title: "Cadence",
+                        yAxisLabel: "SPM",
+                        color: .blue
                     )
                 }
                 
