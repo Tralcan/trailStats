@@ -7,8 +7,6 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var cadenceData: [DataPoint] = []
     @Published var powerData: [DataPoint] = []
     @Published var altitudeData: [DataPoint] = []
-    @Published var strideLengthData: [DataPoint] = []
-    @Published var groundContactTimeData: [DataPoint] = []
     @Published var isLoading = false
     
     private let stravaService = StravaService()
@@ -50,16 +48,6 @@ class ActivityDetailViewModel: ObservableObject {
         
         if let altitudeStream = streamsDictionary["altitude"]?.data.compactMap({ $0 }) {
             self.altitudeData = zip(timeStream, altitudeStream).map { DataPoint(time: $0, value: $1) }
-        }
-
-        // New: Stride Length Stream
-        if let strideLengthStream = streamsDictionary["stride_length"]?.data.compactMap({ $0 }) {
-            self.strideLengthData = zip(timeStream, strideLengthStream).map { DataPoint(time: $0, value: $1) }
-        }
-
-        // New: Ground Contact Time Stream
-        if let groundContactTimeStream = streamsDictionary["ground_contact_time"]?.data.compactMap({ $0 }) {
-            self.groundContactTimeData = zip(timeStream, groundContactTimeStream).map { DataPoint(time: $0, value: $1) }
         }
     }
 }

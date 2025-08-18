@@ -21,31 +21,7 @@ struct ActivityDetailView: View {
                         .frame(height: 200)
                         .frame(maxWidth: .infinity)
                 } else {
-                    // Cadence Chart
-                    TimeSeriesChartView(
-                        data: viewModel.cadenceData,
-                        title: "Cadence",
-                        yAxisLabel: "SPM",
-                        color: .blue
-                    )
-                    
-                    // Power Chart
-                    TimeSeriesChartView(
-                        data: viewModel.powerData,
-                        title: "Power",
-                        yAxisLabel: "Watts",
-                        color: .green
-                    )
-                    
-                    // Heart Rate Chart
-                    TimeSeriesChartView(
-                        data: viewModel.heartRateData,
-                        title: "Heart Rate",
-                        yAxisLabel: "BPM",
-                        color: .red
-                    )
-                    
-                    // Altitude Chart
+                    // Altitude Chart (Elevation) - First
                     TimeSeriesChartView(
                         data: viewModel.altitudeData,
                         title: "Elevation",
@@ -54,20 +30,28 @@ struct ActivityDetailView: View {
                         showAverage: false
                     )
 
-                    // Stride Length Chart
+                    // Heart Rate Chart - Second
                     TimeSeriesChartView(
-                        data: viewModel.strideLengthData,
-                        title: "Stride Length",
-                        yAxisLabel: "Meters",
-                        color: .orange
+                        data: viewModel.heartRateData,
+                        title: "Heart Rate",
+                        yAxisLabel: "BPM",
+                        color: .red
                     )
 
-                    // Ground Contact Time Chart
+                    // Power Chart - Third
                     TimeSeriesChartView(
-                        data: viewModel.groundContactTimeData,
-                        title: "Ground Contact Time",
-                        yAxisLabel: "ms",
-                        color: .teal
+                        data: viewModel.powerData,
+                        title: "Power",
+                        yAxisLabel: "Watts",
+                        color: .green
+                    )
+
+                    // Cadence Chart - Fourth
+                    TimeSeriesChartView(
+                        data: viewModel.cadenceData,
+                        title: "Cadence",
+                        yAxisLabel: "SPM",
+                        color: .blue
                     )
                 }
                 
