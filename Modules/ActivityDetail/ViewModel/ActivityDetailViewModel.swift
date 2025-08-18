@@ -203,10 +203,10 @@ class ActivityDetailViewModel: ObservableObject {
             let altitudeChange = currentAltitude - previousAltitude
 
             var cvertValue: Double = 0.0
-            if altitudeChange > 0 { // Only consider uphill segments
-                if altitudeChange != 0 {
-                    cvertValue = currentPower / altitudeChange
-                }
+            let minAltitudeChangeThreshold: Double = 0.2 // Define a threshold, e.g., 0.2 meters
+            
+            if altitudeChange > minAltitudeChangeThreshold { // Only consider uphill segments with significant altitude change
+                cvertValue = currentPower / altitudeChange
             }
             cvertPoints.append(DataPoint(time: currentTime, value: cvertValue))
         }
