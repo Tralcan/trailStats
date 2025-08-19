@@ -6,21 +6,22 @@ import Charts
 
 struct AdvancedAnalyticsView: View {
     @StateObject private var viewModel = AdvancedAnalyticsViewModel()
-
+    @State private var reloadKey = UUID()
+    
     enum TrainingRange: String, CaseIterable, Identifiable {
-        case last7 = "7e"
-        case last15 = "15e"
-        case last30 = "30e"
-        case last60 = "60e"
-        case last90 = "90e"
+        case last7 = "7"
+        case last15 = "15"
+        case last30 = "30"
+        case last60 = "60"
+        case last90 = "90"
         var id: String { rawValue }
         var description: String {
             switch self {
-            case .last7: return "7e"
-            case .last15: return "15e"
-            case .last30: return "30e"
-            case .last60: return "60e"
-            case .last90: return "90e"
+            case .last7: return "7"
+            case .last15: return "15"
+            case .last30: return "30"
+            case .last60: return "60"
+            case .last90: return "90"
             }
         }
         var count: Int {
@@ -33,18 +34,24 @@ struct AdvancedAnalyticsView: View {
             }
         }
     }
-
+    
     @State private var selectedRange: TrainingRange = .last7
-
+    
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    Text("Analytics")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
                     // Selector de rango de entrenamientos
-                    VStack(alignment: .center, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Select trainings")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         Picker("Select trainings", selection: $selectedRange) {
                             ForEach(TrainingRange.allCases) { range in
                                 Text(range.description).tag(range)
@@ -54,8 +61,8 @@ struct AdvancedAnalyticsView: View {
                         .padding(.horizontal, 8)
                     }
                     .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
                     if !viewModel.filteredActivities.isEmpty {
                         VStack(alignment: .leading, spacing: 20) {
                             AnalyticsCard(title: "Distance per Activity", systemImage: "figure.walk", color: .red) {
@@ -79,19 +86,20 @@ struct AdvancedAnalyticsView: View {
                             }
                         }
                     }
-                    }
-                }
                 }
                 .onAppear {
                     viewModel.filterByTrainings(count: selectedRange.count)
                 }
                 .onChange(of: selectedRange) { newValue in
-                    viewModel.filterByTrainings(count: newValue.count)
+                    // Forzar recarga del ViewModel para obtener datos nuevos del caché
+                    reloadKey = UUID()
                 }
             }
+            .id(reloadKey)
         }
-
-
+    }
+    
+    
     // Definición de las tarjetas de métricas avanzadas fuera de la vista y con keyPath correcto
     struct AdvancedMetricCard {
         let title: String
@@ -100,17 +108,17 @@ struct AdvancedAnalyticsView: View {
         let keyPath: KeyPath<ActivitySummaryMetrics, Double>
         let label: String
     }
-
+    
     let advancedMetricCards: [AdvancedMetricCard] = [
-    AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \ActivitySummaryMetrics.verticalEnergyCostAverage, label: "W/m"),
-    AdvancedMetricCard(title: "Vertical Speed (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \ActivitySummaryMetrics.verticalSpeedAverage, label: "km/h"),
-    AdvancedMetricCard(title: "Power (W)", systemImage: "bolt.circle", color: .orange, keyPath: \ActivitySummaryMetrics.powerAverage, label: "W"),
-    AdvancedMetricCard(title: "Pace (min/km)", systemImage: "speedometer", color: .pink, keyPath: \ActivitySummaryMetrics.paceAverage, label: "min/km"),
-    AdvancedMetricCard(title: "Heart Rate (BPM)", systemImage: "heart.fill", color: .red, keyPath: \ActivitySummaryMetrics.heartRateAverage, label: "BPM"),
-    AdvancedMetricCard(title: "Stride Length (m)", systemImage: "figure.run", color: .indigo, keyPath: \ActivitySummaryMetrics.strideLengthAverage, label: "m"),
-    AdvancedMetricCard(title: "Cadence (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \ActivitySummaryMetrics.cadenceAverage, label: "RPM")
+        AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \ActivitySummaryMetrics.verticalEnergyCostAverage, label: "W/m"),
+        AdvancedMetricCard(title: "Vertical Speed (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \ActivitySummaryMetrics.verticalSpeedAverage, label: "km/h"),
+        AdvancedMetricCard(title: "Power (W)", systemImage: "bolt.circle", color: .orange, keyPath: \ActivitySummaryMetrics.powerAverage, label: "W"),
+        AdvancedMetricCard(title: "Pace (min/km)", systemImage: "speedometer", color: .pink, keyPath: \ActivitySummaryMetrics.paceAverage, label: "min/km"),
+        AdvancedMetricCard(title: "Heart Rate (BPM)", systemImage: "heart.fill", color: .red, keyPath: \ActivitySummaryMetrics.heartRateAverage, label: "BPM"),
+        AdvancedMetricCard(title: "Stride Length (m)", systemImage: "figure.run", color: .indigo, keyPath: \ActivitySummaryMetrics.strideLengthAverage, label: "m"),
+        AdvancedMetricCard(title: "Cadence (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \ActivitySummaryMetrics.cadenceAverage, label: "RPM")
     ]
-
+    
     // Gráfico genérico para métricas avanzadas
     struct MetricBarChart: View {
         let metrics: [ActivitySummaryMetrics]
@@ -130,6 +138,7 @@ struct AdvancedAnalyticsView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            //
             .chartXAxis {
                 AxisMarks(values: .automatic) { value in
                     AxisGridLine()
@@ -141,9 +150,10 @@ struct AdvancedAnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
+            //
         }
     }
-
+    
     struct AnalyticsCard<Content: View>: View {
         let title: String
         let systemImage: String
@@ -172,7 +182,7 @@ struct AdvancedAnalyticsView: View {
             .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
         }
     }
-
+    
     struct ElevationBarChart: View {
         let activities: [Activity]
         var barColor: Color = .green
@@ -189,6 +199,7 @@ struct AdvancedAnalyticsView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            //
             .chartXAxis {
                 AxisMarks(values: .automatic) { value in
                     AxisGridLine()
@@ -200,9 +211,10 @@ struct AdvancedAnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
+            //
         }
     }
-
+    
     struct DistanceBarChart: View {
         let activities: [Activity]
         var barColor: Color = .orange
@@ -219,6 +231,7 @@ struct AdvancedAnalyticsView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            //
             .chartXAxis {
                 AxisMarks(values: .automatic) { value in
                     AxisGridLine()
@@ -230,9 +243,10 @@ struct AdvancedAnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
+            //
         }
     }
-
+    
     struct DurationBarChart: View {
         let activities: [Activity]
         var barColor: Color = .blue
@@ -249,6 +263,7 @@ struct AdvancedAnalyticsView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            //
             .chartXAxis {
                 AxisMarks(values: .automatic) { value in
                     AxisGridLine()
@@ -260,6 +275,7 @@ struct AdvancedAnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
+            //
         }
         func durationString(_ seconds: Double) -> String {
             let minutes = Int(seconds) / 60
@@ -272,9 +288,8 @@ struct AdvancedAnalyticsView: View {
             }
         }
     }
-
-    #Preview {
-        AdvancedAnalyticsView()
-    }
-
-
+    
+    //
+    
+    
+}
