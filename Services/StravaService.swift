@@ -37,6 +37,7 @@ enum StravaAPIDefinition {
             ]
         case .getActivityStreams(let activityId):
             components.path = "/api/v3/activities/\(activityId)/streams"
+            // Aseguramos que 'latlng' esté incluido explícitamente en los keys
             components.queryItems = [
                 URLQueryItem(name: "keys", value: "latlng,time,heartrate,cadence,watts,altitude,distance"),
                 URLQueryItem(name: "key_by_type", value: "true")

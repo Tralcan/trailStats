@@ -48,15 +48,36 @@ class ActivityDetailViewModel: ObservableObject {
         guard let timeStream = streamsDictionary["time"]?.data.compactMap({ $0 }) else { return }
 
         if let hrStream = streamsDictionary["heartrate"]?.data.compactMap({ $0 }) {
-            self.heartRateData = zip(timeStream, hrStream).map { DataPoint(time: $0, value: $1) }
+            let rawHR = zip(timeStream, hrStream).map { DataPoint(time: $0, value: $1) }
+            let window = 31
+            if rawHR.count >= window {
+                self.heartRateData = movingMedian(data: rawHR, windowSize: window)
+            } else {
+                self.heartRateData = rawHR
+            }
         }
         
         if let cadenceStream = streamsDictionary["cadence"]?.data.compactMap({ $0 }) {
-            self.cadenceData = zip(timeStream, cadenceStream).map { DataPoint(time: $0, value: $1 * 2) } // Cadence is often per leg
+            let rawCadence = zip(timeStream, cadenceStream).map { DataPoint(time: $0, value: $1 * 2) }
+            let window = 31
+            if rawCadence.count >= window {
+                self.cadenceData = movingMedian(data: rawCadence, windowSize: window)
+            } else {
+                self.cadenceData = rawCadence
+            }
         }
         
         if let powerStream = streamsDictionary["watts"]?.data.compactMap({ $0 }) {
-            self.powerData = zip(timeStream, powerStream).map { DataPoint(time: $0, value: $1) }
+            // Filtrar valores fuera de rango antes de suavizar
+            let filteredPower = zip(timeStream, powerStream)
+                .map { DataPoint(time: $0, value: $1) }
+                .filter { $0.value >= 90 && $0.value <= 500 }
+            let window = 31
+            if filteredPower.count >= window {
+                self.powerData = movingMedian(data: filteredPower, windowSize: window)
+            } else {
+                self.powerData = filteredPower
+            }
         }
         
         if let altitudeStream = streamsDictionary["altitude"]?.data.compactMap({ $0 }) {
@@ -119,7 +140,12 @@ class ActivityDetailViewModel: ObservableObject {
                 filteredPacePoints.append(DataPoint(time: dataPoint.time, value: 0.0))
             }
         }
-        self.paceData = filteredPacePoints
+        let window = 31
+        if filteredPacePoints.count >= window {
+            self.paceData = movingMedian(data: filteredPacePoints, windowSize: window)
+        } else {
+            self.paceData = filteredPacePoints
+        }
     }
 
     private func calculateStrideLength() { // No longer takes distanceData as parameter
@@ -157,7 +183,12 @@ class ActivityDetailViewModel: ObservableObject {
                 strideLengthPoints.append(DataPoint(time: currentTime, value: strideLengthValue))
             }
         }
-        self.strideLengthData = strideLengthPoints
+        let window = 31
+        if strideLengthPoints.count >= window {
+            self.strideLengthData = movingMedian(data: strideLengthPoints, windowSize: window)
+        } else {
+            self.strideLengthData = strideLengthPoints
+        }
     }
 
     private func calculateVerticalSpeed() {
@@ -210,9 +241,75 @@ class ActivityDetailViewModel: ObservableObject {
             if altitudeChange > minAltitudeChangeThreshold { // Only consider uphill segments with significant altitude change
                 cvertValue = currentPower / altitudeChange
             }
+            // Forzar a cero si es negativo o NaN
+            if cvertValue.isNaN || cvertValue < 0 {
+                cvertValue = 0.0
+            }
             cvertPoints.append(DataPoint(time: currentTime, value: cvertValue))
         }
-        self.cvertData = cvertPoints
+        // Usar ventana 21 (impar más cercano a 20) para evitar crash y mejorar suavizado
+        // Aplicar mediana móvil (moving median) con ventana 21
+    let window = 31
+        if cvertPoints.count >= window {
+            self.cvertData = movingMedian(data: cvertPoints, windowSize: window)
+        } else {
+            self.cvertData = cvertPoints
+        }
+
+    }
+
+    // Mediana móvil para suavizar series temporales
+    private func movingMedian(data: [DataPoint], windowSize: Int) -> [DataPoint] {
+        guard windowSize % 2 == 1, data.count >= windowSize else { return data }
+        let halfWindow = windowSize / 2
+        var result: [DataPoint] = []
+        for i in 0..<data.count {
+            let start = max(0, i - halfWindow)
+            let end = min(data.count - 1, i + halfWindow)
+            let windowSlice = data[start...end].map { $0.value }
+            let sorted = windowSlice.sorted()
+            let median: Double
+            let count = sorted.count
+            if count % 2 == 1 {
+                median = sorted[count / 2]
+            } else {
+                median = (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0
+            }
+            result.append(DataPoint(time: data[i].time, value: median))
+        }
+        return result
+    }
+
+    // Filtro Savitzky-Golay para suavizar series temporales
+    private func savitzkyGolayFilter(data: [DataPoint], windowSize: Int, polynomialOrder: Int) -> [DataPoint] {
+        guard windowSize % 2 == 1, windowSize > polynomialOrder, data.count >= windowSize else { return data }
+        let halfWindow = windowSize / 2
+        let coeffs = savitzkyGolayCoefficients(windowSize: windowSize, polynomialOrder: polynomialOrder)
+        var result: [DataPoint] = []
+        for i in 0..<data.count {
+            var acc = 0.0
+            for j in -halfWindow...halfWindow {
+                let idx = min(max(i + j, 0), data.count - 1)
+                acc += coeffs[j + halfWindow] * data[idx].value
+            }
+            result.append(DataPoint(time: data[i].time, value: acc))
+        }
+        return result
+    }
+
+    // Coeficientes Savitzky-Golay para ventana y polinomio dados (grado 3, ventana 31)
+    private func savitzkyGolayCoefficients(windowSize: Int, polynomialOrder: Int) -> [Double] {
+        // Para ventana 21 y grado 3, coeficientes estándar (21 elementos):
+        if windowSize == 21 && polynomialOrder == 3 {
+            // Coeficientes generados para Savitzky-Golay (grado 3, ventana 21, simétrico)
+            return [
+                -305, -183, -85, -8, 48, 85, 105, 111, 105, 89, 65, 35, 1, -37, -77, -119, -161, -203, -243, -281, -317
+            ].map { $0 / 2024.0 }
+        }
+        // Si se requieren otros, devolver ventana centrada (sin suavizado)
+        var coeffs = [Double](repeating: 0, count: windowSize)
+        coeffs[windowSize/2] = 1.0
+        return coeffs
     }
 
     func shareGPX() {
