@@ -2,6 +2,21 @@ import Foundation
 
 /// Manages caching of activities to the device's local storage.
 class CacheManager {
+
+    // Carga las métricas avanzadas de una actividad (metrics.json)
+    func loadMetrics(activityId: Int) -> ActivitySummaryMetrics? {
+        guard let folder = summaryFolderURL(for: activityId) else { return nil }
+        let fileURL = folder.appendingPathComponent("metrics.json")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let decoder = JSONDecoder()
+            return try decoder.decode(ActivitySummaryMetrics.self, from: data)
+        } catch {
+            print("Error loading metrics for activity \(activityId): \(error.localizedDescription)")
+            return nil
+        }
+    }
     // Guarda el texto de AI Coach para una actividad
     func saveAICoachText(activityId: Int, text: String) {
         guard let folder = summaryFolderURL(for: activityId) else { return }

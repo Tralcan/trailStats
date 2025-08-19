@@ -1,5 +1,6 @@
 
 
+
 import SwiftUI
 import Charts
 
@@ -67,150 +68,198 @@ struct AdvancedAnalyticsView: View {
                                 DurationBarChart(activities: viewModel.filteredActivities, barColor: .blue)
                                     .frame(height: 180)
                             }
+                            // NUEVOS GRÁFICOS DE MÉTRICAS AVANZADAS
+                            ForEach(advancedMetricCards, id: \.title) { card in
+                                AnalyticsCard(title: card.title, systemImage: card.systemImage, color: card.color) {
+                                    MetricBarChart(metrics: viewModel.filteredMetrics, keyPath: card.keyPath, label: card.label, color: card.color)
+                                        .frame(height: 180)
+                                }
+                            }
                         }
-                        .padding(.vertical, 8)
-                    } else {
-                        Spacer(minLength: 80)
-                        Text("No hay actividades en el rango seleccionado.")
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
-            }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("Analytics")
-            .onAppear {
-                viewModel.filterByDateRange(days: selectedRange.days)
             }
         }
     }
-// Tarjeta de Analytics siguiendo HIG
-struct AnalyticsCard<Content: View>: View {
-    let title: String
-    let systemImage: String
-    let color: Color
-    let content: Content
-    init(title: String, systemImage: String, color: Color, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.systemImage = systemImage
-        self.color = color
-        self.content = content()
-    }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage)
-                    .foregroundColor(color)
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-            }
-            content
-        }
-        .padding(16)
-        .background(.thinMaterial)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-    }
-}
-}
 
-struct ElevationBarChart: View {
-    let activities: [Activity]
-    var barColor: Color = .green
-    var body: some View {
-        Chart(activities) { activity in
-            BarMark(
-                x: .value("Fecha", activity.date, unit: .day),
-                y: .value("Elevación", activity.elevationGain)
-            )
-            .foregroundStyle(barColor)
-            .annotation(position: .top, alignment: .center) {
-                Text("\(Int(activity.elevationGain))m")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 1)) { value in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
+    // Definición de las tarjetas de métricas avanzadas fuera de la vista y con keyPath correcto
+    struct AdvancedMetricCard {
+        let title: String
+        let systemImage: String
+        let color: Color
+        let keyPath: KeyPath<ActivitySummaryMetrics, Double>
+        let label: String
     }
-}
 
-struct DistanceBarChart: View {
-    let activities: [Activity]
-    var barColor: Color = .orange
-    var body: some View {
-        Chart(activities) { activity in
-            BarMark(
-                x: .value("Fecha", activity.date, unit: .day),
-                y: .value("Distancia", activity.distance / 1000)
-            )
-            .foregroundStyle(barColor)
-            .annotation(position: .top, alignment: .center) {
-                Text(String(format: "%.1f km", activity.distance / 1000))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 1)) { value in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-    }
-}
+    let advancedMetricCards: [AdvancedMetricCard] = [
+        AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \ActivitySummaryMetrics.verticalEnergyCostAverage, label: "W/m"),
+        AdvancedMetricCard(title: "Vertical Speed (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \ActivitySummaryMetrics.verticalSpeedAverage, label: "km/h"),
+        AdvancedMetricCard(title: "Potencia (W)", systemImage: "bolt.circle", color: .orange, keyPath: \ActivitySummaryMetrics.powerAverage, label: "W"),
+        AdvancedMetricCard(title: "Ritmo (min/km)", systemImage: "speedometer", color: .pink, keyPath: \ActivitySummaryMetrics.paceAverage, label: "min/km"),
+        AdvancedMetricCard(title: "Frecuencia Cardíaca (BPM)", systemImage: "heart.fill", color: .red, keyPath: \ActivitySummaryMetrics.heartRateAverage, label: "BPM"),
+        AdvancedMetricCard(title: "Longitud de Zancada (m)", systemImage: "figure.run", color: .indigo, keyPath: \ActivitySummaryMetrics.strideLengthAverage, label: "m"),
+        AdvancedMetricCard(title: "Cadencia (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \ActivitySummaryMetrics.cadenceAverage, label: "RPM")
+    ]
 
-struct DurationBarChart: View {
-    let activities: [Activity]
-    var barColor: Color = .blue
-    var body: some View {
-        Chart(activities) { activity in
-            BarMark(
-                x: .value("Fecha", activity.date, unit: .day),
-                y: .value("Tiempo", activity.duration / 60)
-            )
-            .foregroundStyle(barColor)
-            .annotation(position: .top, alignment: .center) {
-                Text(durationString(activity.duration))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+    // Gráfico genérico para métricas avanzadas
+    struct MetricBarChart: View {
+        let metrics: [ActivitySummaryMetrics]
+        let keyPath: KeyPath<ActivitySummaryMetrics, Double>
+        let label: String
+        let color: Color
+        var body: some View {
+            Chart(metrics, id: \ .activityId) { metric in
+                BarMark(
+                    x: .value("ID", metric.activityId),
+                    y: .value(label, metric[keyPath: keyPath])
+                )
+                .foregroundStyle(color)
+                .annotation(position: .top, alignment: .center) {
+                    Text(String(format: "%.2f %@", metric[keyPath: keyPath], label))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .automatic) { value in
+                    AxisGridLine()
+                    AxisValueLabel(centered: true) {
+                        Text("#\(value.as(Int.self) ?? 0)")
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
             }
         }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 1)) { value in
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
-            }
-        }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
     }
-    func durationString(_ seconds: Double) -> String {
-        let minutes = Int(seconds) / 60
-        let hours = minutes / 60
-        let mins = minutes % 60
-        if hours > 0 {
-            return "\(hours)h \(mins)m"
-        } else {
-            return "\(mins)m"
-        }
-    }
-}
 
-#Preview {
-    AdvancedAnalyticsView()
-}
+    struct AnalyticsCard<Content: View>: View {
+        let title: String
+        let systemImage: String
+        let color: Color
+        let content: Content
+        init(title: String, systemImage: String, color: Color, @ViewBuilder content: () -> Content) {
+            self.title = title
+            self.systemImage = systemImage
+            self.color = color
+            self.content = content()
+        }
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: systemImage)
+                        .foregroundColor(color)
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
+                content
+            }
+            .padding(16)
+            .background(.thinMaterial)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+        }
+    }
+
+    struct ElevationBarChart: View {
+        let activities: [Activity]
+        var barColor: Color = .green
+        var body: some View {
+            Chart(activities) { activity in
+                BarMark(
+                    x: .value("Fecha", activity.date, unit: .day),
+                    y: .value("Elevación", activity.elevationGain)
+                )
+                .foregroundStyle(barColor)
+                .annotation(position: .top, alignment: .center) {
+                    Text("\(Int(activity.elevationGain))m")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day, count: 1)) { value in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+        }
+    }
+
+    struct DistanceBarChart: View {
+        let activities: [Activity]
+        var barColor: Color = .orange
+        var body: some View {
+            Chart(activities) { activity in
+                BarMark(
+                    x: .value("Fecha", activity.date, unit: .day),
+                    y: .value("Distancia", activity.distance / 1000)
+                )
+                .foregroundStyle(barColor)
+                .annotation(position: .top, alignment: .center) {
+                    Text(String(format: "%.1f km", activity.distance / 1000))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day, count: 1)) { value in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+        }
+    }
+
+    struct DurationBarChart: View {
+        let activities: [Activity]
+        var barColor: Color = .blue
+        var body: some View {
+            Chart(activities) { activity in
+                BarMark(
+                    x: .value("Fecha", activity.date, unit: .day),
+                    y: .value("Tiempo", activity.duration / 60)
+                )
+                .foregroundStyle(barColor)
+                .annotation(position: .top, alignment: .center) {
+                    Text(durationString(activity.duration))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day, count: 1)) { value in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading)
+            }
+        }
+        func durationString(_ seconds: Double) -> String {
+            let minutes = Int(seconds) / 60
+            let hours = minutes / 60
+            let mins = minutes % 60
+            if hours > 0 {
+                return "\(hours)h \(mins)m"
+            } else {
+                return "\(mins)m"
+            }
+        }
+    }
+
+    #Preview {
+        AdvancedAnalyticsView()
+    }
+
+
