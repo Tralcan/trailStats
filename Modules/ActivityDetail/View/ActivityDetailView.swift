@@ -121,9 +121,40 @@ struct ActivityDetailView: View {
     struct ChartSaverView: View {
         @ObservedObject var viewModel: ActivityDetailViewModel
         @State private var didSave = false
-        
+        @State private var aiObservation: String? = nil
+        @State private var aiLoading = false
+        @State private var aiError: String? = nil
+
         var body: some View {
             VStack(spacing: 52) {
+                // Solo mostrar AI Coach si no está cargando
+                if !viewModel.isLoading {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("AI Coach")
+                            .font(.title3).bold()
+                            .foregroundColor(.accentColor)
+                        if aiLoading {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                Text("Analizando actividad...")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if let obs = aiObservation {
+                            Text(obs)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                        } else if let err = aiError {
+                            Text("Error: \(err)")
+                                .font(.body)
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(12)
+                }
+
                 ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, didSave: $didSave, displayTitle: "Elevation")
                 ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, didSave: $didSave, displayTitle: "Vertical Energy Cost")
                 ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, didSave: $didSave, displayTitle: "Vertical Speed")
@@ -138,7 +169,72 @@ struct ActivityDetailView: View {
                     saveSummary()
                     didSave = true
                 }
+                // Lógica robusta para AI Coach
+                if aiObservation == nil && !aiLoading {
+                    aiLoading = true
+                    let cacheManager = CacheManager()
+                    var summary = cacheManager.loadSummary(activityId: viewModel.activity.id)
+                    print("[AI Coach] Resumen cargado del caché:", summary as Any)
+                    // Si el resumen existe pero no tiene promedios válidos, forzar recarga de streams y recalcular
+                    if let s = summary, !Self.tienePromediosValidos(summary: s) {
+                        print("[AI Coach] Resumen sin promedios válidos. Forzando recarga de streams...")
+                        viewModel.isLoading = true
+                        viewModel.fetchActivityStreams()
+                        // Esperar a que los datos se procesen antes de continuar
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            let recalculated = ActivitySummary(
+                                activityId: viewModel.activity.id,
+                                date: viewModel.activity.date,
+                                distance: viewModel.activity.distance,
+                                elevation: viewModel.activity.elevationGain,
+                                duration: viewModel.activity.duration,
+                                averageHeartRate: viewModel.heartRateData.map { $0.value }.averageOrNil(),
+                                averagePower: viewModel.powerData.map { $0.value }.averageOrNil(),
+                                averagePace: viewModel.paceData.map { $0.value }.averageOrNil(),
+                                averageCadence: viewModel.cadenceData.map { $0.value }.averageOrNil(),
+                                averageStrideLength: viewModel.strideLengthData.map { $0.value }.averageOrNil()
+                            )
+                            print("[AI Coach] Resumen recalculado tras recarga:", recalculated)
+                            cacheManager.saveSummary(activityId: viewModel.activity.id, summary: recalculated)
+                            if Self.tienePromediosValidos(summary: recalculated) {
+                                print("[AI Coach] Enviando resumen a Gemini:", recalculated)
+                                GeminiCoachService.fetchObservation(summary: recalculated) { obs in
+                                    DispatchQueue.main.async {
+                                        aiObservation = obs ?? "No se pudo obtener observación de la IA."
+                                        aiLoading = false
+                                        viewModel.isLoading = false
+                                    }
+                                }
+                            } else {
+                                print("[AI Coach] No hay resumen de la actividad con datos válidos tras recarga. No se llama a Gemini.")
+                                aiError = "No hay resumen de la actividad con datos válidos."
+                                aiLoading = false
+                                viewModel.isLoading = false
+                            }
+                        }
+                        return
+                    }
+                    // Si ahora hay promedios válidos, llamar a Gemini
+                    if let s = summary, Self.tienePromediosValidos(summary: s) {
+                        print("[AI Coach] Enviando resumen a Gemini:", s)
+                        GeminiCoachService.fetchObservation(summary: s) { obs in
+                            DispatchQueue.main.async {
+                                aiObservation = obs ?? "No se pudo obtener observación de la IA."
+                                aiLoading = false
+                            }
+                        }
+                    } else {
+                        print("[AI Coach] No hay resumen de la actividad con datos válidos. No se llama a Gemini.")
+                        aiError = "No hay resumen de la actividad con datos válidos."
+                        aiLoading = false
+                    }
+                }
             }
+        }
+
+        // Helper para validar que el resumen tiene promedios válidos
+        private static func tienePromediosValidos(summary: ActivitySummary) -> Bool {
+            return summary.averageHeartRate != nil || summary.averagePower != nil || summary.averagePace != nil || summary.averageCadence != nil || summary.averageStrideLength != nil
         }
         
         // Calcula y guarda el resumen de la actividad
