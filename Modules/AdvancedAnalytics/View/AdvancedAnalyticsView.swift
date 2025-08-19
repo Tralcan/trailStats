@@ -41,17 +41,13 @@ struct AdvancedAnalyticsView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    Text("Analytics")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .padding(.top, 8)
-                        .padding(.bottom, 4)
+                    
                     // Selector de rango de entrenamientos
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Select trainings")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 8)
                         Picker("Select trainings", selection: $selectedRange) {
                             ForEach(TrainingRange.allCases) { range in
                                 Text(range.description).tag(range)
@@ -96,6 +92,7 @@ struct AdvancedAnalyticsView: View {
                 }
             }
             .id(reloadKey)
+                .navigationTitle("Analytics")
         }
     }
     
