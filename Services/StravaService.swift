@@ -38,7 +38,7 @@ enum StravaAPIDefinition {
         case .getActivityStreams(let activityId):
             components.path = "/api/v3/activities/\(activityId)/streams"
             components.queryItems = [
-                URLQueryItem(name: "keys", value: "time,heartrate,cadence,watts,altitude,distance"),
+                URLQueryItem(name: "keys", value: "latlng,time,heartrate,cadence,watts,altitude,distance"),
                 URLQueryItem(name: "key_by_type", value: "true")
             ]
         }
@@ -49,13 +49,32 @@ enum StravaAPIDefinition {
 
 // MARK: - Stream Model
 
-struct Stream: Decodable, Encodable { // Added Encodable conformance
+struct Stream: Decodable, Encodable {
     let type: String
     let data: [Double?]
+    let latlngData: [[Double]]?
 
     enum CodingKeys: String, CodingKey {
         case type = "series_type"
         case data
+    }
+
+    // Custom decoding to handle both [Double] and [[Double]] for 'latlng'
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.type = (try? container.decode(String.self, forKey: .type)) ?? ""
+
+        // Try to decode as [[Double]] first (for latlng)
+        if let latlngArray = try? container.decode([[Double]].self, forKey: .data) {
+            self.latlngData = latlngArray
+            self.data = latlngArray.flatMap { $0 }
+        } else if let doubleArray = try? container.decode([Double?].self, forKey: .data) {
+            self.data = doubleArray
+            self.latlngData = nil
+        } else {
+            self.data = []
+            self.latlngData = nil
+        }
     }
 }
 
@@ -190,15 +209,21 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
                 return
             }
 
-            // Print raw JSON data for debugging
+            // Imprimir el JSON recibido de Strava para depuración
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("Raw Strava Streams JSON: \(jsonString)")
+                print("\n--- RAW STRAVA STREAMS JSON ---\n\(jsonString)\n------------------------------\n")
             }
 
             do {
                 let decoder = JSONDecoder()
                 // Attempt to decode as streams
                 let streams = try decoder.decode([String: Stream].self, from: data)
+                // Imprimir solo el stream latlng si existe
+                if let latlng = streams["latlng"] {
+                    print("\n--- DECODED latlng STREAM ---\n\(latlng)\n----------------------------\n")
+                } else {
+                    print("\n--- NO latlng STREAM FOUND ---\n")
+                }
                 self.cacheManager.saveActivityStreams(activityId: activityId, streams: streams) // Save to cache
                 completion(.success(streams))
             } catch let decodingError {

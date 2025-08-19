@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 /// Displays the detailed metrics and charts for a single activity.
@@ -136,7 +135,11 @@ struct ActivityDetailView: View {
         }
         .sheet(isPresented: $showShareSheet) {
             if let gpxData = viewModel.gpxDataToShare {
-                ShareSheet(activityItems: [GPXFile(data: gpxData, filename: "\(viewModel.activity.name).gpx")])
+                let sanitizedName = viewModel.activity.name
+                    .replacingOccurrences(of: "[^a-zA-Z0-9_-]", with: "_", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let filename = sanitizedName.isEmpty ? "activity.gpx" : "\(sanitizedName).gpx"
+                ShareSheet(activityItems: [GPXFile(data: gpxData, filename: filename)])
             }
         }
     }
