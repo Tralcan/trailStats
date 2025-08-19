@@ -61,8 +61,7 @@ struct ActivityDetailView: View {
                 .padding()
             }
             if viewModel.isLoading {
-                Color.black.opacity(0.3)
-                    .ignoresSafeArea()
+                Color.clear.ignoresSafeArea()
                 VStack(spacing: 16) {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .accentColor))
@@ -72,10 +71,6 @@ struct ActivityDetailView: View {
                         .foregroundColor(.primary)
                         .padding(.top, 8)
                 }
-                .padding(32)
-                .background(VisualEffectBlur())
-                .cornerRadius(16)
-                .shadow(radius: 10)
             }
         }
         .navigationTitle(viewModel.activity.name)
@@ -155,7 +150,7 @@ struct ActivityDetailView: View {
                     .cornerRadius(12)
                 }
 
-                ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, didSave: $didSave, displayTitle: "Elevation")
+                ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, didSave: $didSave, displayTitle: "Elevation", showAverage: false)
                 ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, didSave: $didSave, displayTitle: "Vertical Energy Cost")
                 ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, didSave: $didSave, displayTitle: "Vertical Speed")
                 ChartSnapshotter(title: "Power", data: viewModel.powerData, color: .green, viewModel: viewModel, didSave: $didSave, displayTitle: "Power")
@@ -170,9 +165,16 @@ struct ActivityDetailView: View {
                     didSave = true
                 }
                 // Lógica robusta para AI Coach
+                let cacheManager = CacheManager()
+                // 1. Intentar cargar texto AI Coach del caché
+                if let cachedText = cacheManager.loadAICoachText(activityId: viewModel.activity.id) {
+                    print("[AI Coach] Texto AI Coach cargado del caché:", cachedText)
+                    aiObservation = cachedText
+                    aiLoading = false
+                    return
+                }
                 if aiObservation == nil && !aiLoading {
                     aiLoading = true
-                    let cacheManager = CacheManager()
                     var summary = cacheManager.loadSummary(activityId: viewModel.activity.id)
                     print("[AI Coach] Resumen cargado del caché:", summary as Any)
                     // Si el resumen existe pero no tiene promedios válidos, forzar recarga de streams y recalcular
@@ -201,6 +203,9 @@ struct ActivityDetailView: View {
                                 GeminiCoachService.fetchObservation(summary: recalculated) { obs in
                                     DispatchQueue.main.async {
                                         aiObservation = obs ?? "No se pudo obtener observación de la IA."
+                                        if let obs = obs {
+                                            cacheManager.saveAICoachText(activityId: viewModel.activity.id, text: obs)
+                                        }
                                         aiLoading = false
                                         viewModel.isLoading = false
                                     }
@@ -220,6 +225,9 @@ struct ActivityDetailView: View {
                         GeminiCoachService.fetchObservation(summary: s) { obs in
                             DispatchQueue.main.async {
                                 aiObservation = obs ?? "No se pudo obtener observación de la IA."
+                                if let obs = obs {
+                                    cacheManager.saveAICoachText(activityId: viewModel.activity.id, text: obs)
+                                }
                                 aiLoading = false
                             }
                         }
@@ -262,7 +270,8 @@ struct ActivityDetailView: View {
         let color: Color
         let viewModel: ActivityDetailViewModel
         @Binding var didSave: Bool
-        var displayTitle: String? = nil
+    var displayTitle: String? = nil
+    var showAverage: Bool = true
 
         var body: some View {
             let chartTitle = displayTitle ?? title
@@ -277,7 +286,8 @@ struct ActivityDetailView: View {
                     data: data,
                     title: chartTitle,
                     yAxisLabel: "",
-                    color: color
+                    color: color,
+                    showAverage: showAverage
                 )
                 .frame(height: 200)
                 .background(
@@ -290,7 +300,8 @@ struct ActivityDetailView: View {
                                                                                     data: data,
                                                                                     title: chartTitle,
                                                                                     yAxisLabel: "",
-                                                                                    color: color
+                                                                                    color: color,
+                                                                                    showAverage: showAverage
                                                                                 ),
                                                                             size: geo.size
                                     ) {

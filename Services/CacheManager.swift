@@ -2,6 +2,25 @@ import Foundation
 
 /// Manages caching of activities to the device's local storage.
 class CacheManager {
+    // Guarda el texto de AI Coach para una actividad
+    func saveAICoachText(activityId: Int, text: String) {
+        guard let folder = summaryFolderURL(for: activityId) else { return }
+        let fileURL = folder.appendingPathComponent("ai_coach.txt")
+        do {
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+            print("Saved AI Coach text for activity \(activityId)")
+        } catch {
+            print("Error saving AI Coach text: \(error.localizedDescription)")
+        }
+    }
+
+    // Carga el texto de AI Coach para una actividad
+    func loadAICoachText(activityId: Int) -> String? {
+        guard let folder = summaryFolderURL(for: activityId) else { return nil }
+        let fileURL = folder.appendingPathComponent("ai_coach.txt")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        return try? String(contentsOf: fileURL, encoding: .utf8)
+    }
 
     // MARK: - Summaries & Chart Images
 

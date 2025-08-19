@@ -23,7 +23,6 @@ class HomeViewModel: ObservableObject {
     
     var filteredActivities: [Activity] {
         var filtered = activities
-        
         // Apply basic name search if advanced search is not active
         if advancedSearchName.isEmpty && advancedSearchDate == nil && advancedSearchDistance == nil && advancedSearchElevation == nil && advancedSearchDuration == nil {
             if !searchText.isEmpty {
@@ -34,26 +33,22 @@ class HomeViewModel: ObservableObject {
             if !advancedSearchName.isEmpty {
                 filtered = filtered.filter { $0.name.lowercased().contains(advancedSearchName.lowercased()) }
             }
-            
             if let searchDate = advancedSearchDate {
                 let calendar = Calendar.current
                 filtered = filtered.filter { calendar.isDate($0.date, inSameDayAs: searchDate) }
             }
-            
             if let searchDistance = advancedSearchDistance {
                 filtered = filtered.filter { $0.distance >= searchDistance }
             }
-            
             if let searchElevation = advancedSearchElevation {
                 filtered = filtered.filter { $0.elevationGain >= searchElevation }
             }
-            
             if let searchDuration = advancedSearchDuration {
                 filtered = filtered.filter { $0.duration >= searchDuration }
             }
         }
-        
-        return filtered
+        // Siempre ordenar por fecha descendente
+        return filtered.sorted { $0.date > $1.date }
     }
     
     func applyAdvancedSearch(name: String, date: Date?, distance: Double?, elevation: Double?, duration: TimeInterval?) {
@@ -70,7 +65,9 @@ class HomeViewModel: ObservableObject {
         _isAuthenticated = Published(initialValue: stravaService.isAuthenticated())
         if isAuthenticated {
             if let cachedActivities = cacheManager.loadActivities(), !cachedActivities.isEmpty {
-                self.activities = cachedActivities
+                // Mostrar instantáneamente el caché, pero siempre empezar el paginado en 1
+                self.activities = cachedActivities.sorted { $0.date > $1.date }
+                self.currentPage = 1
             } else {
                 fetchActivities()
             }
@@ -103,22 +100,26 @@ class HomeViewModel: ObservableObject {
     
     func fetchActivities() {
         guard !isLoading, canLoadMoreActivities else { return }
-        
         isLoading = true
         stravaService.getActivities(page: currentPage, perPage: 10) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                
                 self.isLoading = false
                 switch result {
                 case .success(let newActivities):
                     if newActivities.isEmpty {
                         self.canLoadMoreActivities = false
-                    } else {
-                        self.activities.append(contentsOf: newActivities.filter { $0.sportType == "TrailRun" })
-                        self.cacheManager.saveActivities(self.activities)
-                        self.currentPage += 1
+                        return
                     }
+                    let trailRuns = newActivities.filter { $0.sportType == "TrailRun" }
+                    // Evitar duplicados por id
+                    let existingIds = Set(self.activities.map { $0.id })
+                    let uniqueNew = trailRuns.filter { !existingIds.contains($0.id) }
+                    self.activities.append(contentsOf: uniqueNew)
+                    // Ordenar siempre por fecha descendente
+                    self.activities.sort { $0.date > $1.date }
+                    self.cacheManager.saveActivities(self.activities)
+                    self.currentPage += 1
                 case .failure(let error):
                     print("Failed to fetch activities: \(error.localizedDescription)")
                 }
