@@ -56,15 +56,15 @@ struct AdvancedAnalyticsView: View {
 
                     if !viewModel.filteredActivities.isEmpty {
                         VStack(alignment: .leading, spacing: 20) {
-                            AnalyticsCard(title: "Distancia por Actividad", systemImage: "figure.walk", color: .red) {
+                            AnalyticsCard(title: "Distance per Activity", systemImage: "figure.walk", color: .red) {
                                 DistanceBarChart(activities: viewModel.filteredActivities, barColor: .red)
                                     .frame(height: 180)
                             }
-                            AnalyticsCard(title: "Elevación por Actividad", systemImage: "mountain.2", color: .green) {
+                            AnalyticsCard(title: "Elevation per Activity", systemImage: "mountain.2", color: .green) {
                                 ElevationBarChart(activities: viewModel.filteredActivities, barColor: .green)
                                     .frame(height: 180)
                             }
-                            AnalyticsCard(title: "Tiempo por Actividad", systemImage: "hourglass", color: .blue) {
+                            AnalyticsCard(title: "Duration per Activity", systemImage: "hourglass", color: .blue) {
                                 DurationBarChart(activities: viewModel.filteredActivities, barColor: .blue)
                                     .frame(height: 180)
                             }
@@ -93,13 +93,13 @@ struct AdvancedAnalyticsView: View {
     }
 
     let advancedMetricCards: [AdvancedMetricCard] = [
-        AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \ActivitySummaryMetrics.verticalEnergyCostAverage, label: "W/m"),
-        AdvancedMetricCard(title: "Vertical Speed (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \ActivitySummaryMetrics.verticalSpeedAverage, label: "km/h"),
-        AdvancedMetricCard(title: "Potencia (W)", systemImage: "bolt.circle", color: .orange, keyPath: \ActivitySummaryMetrics.powerAverage, label: "W"),
-        AdvancedMetricCard(title: "Ritmo (min/km)", systemImage: "speedometer", color: .pink, keyPath: \ActivitySummaryMetrics.paceAverage, label: "min/km"),
-        AdvancedMetricCard(title: "Frecuencia Cardíaca (BPM)", systemImage: "heart.fill", color: .red, keyPath: \ActivitySummaryMetrics.heartRateAverage, label: "BPM"),
-        AdvancedMetricCard(title: "Longitud de Zancada (m)", systemImage: "figure.run", color: .indigo, keyPath: \ActivitySummaryMetrics.strideLengthAverage, label: "m"),
-        AdvancedMetricCard(title: "Cadencia (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \ActivitySummaryMetrics.cadenceAverage, label: "RPM")
+    AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \ActivitySummaryMetrics.verticalEnergyCostAverage, label: "W/m"),
+    AdvancedMetricCard(title: "Vertical Speed (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \ActivitySummaryMetrics.verticalSpeedAverage, label: "km/h"),
+    AdvancedMetricCard(title: "Power (W)", systemImage: "bolt.circle", color: .orange, keyPath: \ActivitySummaryMetrics.powerAverage, label: "W"),
+    AdvancedMetricCard(title: "Pace (min/km)", systemImage: "speedometer", color: .pink, keyPath: \ActivitySummaryMetrics.paceAverage, label: "min/km"),
+    AdvancedMetricCard(title: "Heart Rate (BPM)", systemImage: "heart.fill", color: .red, keyPath: \ActivitySummaryMetrics.heartRateAverage, label: "BPM"),
+    AdvancedMetricCard(title: "Stride Length (m)", systemImage: "figure.run", color: .indigo, keyPath: \ActivitySummaryMetrics.strideLengthAverage, label: "m"),
+    AdvancedMetricCard(title: "Cadence (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \ActivitySummaryMetrics.cadenceAverage, label: "RPM")
     ]
 
     // Gráfico genérico para métricas avanzadas
