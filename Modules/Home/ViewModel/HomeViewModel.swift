@@ -19,7 +19,7 @@ class HomeViewModel: ObservableObject {
     private let stravaService = StravaService()
     private let cacheManager = CacheManager()
     private var currentPage = 1
-    private var canLoadMoreActivities = true
+    @Published var canLoadMoreActivities = true
     
     var filteredActivities: [Activity] {
         var filtered = activities
@@ -92,10 +92,10 @@ class HomeViewModel: ObservableObject {
     }
     
     func logout() {
-        stravaService.logout()
-        cacheManager.clearCache()
-        isAuthenticated = false
-        activities = [] // Clear activities on logout
+    stravaService.logout()
+    cacheManager.clearAllCaches()
+    isAuthenticated = false
+    activities = [] // Clear activities on logout
     }
     
     func fetchActivities() {
@@ -119,6 +119,7 @@ class HomeViewModel: ObservableObject {
                     // Ordenar siempre por fecha descendente
                     self.activities.sort { $0.date > $1.date }
                     self.cacheManager.saveActivities(self.activities)
+                    // Siempre avanzar de página si la respuesta no está vacía
                     self.currentPage += 1
                 case .failure(let error):
                     print("Failed to fetch activities: \(error.localizedDescription)")

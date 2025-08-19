@@ -50,13 +50,12 @@ struct HomeView: View {
                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
                         ActivityRowView(activity: activity)
                             .onAppear {
-                                if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
+                                if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil && viewModel.canLoadMoreActivities {
                                     viewModel.fetchActivities()
                                 }
                             }
                     }
                 }
-                
                 if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
                     ProgressView()
                         .frame(maxWidth: .infinity, alignment: .center)

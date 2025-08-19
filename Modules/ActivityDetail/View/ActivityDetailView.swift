@@ -327,9 +327,9 @@ struct ActivityDetailView: View {
                         color: color,
                         showAverage: showAverage
                     )
-                    Spacer().frame(height: 60) // Espacio extra para el eje X
+                    Spacer().frame(height: 70) // Espacio extra para el eje X
                 }
-                .frame(height: 200) // 200 + 32
+                .frame(height: 210) // 200 + 32
                 .padding(.horizontal, 0)
                 .padding(.vertical, 0)
                 .background(Color(.secondarySystemBackground))
