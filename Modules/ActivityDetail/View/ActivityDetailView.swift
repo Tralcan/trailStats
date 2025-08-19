@@ -5,6 +5,7 @@ import SwiftUI
 struct ActivityDetailView: View {
     
     @StateObject var viewModel: ActivityDetailViewModel
+    @State private var showShareSheet = false // New: State to control share sheet presentation
     
     init(activity: Activity) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
@@ -114,9 +115,29 @@ struct ActivityDetailView: View {
         }
         .navigationTitle(viewModel.activity.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    viewModel.shareGPX()
+                }) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(viewModel.isGeneratingGPX) // Disable button while generating GPX
+            }
+        }
         .background(Color(.systemGroupedBackground))
         .onAppear {
             viewModel.fetchActivityStreams()
+        }
+        .onChange(of: viewModel.gpxDataToShare) { gpxData in
+            if gpxData != nil {
+                showShareSheet = true
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let gpxData = viewModel.gpxDataToShare {
+                ShareSheet(activityItems: [GPXFile(data: gpxData, filename: "\(viewModel.activity.name).gpx")])
+            }
         }
     }
     
@@ -163,6 +184,58 @@ struct ActivityDetailView: View {
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
     }
+}
+
+// Helper class to represent a GPX file for sharing
+class GPXFile: NSObject, UIActivityItemSource {
+    let data: Data
+    let filename: String
+
+    init(data: Data, filename: String) {
+        self.data = data
+        self.filename = filename
+    }
+
+    var url: URL? {
+        let tempDirectory = FileManager.default.temporaryDirectory
+        let fileURL = tempDirectory.appendingPathComponent(filename)
+        do {
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
+            print("Error writing GPX data to temporary file: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    @objc func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        return ""
+    }
+
+    @objc func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
+        return url
+    }
+
+    @objc func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
+        return filename
+    }
+
+    @objc func activityViewController(_ activityViewController: UIActivityViewController, dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
+        return "com.topografix.gpx" // GPX UTI
+    }
+}
+
+// UIViewControllerRepresentable for UIActivityViewController
+struct ShareSheet: UIViewControllerRepresentable {
+    var activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+
+    func makeUIViewController(context: UIViewControllerRepresentableContext<ShareSheet>) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ShareSheet>) {}
 }
 
 

@@ -14,6 +14,8 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var distanceData: [DataPoint] = [] // New: Add distanceData as a published property
     @Published var isLoading = false
     @Published var errorMessage: String? = nil // New: Add errorMessage property
+    @Published var isGeneratingGPX = false // New: Indicate if GPX generation is in progress
+    @Published var gpxDataToShare: Data? = nil // New: Hold generated GPX data for sharing
     
     private let stravaService = StravaService()
     
@@ -211,5 +213,30 @@ class ActivityDetailViewModel: ObservableObject {
             cvertPoints.append(DataPoint(time: currentTime, value: cvertValue))
         }
         self.cvertData = cvertPoints
+    }
+
+    func shareGPX() {
+        isGeneratingGPX = true
+        gpxDataToShare = nil // Clear previous data
+
+        stravaService.getActivityStreams(activityId: activity.id) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isGeneratingGPX = false
+                switch result {
+                case .success(let streamsDictionary):
+                    if let gpxString = GPXGenerator.generateGPX(from: streamsDictionary, startDate: self?.activity.date ?? Date()) {
+                        self?.gpxDataToShare = gpxString.data(using: .utf8)
+                    } else {
+                        self?.errorMessage = "Failed to generate GPX data."
+                    }
+                case .failure(let error):
+                    if let stravaAuthError = error as? StravaAuthError, case .apiError(let message) = stravaAuthError {
+                        self?.errorMessage = message
+                    } else {
+                        self?.errorMessage = "Failed to fetch activity streams for GPX: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
     }
 }
