@@ -16,11 +16,22 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var errorMessage: String? = nil // New: Add errorMessage property
     @Published var isGeneratingGPX = false // New: Indicate if GPX generation is in progress
     @Published var gpxDataToShare: Data? = nil // New: Hold generated GPX data for sharing
+
+    // Persistencia de AI Coach
+    @Published var aiCoachObservation: String? = nil
+    @Published var aiCoachLoading: Bool = false
+    @Published var aiCoachError: String? = nil
     
     private let stravaService = StravaService()
     
     init(activity: Activity) {
         self.activity = activity
+        // Cargar AI Coach desde caché si existe
+        let cacheManager = CacheManager()
+        if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
+            self.aiCoachObservation = cachedText
+            self.aiCoachLoading = false
+        }
     }
     
     func fetchActivityStreams() {

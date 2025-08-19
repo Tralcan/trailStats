@@ -87,12 +87,20 @@ struct ActivityDetailView: View {
         }
         .background(Color(.systemGroupedBackground))
         .onAppear {
+            let startTime = Date()
+            print("[PERF] onAppear ActivityDetailView: \(startTime)")
             // Solo cargar streams si falta alguna imagen de gráfico
             let chartNames = ["HeartRate", "Power", "Pace", "Cadence", "StrideLength", "Elevation", "VerticalEnergyCost", "VerticalSpeed"]
+            var missingImages: [String] = []
             let allImagesExist = chartNames.allSatisfy { name in
-                CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: name) != nil
+                let exists = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: name) != nil
+                if !exists { missingImages.append(name) }
+                return exists
             }
+            print("[PERF] allImagesExist: \(allImagesExist) - \(Date().timeIntervalSince(startTime))s")
             if !allImagesExist {
+                print("[PERF] Faltan imágenes de gráficos en caché: \(missingImages)")
+                print("[PERF] fetchActivityStreams llamado")
                 viewModel.fetchActivityStreams()
             }
         }
@@ -116,9 +124,7 @@ struct ActivityDetailView: View {
     struct ChartSaverView: View {
         @ObservedObject var viewModel: ActivityDetailViewModel
         @State private var didSave = false
-        @State private var aiObservation: String? = nil
-        @State private var aiLoading = false
-        @State private var aiError: String? = nil
+    // El estado de AI Coach ahora vive en el ViewModel
 
         var body: some View {
             VStack(spacing: 52) {
@@ -128,18 +134,18 @@ struct ActivityDetailView: View {
                         Text("AI Coach")
                             .font(.title3).bold()
                             .foregroundColor(.accentColor)
-                        if aiLoading {
+                        if viewModel.aiCoachLoading {
                             HStack(spacing: 8) {
                                 ProgressView()
                                 Text("Analizando actividad...")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
-                        } else if let obs = aiObservation {
+                        } else if let obs = viewModel.aiCoachObservation {
                             Text(obs)
                                 .font(.body)
                                 .foregroundColor(.primary)
-                        } else if let err = aiError {
+                        } else if let err = viewModel.aiCoachError {
                             Text("Error: \(err)")
                                 .font(.body)
                                 .foregroundColor(.red)
@@ -150,31 +156,36 @@ struct ActivityDetailView: View {
                     .cornerRadius(12)
                 }
 
-                ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, didSave: $didSave, displayTitle: "Elevation", showAverage: false)
-                ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, didSave: $didSave, displayTitle: "Vertical Energy Cost")
-                ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, didSave: $didSave, displayTitle: "Vertical Speed")
-                ChartSnapshotter(title: "Power", data: viewModel.powerData, color: .green, viewModel: viewModel, didSave: $didSave, displayTitle: "Power")
-                ChartSnapshotter(title: "Pace", data: viewModel.paceData, color: .purple, viewModel: viewModel, didSave: $didSave, displayTitle: "Pace")
-                ChartSnapshotter(title: "HeartRate", data: viewModel.heartRateData, color: .red, viewModel: viewModel, didSave: $didSave, displayTitle: "Heart Rate")
-                ChartSnapshotter(title: "StrideLength", data: viewModel.strideLengthData, color: .orange, viewModel: viewModel, didSave: $didSave, displayTitle: "Stride Length")
-                ChartSnapshotter(title: "Cadence", data: viewModel.cadenceData, color: .blue, viewModel: viewModel, didSave: $didSave, displayTitle: "Cadence")
+                ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, displayTitle: "Elevation", showAverage: false)
+                ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, displayTitle: "Vertical Energy Cost")
+                ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, displayTitle: "Vertical Speed")
+                ChartSnapshotter(title: "Power", data: viewModel.powerData, color: .green, viewModel: viewModel, displayTitle: "Power")
+                ChartSnapshotter(title: "Pace", data: viewModel.paceData, color: .purple, viewModel: viewModel, displayTitle: "Pace")
+                ChartSnapshotter(title: "HeartRate", data: viewModel.heartRateData, color: .red, viewModel: viewModel, displayTitle: "Heart Rate")
+                ChartSnapshotter(title: "StrideLength", data: viewModel.strideLengthData, color: .orange, viewModel: viewModel, displayTitle: "Stride Length")
+                ChartSnapshotter(title: "Cadence", data: viewModel.cadenceData, color: .blue, viewModel: viewModel, displayTitle: "Cadence")
             }
             .onAppear {
                 if !didSave {
                     saveSummary()
                     didSave = true
                 }
-                // Lógica robusta para AI Coach
-                let cacheManager = CacheManager()
-                // 1. Intentar cargar texto AI Coach del caché
-                if let cachedText = cacheManager.loadAICoachText(activityId: viewModel.activity.id) {
-                    print("[AI Coach] Texto AI Coach cargado del caché:", cachedText)
-                    aiObservation = cachedText
-                    aiLoading = false
+                // 1. Si ya hay texto de AI Coach en el ViewModel, no hacer nada
+                if viewModel.aiCoachObservation != nil {
+                    viewModel.aiCoachLoading = false
                     return
                 }
-                if aiObservation == nil && !aiLoading {
-                    aiLoading = true
+                // 2. Si hay texto en caché, cargarlo y no mostrar spinner
+                let cacheManager = CacheManager()
+                if let cachedText = cacheManager.loadAICoachText(activityId: viewModel.activity.id) {
+                    print("[AI Coach] Texto AI Coach cargado del caché:", cachedText)
+                    viewModel.aiCoachObservation = cachedText
+                    viewModel.aiCoachLoading = false
+                    return
+                }
+                // 3. Solo si no hay texto en caché ni en memoria, mostrar spinner y generar
+                if !viewModel.aiCoachLoading {
+                    viewModel.aiCoachLoading = true
                     var summary = cacheManager.loadSummary(activityId: viewModel.activity.id)
                     print("[AI Coach] Resumen cargado del caché:", summary as Any)
                     // Si el resumen existe pero no tiene promedios válidos, forzar recarga de streams y recalcular
@@ -202,18 +213,18 @@ struct ActivityDetailView: View {
                                 print("[AI Coach] Enviando resumen a Gemini:", recalculated)
                                 GeminiCoachService.fetchObservation(summary: recalculated) { obs in
                                     DispatchQueue.main.async {
-                                        aiObservation = obs ?? "No se pudo obtener observación de la IA."
+                                        viewModel.aiCoachObservation = obs ?? "No se pudo obtener observación de la IA."
                                         if let obs = obs {
                                             cacheManager.saveAICoachText(activityId: viewModel.activity.id, text: obs)
                                         }
-                                        aiLoading = false
+                                        viewModel.aiCoachLoading = false
                                         viewModel.isLoading = false
                                     }
                                 }
                             } else {
                                 print("[AI Coach] No hay resumen de la actividad con datos válidos tras recarga. No se llama a Gemini.")
-                                aiError = "No hay resumen de la actividad con datos válidos."
-                                aiLoading = false
+                                viewModel.aiCoachError = "No hay resumen de la actividad con datos válidos."
+                                viewModel.aiCoachLoading = false
                                 viewModel.isLoading = false
                             }
                         }
@@ -224,17 +235,17 @@ struct ActivityDetailView: View {
                         print("[AI Coach] Enviando resumen a Gemini:", s)
                         GeminiCoachService.fetchObservation(summary: s) { obs in
                             DispatchQueue.main.async {
-                                aiObservation = obs ?? "No se pudo obtener observación de la IA."
+                                viewModel.aiCoachObservation = obs ?? "No se pudo obtener observación de la IA."
                                 if let obs = obs {
                                     cacheManager.saveAICoachText(activityId: viewModel.activity.id, text: obs)
                                 }
-                                aiLoading = false
+                                viewModel.aiCoachLoading = false
                             }
                         }
                     } else {
                         print("[AI Coach] No hay resumen de la actividad con datos válidos. No se llama a Gemini.")
-                        aiError = "No hay resumen de la actividad con datos válidos."
-                        aiLoading = false
+                        viewModel.aiCoachError = "No hay resumen de la actividad con datos válidos."
+                        viewModel.aiCoachLoading = false
                     }
                 }
             }
@@ -295,7 +306,7 @@ struct ActivityDetailView: View {
         let data: [DataPoint]
         let color: Color
         let viewModel: ActivityDetailViewModel
-        @Binding var didSave: Bool
+    // Eliminado didSave global, cada gráfico guarda su imagen independientemente
     var displayTitle: String? = nil
     var showAverage: Bool = true
 
@@ -308,35 +319,34 @@ struct ActivityDetailView: View {
                     .scaledToFit()
                     .frame(height: 200)
             } else if !data.isEmpty {
-                TimeSeriesChartView(
-                    data: data,
-                    title: chartTitle,
-                    yAxisLabel: "",
-                    color: color,
-                    showAverage: showAverage
-                )
-                .frame(height: 200)
-                .background(
-                    GeometryReader { geo in
-                        Color.clear
-                            .onAppear {
-                                if !didSave {
-                                    if let imageData = ViewSnapshotter.snapshot(of:
-                                                                                TimeSeriesChartView(
-                                                                                    data: data,
-                                                                                    title: chartTitle,
-                                                                                    yAxisLabel: "",
-                                                                                    color: color,
-                                                                                    showAverage: showAverage
-                                                                                ),
-                                                                            size: geo.size
-                                    ) {
-                                        CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
+                let chartContent = VStack(spacing: 0) {
+                    TimeSeriesChartView(
+                        data: data,
+                        title: chartTitle,
+                        yAxisLabel: "",
+                        color: color,
+                        showAverage: showAverage
+                    )
+                    Spacer().frame(height: 60) // Espacio extra para el eje X
+                }
+                .frame(height: 200) // 200 + 32
+                .padding(.horizontal, 0)
+                .padding(.vertical, 0)
+                .background(Color(.secondarySystemBackground))
+                chartContent
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .onAppear {
+                                    // Guardar la imagen siempre que no exista en caché
+                                    if CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title) == nil {
+                                        if let imageData = ViewSnapshotter.snapshot(of: chartContent, size: geo.size) {
+                                            CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
+                                        }
                                     }
                                 }
-                            }
-                    }
-                )
+                        }
+                    )
             }
         }
     }
