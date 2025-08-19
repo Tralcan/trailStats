@@ -2,6 +2,89 @@ import Foundation
 
 /// Manages caching of activities to the device's local storage.
 class CacheManager {
+
+    // MARK: - Summaries & Chart Images
+
+    private var summariesDirectoryURL: URL? {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("Error: Could not find documents directory.")
+            return nil
+        }
+        let summariesDir = documentsDirectory.appendingPathComponent("activitySummaries")
+        if !FileManager.default.fileExists(atPath: summariesDir.path) {
+            do {
+                try FileManager.default.createDirectory(at: summariesDir, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print("Error creating summaries directory: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return summariesDir
+    }
+
+    private func summaryFolderURL(for activityId: Int) -> URL? {
+        guard let base = summariesDirectoryURL else { return nil }
+        let folder = base.appendingPathComponent("\(activityId)")
+        if !FileManager.default.fileExists(atPath: folder.path) {
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print("Error creating summary folder: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return folder
+    }
+
+    // Guarda una imagen PNG de un gráfico para una actividad
+    func saveChartImage(activityId: Int, chartName: String, imageData: Data) {
+        guard let folder = summaryFolderURL(for: activityId) else { return }
+        let fileURL = folder.appendingPathComponent("\(chartName).jpg")
+        do {
+            try imageData.write(to: fileURL, options: .atomic)
+            print("Saved chart image \(chartName) for activity \(activityId)")
+        } catch {
+            print("Error saving chart image: \(error.localizedDescription)")
+        }
+    }
+
+    // Carga una imagen PNG de un gráfico para una actividad
+    func loadChartImage(activityId: Int, chartName: String) -> Data? {
+    guard let folder = summaryFolderURL(for: activityId) else { return nil }
+    let fileURL = folder.appendingPathComponent("\(chartName).jpg")
+    return try? Data(contentsOf: fileURL)
+    }
+
+    // Guarda un resumen JSON de la actividad (distancia, elevación, tiempo, promedios, etc)
+    func saveSummary(activityId: Int, summary: ActivitySummary) {
+        guard let folder = summaryFolderURL(for: activityId) else { return }
+        let fileURL = folder.appendingPathComponent("summary.json")
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(summary)
+            try data.write(to: fileURL, options: .atomic)
+            print("Saved summary for activity \(activityId)")
+        } catch {
+            print("Error saving summary: \(error.localizedDescription)")
+        }
+    }
+
+    // Carga el resumen JSON de la actividad
+    func loadSummary(activityId: Int) -> ActivitySummary? {
+        guard let folder = summaryFolderURL(for: activityId) else { return nil }
+        let fileURL = folder.appendingPathComponent("summary.json")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(ActivitySummary.self, from: data)
+        } catch {
+            print("Error loading summary: \(error.localizedDescription)")
+            return nil
+        }
+    }
     
     private var fileURL: URL? {
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
