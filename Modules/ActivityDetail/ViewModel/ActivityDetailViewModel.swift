@@ -94,6 +94,22 @@ class ActivityDetailViewModel: ObservableObject {
         self.calculateVerticalSpeed()
         self.calculateStrideLength() // No longer takes distanceData as parameter
         self.calculatePace() // No longer takes distanceData as parameter
+
+        // Guardar métricas avanzadas solo cuando los datos están listos
+        let metrics = ActivitySummaryMetrics(
+            activityId: activity.id,
+            distance: activity.distance,
+            elevation: activity.elevationGain,
+            elevationAverage: self.altitudeData.map { $0.value }.averageOrNil() ?? 0,
+            verticalEnergyCostAverage: self.cvertData.map { $0.value }.averageOrNil() ?? 0,
+            verticalSpeedAverage: self.verticalSpeedData.map { $0.value }.averageOrNil() ?? 0,
+            heartRateAverage: self.heartRateData.map { $0.value }.averageOrNil() ?? 0,
+            powerAverage: self.powerData.map { $0.value }.averageOrNil() ?? 0,
+            paceAverage: self.paceData.map { $0.value }.averageOrNil() ?? 0,
+            strideLengthAverage: self.strideLengthData.map { $0.value }.averageOrNil() ?? 0,
+            cadenceAverage: self.cadenceData.map { $0.value }.averageOrNil() ?? 0
+        )
+        CacheManager().saveMetrics(activityId: activity.id, metrics: metrics)
     }
 
     private func calculatePace() {

@@ -6,6 +6,15 @@ import Foundation
 import Foundation
 
 class AdvancedAnalyticsViewModel: ObservableObject {
+    func filterByTrainings(count: Int) {
+        // Filtrar actividades con fecha válida (no vacía ni nula)
+        let validActivities = allActivities.filter { $0.date.timeIntervalSince1970 > 0 }
+        // Tomar los últimos 'count' entrenamientos válidos (ordenados por fecha descendente)
+        let selectedActivities = validActivities.prefix(count).sorted { $0.date < $1.date }
+        let selectedIds = Set(selectedActivities.map { $0.id })
+        filteredActivities = Array(selectedActivities)
+        filteredMetrics = allMetrics.filter { selectedIds.contains($0.activityId) }
+    }
     @Published var filteredActivities: [Activity] = []
     @Published var filteredMetrics: [ActivitySummaryMetrics] = []
     private var allActivities: [Activity] = []

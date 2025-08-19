@@ -7,49 +7,51 @@ import Charts
 struct AdvancedAnalyticsView: View {
     @StateObject private var viewModel = AdvancedAnalyticsViewModel()
 
-    enum DateRange: String, CaseIterable, Identifiable {
-        case week = "7D"
-        case twoWeeks = "15D"
-        case threeMonths = "3M"
-        case sixMonths = "6M"
-        case year = "1Y"
+    enum TrainingRange: String, CaseIterable, Identifiable {
+        case last7 = "7e"
+        case last15 = "15e"
+        case last30 = "30e"
+        case last60 = "60e"
+        case last90 = "90e"
         var id: String { rawValue }
-        var description: String { rawValue }
-        var days: Int {
+        var description: String {
             switch self {
-            case .week: return 7
-            case .twoWeeks: return 15
-            case .threeMonths: return 90
-            case .sixMonths: return 180
-            case .year: return 365
+            case .last7: return "7e"
+            case .last15: return "15e"
+            case .last30: return "30e"
+            case .last60: return "60e"
+            case .last90: return "90e"
+            }
+        }
+        var count: Int {
+            switch self {
+            case .last7: return 7
+            case .last15: return 15
+            case .last30: return 30
+            case .last60: return 60
+            case .last90: return 90
             }
         }
     }
 
-    @State private var selectedRange: DateRange = .week
+    @State private var selectedRange: TrainingRange = .last7
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Selector de rango de fechas
-                    HStack(spacing: 8) {
-                        ForEach(DateRange.allCases) { range in
-                            Button(action: {
-                                selectedRange = range
-                                viewModel.filterByDateRange(days: range.days)
-                            }) {
-                                Text(range.description)
-                                    .font(.subheadline)
-                                    .fontWeight(selectedRange == range ? .semibold : .regular)
-                                    .foregroundColor(selectedRange == range ? .accentColor : .primary)
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 16)
-                                    .background(selectedRange == range ? Color.accentColor.opacity(0.15) : Color(.systemGray6))
-                                    .cornerRadius(10)
+                    // Selector de rango de entrenamientos
+                    VStack(alignment: .center, spacing: 4) {
+                        Text("Select trainings")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Picker("Select trainings", selection: $selectedRange) {
+                            ForEach(TrainingRange.allCases) { range in
+                                Text(range.description).tag(range)
                             }
-                            .buttonStyle(.plain)
                         }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 8)
                     }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -81,7 +83,10 @@ struct AdvancedAnalyticsView: View {
                 }
                 }
                 .onAppear {
-                    viewModel.filterByDateRange(days: selectedRange.days)
+                    viewModel.filterByTrainings(count: selectedRange.count)
+                }
+                .onChange(of: selectedRange) { newValue in
+                    viewModel.filterByTrainings(count: newValue.count)
                 }
             }
         }
@@ -113,13 +118,13 @@ struct AdvancedAnalyticsView: View {
         let label: String
         let color: Color
         var body: some View {
-            Chart(metrics, id: \ .activityId) { metric in
+            Chart(Array(metrics.enumerated()), id: \ .element.activityId) { (index, metric) in
                 BarMark(
-                    x: .value("ID", metric.activityId),
+                    x: .value("Training", index + 1),
                     y: .value(label, metric[keyPath: keyPath])
                 )
                 .foregroundStyle(color)
-                .annotation(position: .top, alignment: .center) {
+                .annotation(position: .top) {
                     Text(String(format: "%.2f %@", metric[keyPath: keyPath], label))
                         .font(.caption2)
                         .foregroundColor(.secondary)
@@ -172,22 +177,24 @@ struct AdvancedAnalyticsView: View {
         let activities: [Activity]
         var barColor: Color = .green
         var body: some View {
-            Chart(activities) { activity in
+            Chart(Array(activities.enumerated()), id: \ .element.id) { (index, activity) in
                 BarMark(
-                    x: .value("Fecha", activity.date, unit: .day),
+                    x: .value("Training", index + 1),
                     y: .value("Elevación", activity.elevationGain)
                 )
                 .foregroundStyle(barColor)
-                .annotation(position: .top, alignment: .center) {
+                .annotation(position: .top) {
                     Text("\(Int(activity.elevationGain))m")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .day, count: 1)) { value in
+                AxisMarks(values: .automatic) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+                    AxisValueLabel(centered: true) {
+                        Text("#\(value.as(Int.self) ?? 0)")
+                    }
                 }
             }
             .chartYAxis {
@@ -200,22 +207,24 @@ struct AdvancedAnalyticsView: View {
         let activities: [Activity]
         var barColor: Color = .orange
         var body: some View {
-            Chart(activities) { activity in
+            Chart(Array(activities.enumerated()), id: \ .element.id) { (index, activity) in
                 BarMark(
-                    x: .value("Fecha", activity.date, unit: .day),
+                    x: .value("Training", index + 1),
                     y: .value("Distancia", activity.distance / 1000)
                 )
                 .foregroundStyle(barColor)
-                .annotation(position: .top, alignment: .center) {
+                .annotation(position: .top) {
                     Text(String(format: "%.1f km", activity.distance / 1000))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .day, count: 1)) { value in
+                AxisMarks(values: .automatic) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+                    AxisValueLabel(centered: true) {
+                        Text("#\(value.as(Int.self) ?? 0)")
+                    }
                 }
             }
             .chartYAxis {
@@ -228,22 +237,24 @@ struct AdvancedAnalyticsView: View {
         let activities: [Activity]
         var barColor: Color = .blue
         var body: some View {
-            Chart(activities) { activity in
+            Chart(Array(activities.enumerated()), id: \ .element.id) { (index, activity) in
                 BarMark(
-                    x: .value("Fecha", activity.date, unit: .day),
+                    x: .value("Training", index + 1),
                     y: .value("Tiempo", activity.duration / 60)
                 )
                 .foregroundStyle(barColor)
-                .annotation(position: .top, alignment: .center) {
+                .annotation(position: .top) {
                     Text(durationString(activity.duration))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
             }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .day, count: 1)) { value in
+                AxisMarks(values: .automatic) { value in
                     AxisGridLine()
-                    AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+                    AxisValueLabel(centered: true) {
+                        Text("#\(value.as(Int.self) ?? 0)")
+                    }
                 }
             }
             .chartYAxis {

@@ -260,6 +260,32 @@ struct ActivityDetailView: View {
                 averageStrideLength: viewModel.strideLengthData.map { $0.value }.averageOrNil()
             )
             CacheManager().saveSummary(activityId: viewModel.activity.id, summary: summary)
+
+            // Guardar métricas avanzadas
+            // Prints de depuración para ver los datos antes de guardar
+            print("[DEBUG] altitudeData count: \(viewModel.altitudeData.count), values: \(viewModel.altitudeData.map { $0.value })")
+            print("[DEBUG] cvertData count: \(viewModel.cvertData.count), values: \(viewModel.cvertData.map { $0.value })")
+            print("[DEBUG] verticalSpeedData count: \(viewModel.verticalSpeedData.count), values: \(viewModel.verticalSpeedData.map { $0.value })")
+            print("[DEBUG] heartRateData count: \(viewModel.heartRateData.count), values: \(viewModel.heartRateData.map { $0.value })")
+            print("[DEBUG] powerData count: \(viewModel.powerData.count), values: \(viewModel.powerData.map { $0.value })")
+            print("[DEBUG] paceData count: \(viewModel.paceData.count), values: \(viewModel.paceData.map { $0.value })")
+            print("[DEBUG] strideLengthData count: \(viewModel.strideLengthData.count), values: \(viewModel.strideLengthData.map { $0.value })")
+            print("[DEBUG] cadenceData count: \(viewModel.cadenceData.count), values: \(viewModel.cadenceData.map { $0.value })")
+
+            let metrics = ActivitySummaryMetrics(
+                activityId: viewModel.activity.id,
+                distance: viewModel.activity.distance,
+                elevation: viewModel.activity.elevationGain,
+                elevationAverage: viewModel.altitudeData.map { $0.value }.averageOrNil() ?? 0,
+                verticalEnergyCostAverage: viewModel.cvertData.map { $0.value }.averageOrNil() ?? 0,
+                verticalSpeedAverage: viewModel.verticalSpeedData.map { $0.value }.averageOrNil() ?? 0,
+                heartRateAverage: viewModel.heartRateData.map { $0.value }.averageOrNil() ?? 0,
+                powerAverage: viewModel.powerData.map { $0.value }.averageOrNil() ?? 0,
+                paceAverage: viewModel.paceData.map { $0.value }.averageOrNil() ?? 0,
+                strideLengthAverage: viewModel.strideLengthData.map { $0.value }.averageOrNil() ?? 0,
+                cadenceAverage: viewModel.cadenceData.map { $0.value }.averageOrNil() ?? 0
+            )
+            CacheManager().saveMetrics(activityId: viewModel.activity.id, metrics: metrics)
         }
     }
     
