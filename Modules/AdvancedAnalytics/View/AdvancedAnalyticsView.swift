@@ -79,9 +79,13 @@ struct AdvancedAnalyticsView: View {
                     }
                     }
                 }
+                }
+                .onAppear {
+                    viewModel.filterByDateRange(days: selectedRange.days)
+                }
             }
         }
-    }
+
 
     // Definición de las tarjetas de métricas avanzadas fuera de la vista y con keyPath correcto
     struct AdvancedMetricCard {
