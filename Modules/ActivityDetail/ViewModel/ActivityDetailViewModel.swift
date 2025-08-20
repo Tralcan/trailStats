@@ -106,7 +106,8 @@ class ActivityDetailViewModel: ObservableObject {
         self.calculateStrideLength() // No longer takes distanceData as parameter
         self.calculatePace() // No longer takes distanceData as parameter
 
-        // Guardar métricas avanzadas solo cuando los datos están listos
+        // Guardar métricas avanzadas solo si no existen en caché y los promedios son válidos
+        let cacheManager = CacheManager()
         let metrics = ActivitySummaryMetrics(
             activityId: activity.id,
             distance: activity.distance,
@@ -120,7 +121,30 @@ class ActivityDetailViewModel: ObservableObject {
             strideLengthAverage: self.strideLengthData.map { $0.value }.averageOrNil() ?? 0,
             cadenceAverage: self.cadenceData.map { $0.value }.averageOrNil() ?? 0
         )
-        CacheManager().saveMetrics(activityId: activity.id, metrics: metrics)
+    // Permitir verticalSpeed negativo
+    let allValid = metrics.elevationAverage > 0 && metrics.verticalEnergyCostAverage > 0 && metrics.heartRateAverage > 0 && metrics.powerAverage > 0 && metrics.paceAverage > 0 && metrics.strideLengthAverage > 0 && metrics.cadenceAverage > 0
+        let metricsFileExists = cacheManager.loadMetrics(activityId: activity.id) != nil
+        print("[DEBUG] Métricas para actividad \(activity.id):")
+        print("  elevation=\(metrics.elevationAverage)")
+        print("  verticalEnergyCost=\(metrics.verticalEnergyCostAverage)")
+        print("  verticalSpeed=\(metrics.verticalSpeedAverage)")
+        print("  heartRate=\(metrics.heartRateAverage)")
+        print("  power=\(metrics.powerAverage)")
+        print("  pace=\(metrics.paceAverage)")
+        print("  strideLength=\(metrics.strideLengthAverage)")
+        print("  cadence=\(metrics.cadenceAverage)")
+        print("[DEBUG] ¿Archivo de métricas ya existe?: \(metricsFileExists)")
+        print("[DEBUG] ¿Todos los promedios son válidos?: \(allValid)")
+        if !metricsFileExists && allValid {
+            cacheManager.saveMetrics(activityId: activity.id, metrics: metrics)
+            if let fileURL = cacheManager.metricsFileURL(for: activity.id) {
+                print("[NOCACHE] Saved metrics for activity \(activity.id) at \(fileURL.path):" +
+                      " elevation=\(metrics.elevationAverage), verticalEnergyCost=\(metrics.verticalEnergyCostAverage), verticalSpeed=\(metrics.verticalSpeedAverage), heartRate=\(metrics.heartRateAverage), power=\(metrics.powerAverage), pace=\(metrics.paceAverage), strideLength=\(metrics.strideLengthAverage), cadence=\(metrics.cadenceAverage)")
+            } else {
+                print("[NOCACHE] Saved metrics for activity \(activity.id):" +
+                      " elevation=\(metrics.elevationAverage), verticalEnergyCost=\(metrics.verticalEnergyCostAverage), verticalSpeed=\(metrics.verticalSpeedAverage), heartRate=\(metrics.heartRateAverage), power=\(metrics.powerAverage), pace=\(metrics.paceAverage), strideLength=\(metrics.strideLengthAverage), cadence=\(metrics.cadenceAverage)")
+            }
+        }
     }
 
     private func calculatePace() {

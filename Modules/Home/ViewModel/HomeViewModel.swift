@@ -5,6 +5,24 @@ import Foundation
 /// Manages both the authentication state and the list of activities.
 @MainActor
 class HomeViewModel: ObservableObject {
+    // Deletes all app caches (activities, streams, summaries, metrics, images, AI coach, etc) and reloads from Strava
+    func clearCachesAndReload() {
+        cacheManager.clearAllCaches() // Borra actividades y streams
+        // Borra summaries y archivos relacionados
+        if let summariesURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("activitySummaries"),
+           FileManager.default.fileExists(atPath: summariesURL.path) {
+            do {
+                try FileManager.default.removeItem(at: summariesURL)
+                print("Successfully cleared all activity summaries cache.")
+            } catch {
+                print("Error clearing activity summaries cache: \(error.localizedDescription)")
+            }
+        }
+        activities = []
+        currentPage = 1
+        canLoadMoreActivities = true
+        fetchActivities()
+    }
     
     @Published var isAuthenticated: Bool
     @Published var activities: [Activity] = []

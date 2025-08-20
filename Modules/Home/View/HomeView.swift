@@ -7,6 +7,7 @@ struct HomeView: View {
     
     @StateObject private var viewModel = HomeViewModel()
     
+    @State private var showOptionsMenu = false
     var body: some View {
         NavigationView {
             Group {
@@ -20,11 +21,20 @@ struct HomeView: View {
             .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Logout") {
-                        viewModel.logout()
+                    Button(action: { showOptionsMenu = true }) {
+                        Image(systemName: "ellipsis.circle")
+                            .imageScale(.large)
+                    }
+                    .confirmationDialog("Options", isPresented: $showOptionsMenu, titleVisibility: .visible) {
+                        Button("Clear cache and reload", role: .none) {
+                            viewModel.clearCachesAndReload()
+                        }
+                        Button("Logout and clear cache", role: .destructive) {
+                            viewModel.logout()
+                        }
+                        Button("Cancel", role: .cancel) {}
                     }
                 }
-                
             }
             .sheet(isPresented: $isShowingAdvancedSearch) {
                 AdvancedSearchView(viewModel: AdvancedSearchViewModel(onSearch: { name, date, distance, elevation, duration in

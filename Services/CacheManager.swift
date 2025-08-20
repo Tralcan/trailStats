@@ -2,6 +2,11 @@ import Foundation
 
 /// Manages caching of activities to the device's local storage.
 class CacheManager {
+    // Devuelve la ruta del archivo de métricas para una actividad
+    func metricsFileURL(for activityId: Int) -> URL? {
+        guard let folder = summaryFolderURL(for: activityId) else { return nil }
+        return folder.appendingPathComponent("metrics.json")
+    }
     // Guarda las métricas avanzadas de una actividad (metrics.json)
     func saveMetrics(activityId: Int, metrics: ActivitySummaryMetrics) {
         guard let folder = summaryFolderURL(for: activityId) else { return }
@@ -10,9 +15,9 @@ class CacheManager {
             let encoder = JSONEncoder()
             let data = try encoder.encode(metrics)
             try data.write(to: fileURL, options: .atomic)
-            print("Saved metrics for activity \(activityId)")
+            // print("Saved metrics for activity \(activityId)")
         } catch {
-            print("Error saving metrics for activity \(activityId): \(error.localizedDescription)")
+            // print("Error saving metrics for activity \(activityId): \(error.localizedDescription)")
         }
     }
 

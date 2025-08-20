@@ -87,8 +87,8 @@ struct ActivityDetailView: View {
         }
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            let startTime = Date()
-            print("[PERF] onAppear ActivityDetailView: \(startTime)")
+            // let startTime = Date()
+            // print("[PERF] onAppear ActivityDetailView: \(startTime)")
             // Solo cargar streams si falta alguna imagen de gráfico
             let chartNames = ["HeartRate", "Power", "Pace", "Cadence", "StrideLength", "Elevation", "VerticalEnergyCost", "VerticalSpeed"]
             var missingImages: [String] = []
@@ -97,10 +97,10 @@ struct ActivityDetailView: View {
                 if !exists { missingImages.append(name) }
                 return exists
             }
-            print("[PERF] allImagesExist: \(allImagesExist) - \(Date().timeIntervalSince(startTime))s")
+            // print("[PERF] allImagesExist: \(allImagesExist) - \(Date().timeIntervalSince(startTime))s")
             if !allImagesExist {
-                print("[PERF] Faltan imágenes de gráficos en caché: \(missingImages)")
-                print("[PERF] fetchActivityStreams llamado")
+                // print("[PERF] Faltan imágenes de gráficos en caché: \(missingImages)")
+                // print("[PERF] fetchActivityStreams llamado")
                 viewModel.fetchActivityStreams()
             }
         }
@@ -128,42 +128,43 @@ struct ActivityDetailView: View {
 
         var body: some View {
             VStack(spacing: 52) {
-                // Solo mostrar AI Coach si no está cargando
-                if !viewModel.isLoading {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("AI Coach")
-                            .font(.title3).bold()
-                            .foregroundColor(.accentColor)
-                        if viewModel.aiCoachLoading {
-                            HStack(spacing: 8) {
-                                ProgressView()
-                                Text("Analizando actividad...")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        } else if let obs = viewModel.aiCoachObservation {
-                            Text(obs)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                        } else if let err = viewModel.aiCoachError {
-                            Text("Error: \(err)")
-                                .font(.body)
-                                .foregroundColor(.red)
+                // AI Coach y spinner
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("AI Coach")
+                        .font(.title3).bold()
+                        .foregroundColor(.accentColor)
+                    if viewModel.aiCoachLoading {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Analizando actividad...")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
+                    } else if let obs = viewModel.aiCoachObservation {
+                        Text(obs)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                    } else if let err = viewModel.aiCoachError {
+                        Text("Error: \(err)")
+                            .font(.body)
+                            .foregroundColor(.red)
                     }
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
                 }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(12)
 
-                ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, displayTitle: "Elevation", showAverage: false)
-                ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, displayTitle: "Vertical Energy Cost")
-                ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, displayTitle: "Vertical Speed")
-                ChartSnapshotter(title: "Power", data: viewModel.powerData, color: .green, viewModel: viewModel, displayTitle: "Power")
-                ChartSnapshotter(title: "Pace", data: viewModel.paceData, color: .purple, viewModel: viewModel, displayTitle: "Pace")
-                ChartSnapshotter(title: "HeartRate", data: viewModel.heartRateData, color: .red, viewModel: viewModel, displayTitle: "Heart Rate")
-                ChartSnapshotter(title: "StrideLength", data: viewModel.strideLengthData, color: .orange, viewModel: viewModel, displayTitle: "Stride Length")
-                ChartSnapshotter(title: "Cadence", data: viewModel.cadenceData, color: .blue, viewModel: viewModel, displayTitle: "Cadence")
+                // Solo mostrar los títulos y gráficos cuando ya no está cargando
+                if !viewModel.isLoading {
+                    ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, displayTitle: "Elevation", showAverage: false, normalize: false)
+                    ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, displayTitle: "Vertical Energy Cost")
+                    ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, displayTitle: "Vertical Speed", showAverage: true, normalize: false)
+                    ChartSnapshotter(title: "Power", data: viewModel.powerData, color: .green, viewModel: viewModel, displayTitle: "Power")
+                    ChartSnapshotter(title: "Pace", data: viewModel.paceData, color: .purple, viewModel: viewModel, displayTitle: "Pace")
+                    ChartSnapshotter(title: "HeartRate", data: viewModel.heartRateData, color: .red, viewModel: viewModel, displayTitle: "Heart Rate")
+                    ChartSnapshotter(title: "StrideLength", data: viewModel.strideLengthData, color: .orange, viewModel: viewModel, displayTitle: "Stride Length")
+                    ChartSnapshotter(title: "Cadence", data: viewModel.cadenceData, color: .blue, viewModel: viewModel, displayTitle: "Cadence")
+                }
             }
             .onAppear {
                 if !didSave {
@@ -178,7 +179,7 @@ struct ActivityDetailView: View {
                 // 2. Si hay texto en caché, cargarlo y no mostrar spinner
                 let cacheManager = CacheManager()
                 if let cachedText = cacheManager.loadAICoachText(activityId: viewModel.activity.id) {
-                    print("[AI Coach] Texto AI Coach cargado del caché:", cachedText)
+                    //print("[AI Coach] Texto AI Coach cargado del caché:", cachedText)
                     viewModel.aiCoachObservation = cachedText
                     viewModel.aiCoachLoading = false
                     return
@@ -187,10 +188,10 @@ struct ActivityDetailView: View {
                 if !viewModel.aiCoachLoading {
                     viewModel.aiCoachLoading = true
                     var summary = cacheManager.loadSummary(activityId: viewModel.activity.id)
-                    print("[AI Coach] Resumen cargado del caché:", summary as Any)
+                   // print("[AI Coach] Resumen cargado del caché:", summary as Any)
                     // Si el resumen existe pero no tiene promedios válidos, forzar recarga de streams y recalcular
                     if let s = summary, !Self.tienePromediosValidos(summary: s) {
-                        print("[AI Coach] Resumen sin promedios válidos. Forzando recarga de streams...")
+                       // print("[AI Coach] Resumen sin promedios válidos. Forzando recarga de streams...")
                         viewModel.isLoading = true
                         viewModel.fetchActivityStreams()
                         // Esperar a que los datos se procesen antes de continuar
@@ -210,7 +211,7 @@ struct ActivityDetailView: View {
                             print("[AI Coach] Resumen recalculado tras recarga:", recalculated)
                             cacheManager.saveSummary(activityId: viewModel.activity.id, summary: recalculated)
                             if Self.tienePromediosValidos(summary: recalculated) {
-                                print("[AI Coach] Enviando resumen a Gemini:", recalculated)
+                                //print("[AI Coach] Enviando resumen a Gemini:", recalculated)
                                 GeminiCoachService.fetchObservation(summary: recalculated) { obs in
                                     DispatchQueue.main.async {
                                         viewModel.aiCoachObservation = obs ?? "No se pudo obtener observación de la IA."
@@ -222,7 +223,7 @@ struct ActivityDetailView: View {
                                     }
                                 }
                             } else {
-                                print("[AI Coach] No hay resumen de la actividad con datos válidos tras recarga. No se llama a Gemini.")
+                                //print("[AI Coach] No hay resumen de la actividad con datos válidos tras recarga. No se llama a Gemini.")
                                 viewModel.aiCoachError = "No hay resumen de la actividad con datos válidos."
                                 viewModel.aiCoachLoading = false
                                 viewModel.isLoading = false
@@ -232,7 +233,7 @@ struct ActivityDetailView: View {
                     }
                     // Si ahora hay promedios válidos, llamar a Gemini
                     if let s = summary, Self.tienePromediosValidos(summary: s) {
-                        print("[AI Coach] Enviando resumen a Gemini:", s)
+                        //print("[AI Coach] Enviando resumen a Gemini:", s)
                         GeminiCoachService.fetchObservation(summary: s) { obs in
                             DispatchQueue.main.async {
                                 viewModel.aiCoachObservation = obs ?? "No se pudo obtener observación de la IA."
@@ -243,7 +244,7 @@ struct ActivityDetailView: View {
                             }
                         }
                     } else {
-                        print("[AI Coach] No hay resumen de la actividad con datos válidos. No se llama a Gemini.")
+                        //print("[AI Coach] No hay resumen de la actividad con datos válidos. No se llama a Gemini.")
                         viewModel.aiCoachError = "No hay resumen de la actividad con datos válidos."
                         viewModel.aiCoachLoading = false
                     }
@@ -258,6 +259,12 @@ struct ActivityDetailView: View {
         
         // Calcula y guarda el resumen de la actividad
         private func saveSummary() {
+            let cacheManager = CacheManager()
+            // Solo guardar si no existe ya un resumen o métricas en caché
+            guard cacheManager.loadSummary(activityId: viewModel.activity.id) == nil || cacheManager.loadMetrics(activityId: viewModel.activity.id) == nil else {
+                return
+            }
+
             let summary = ActivitySummary(
                 activityId: viewModel.activity.id,
                 date: viewModel.activity.date,
@@ -270,19 +277,9 @@ struct ActivityDetailView: View {
                 averageCadence: viewModel.cadenceData.map { $0.value }.averageOrNil(),
                 averageStrideLength: viewModel.strideLengthData.map { $0.value }.averageOrNil()
             )
-            CacheManager().saveSummary(activityId: viewModel.activity.id, summary: summary)
+            cacheManager.saveSummary(activityId: viewModel.activity.id, summary: summary)
 
             // Guardar métricas avanzadas
-            // Prints de depuración para ver los datos antes de guardar
-            print("[DEBUG] altitudeData count: \(viewModel.altitudeData.count), values: \(viewModel.altitudeData.map { $0.value })")
-            print("[DEBUG] cvertData count: \(viewModel.cvertData.count), values: \(viewModel.cvertData.map { $0.value })")
-            print("[DEBUG] verticalSpeedData count: \(viewModel.verticalSpeedData.count), values: \(viewModel.verticalSpeedData.map { $0.value })")
-            print("[DEBUG] heartRateData count: \(viewModel.heartRateData.count), values: \(viewModel.heartRateData.map { $0.value })")
-            print("[DEBUG] powerData count: \(viewModel.powerData.count), values: \(viewModel.powerData.map { $0.value })")
-            print("[DEBUG] paceData count: \(viewModel.paceData.count), values: \(viewModel.paceData.map { $0.value })")
-            print("[DEBUG] strideLengthData count: \(viewModel.strideLengthData.count), values: \(viewModel.strideLengthData.map { $0.value })")
-            print("[DEBUG] cadenceData count: \(viewModel.cadenceData.count), values: \(viewModel.cadenceData.map { $0.value })")
-
             let metrics = ActivitySummaryMetrics(
                 activityId: viewModel.activity.id,
                 distance: viewModel.activity.distance,
@@ -296,7 +293,7 @@ struct ActivityDetailView: View {
                 strideLengthAverage: viewModel.strideLengthData.map { $0.value }.averageOrNil() ?? 0,
                 cadenceAverage: viewModel.cadenceData.map { $0.value }.averageOrNil() ?? 0
             )
-            CacheManager().saveMetrics(activityId: viewModel.activity.id, metrics: metrics)
+            cacheManager.saveMetrics(activityId: viewModel.activity.id, metrics: metrics)
         }
     }
     
@@ -309,44 +306,115 @@ struct ActivityDetailView: View {
     // Eliminado didSave global, cada gráfico guarda su imagen independientemente
     var displayTitle: String? = nil
     var showAverage: Bool = true
+    var normalize: Bool = true // Nuevo flag para controlar normalización
 
         var body: some View {
+            // Usar el nombre interno (title) para el mapeo, igual que en Analytics
+            let chartKey = title
             let chartTitle = displayTitle ?? title
-            if let imageData = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title),
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 200)
-            } else if !data.isEmpty {
-                let chartContent = VStack(spacing: 0) {
-                    TimeSeriesChartView(
-                        data: data,
-                        title: chartTitle,
-                        yAxisLabel: "",
-                        color: color,
-                        showAverage: showAverage
-                    )
-                    Spacer().frame(height: 70) // Espacio extra para el eje X
+            // Calcular promedio y unidad
+            // Siempre priorizar el caché si existe, para evitar promedios en 0 por arrays vacíos
+            let avg: Double? = {
+                if !data.isEmpty {
+                    switch chartKey {
+                    case "VerticalEnergyCost": return data.map { $0.value }.averageOrNil()
+                    case "VerticalSpeed": return data.filter { $0.value > 0 }.map { $0.value }.averageOrNil()
+                    case "Power": return data.map { $0.value }.averageOrNil()
+                    case "Pace": return data.map { $0.value }.averageOrNil()
+                    case "HeartRate": return data.map { $0.value }.averageOrNil()
+                    case "StrideLength": return data.map { $0.value }.averageOrNil()
+                    case "Cadence": return data.map { $0.value }.averageOrNil()
+                    default: return nil
+                    }
+                } else if let metrics = CacheManager().loadMetrics(activityId: viewModel.activity.id) {
+                    let value: Double? = {
+                        switch chartKey {
+                        case "VerticalEnergyCost": return metrics.verticalEnergyCostAverage
+                        case "VerticalSpeed": return metrics.verticalSpeedAverage
+                        case "Power": return metrics.powerAverage
+                        case "Pace": return metrics.paceAverage
+                        case "HeartRate": return metrics.heartRateAverage
+                        case "StrideLength": return metrics.strideLengthAverage
+                        case "Cadence": return metrics.cadenceAverage
+                        default: return nil
+                        }
+                    }()
+                    if let v = value {
+                        print("[CACHE] activityId=\(viewModel.activity.id) chart=\(chartKey) avg=\(v)")
+                    }
+                    return value
+                } else {
+                    return nil
                 }
-                .frame(height: 210) // 200 + 32
-                .padding(.horizontal, 0)
-                .padding(.vertical, 0)
-                .background(Color(.secondarySystemBackground))
-                chartContent
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear
-                                .onAppear {
-                                    // Guardar la imagen siempre que no exista en caché
-                                    if CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title) == nil {
-                                        if let imageData = ViewSnapshotter.snapshot(of: chartContent, size: geo.size) {
-                                            CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
+            }()
+            let unit: String = {
+                switch chartKey {
+                case "VerticalEnergyCost": return "W/m"
+                case "VerticalSpeed": return "km/h"
+                case "Power": return "W"
+                case "Pace": return "min/km"
+                case "HeartRate": return "BPM"
+                case "StrideLength": return "m"
+                case "Cadence": return "RPM"
+                default: return ""
+                }
+            }()
+            let avgString: String? = {
+                guard let avg = avg, !unit.isEmpty, chartKey != "Elevation" else { return nil }
+                if chartKey == "Pace" || chartKey == "VerticalSpeed" {
+                    return String(format: "AVG: %.2f %@", avg, unit)
+                } else {
+                    return String(format: "AVG: %.0f %@", avg, unit)
+                }
+            }()
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(chartTitle)
+                        .font(.headline)
+                    if let avgString = avgString {
+                        Text(avgString)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.leading, 8)
+                if let imageData = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title),
+                   let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 200)
+                } else if !data.isEmpty {
+                    // El snapshot solo incluye el gráfico, sin el título
+                    let chartContent = VStack(spacing: 0) {
+                        TimeSeriesChartView(
+                            data: data,
+                            title: "", // No pasar título
+                            yAxisLabel: "",
+                            color: color,
+                            showAverage: showAverage,
+                            normalize: normalize
+                        )
+                        Spacer().frame(height: 70) // Espacio extra para el eje X
+                    }
+                    .frame(height: 210)
+                    .padding(.horizontal, 0)
+                    .padding(.vertical, 0)
+                    .background(Color(.secondarySystemBackground))
+                    chartContent
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear
+                                    .onAppear {
+                                        if CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title) == nil {
+                                            if let imageData = ViewSnapshotter.snapshot(of: chartContent, size: geo.size) {
+                                                CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
+                                            }
                                         }
                                     }
-                                }
-                        }
-                    )
+                            }
+                        )
+                }
             }
         }
     }
@@ -370,7 +438,7 @@ struct ActivityDetailView: View {
                 try data.write(to: fileURL)
                 return fileURL
             } catch {
-                print("Error writing GPX data to temporary file: \(error.localizedDescription)")
+                // print("Error writing GPX data to temporary file: \(error.localizedDescription)")
                 return nil
             }
         }
