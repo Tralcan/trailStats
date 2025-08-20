@@ -393,7 +393,7 @@ struct ActivityDetailView: View {
 
             } else if title != "Elevation" {
                 if let avg = getGenericAverage() {
-                    let format = (title == "Pace") ? "AVG: %.2f %@" : "AVG: %.0f %@"
+                    let format = (title == "Pace" || title == "StrideLength") ? "AVG: %.2f %@" : "AVG: %.0f %@"
                     Text(String(format: format, avg, unit))
                 }
             }
