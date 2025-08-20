@@ -8,6 +8,7 @@ struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     
     @State private var showOptionsMenu = false
+    @State private var selectedActivity: Activity? // New: State to control sheet presentation
     var body: some View {
         NavigationView {
             Group {
@@ -59,15 +60,16 @@ struct HomeView: View {
             }
             List {
                 ForEach(viewModel.filteredActivities) { activity in
-                    NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                        let isCached = cacheManager.loadMetrics(activityId: activity.id) != nil
-                        ActivityRowView(activity: activity, isCached: isCached)
-                            .onAppear {
-                                if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil && viewModel.canLoadMoreActivities {
-                                    viewModel.fetchActivities()
-                                }
+                    let isCached = cacheManager.loadMetrics(activityId: activity.id) != nil
+                    ActivityRowView(activity: activity, isCached: isCached)
+                        .onTapGesture {
+                            selectedActivity = activity
+                        }
+                        .onAppear {
+                            if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil && viewModel.canLoadMoreActivities {
+                                viewModel.fetchActivities()
                             }
-                    }
+                        }
                 }
                 if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
                     ProgressView()
@@ -75,6 +77,9 @@ struct HomeView: View {
                 }
             }
             .listStyle(.plain)
+            .sheet(item: $selectedActivity) { activity in
+                ActivityDetailView(activity: activity)
+            }
         }
     }
     

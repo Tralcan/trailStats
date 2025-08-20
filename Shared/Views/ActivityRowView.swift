@@ -57,6 +57,7 @@ struct ActivityRowView: View {
                 .frame(width: 10, height: 10)
         }
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
     }
 }
 
