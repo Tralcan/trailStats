@@ -8,7 +8,8 @@ struct ActivitySummaryMetrics: Codable {
     // Averages of the charts
     let elevationAverage: Double
     let verticalEnergyCostAverage: Double
-    let verticalSpeedAverage: Double
+    let positiveVerticalSpeedAverage: Double
+    let negativeVerticalSpeedAverage: Double
     let heartRateAverage: Double
     let powerAverage: Double
     let paceAverage: Double

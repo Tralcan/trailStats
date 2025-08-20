@@ -128,34 +128,33 @@ struct ActivityDetailView: View {
 
         var body: some View {
             VStack(spacing: 52) {
-                // AI Coach y spinner
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("AI Coach")
-                        .font(.title3).bold()
-                        .foregroundColor(.accentColor)
-                    if viewModel.aiCoachLoading {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                            Text("Analizando actividad...")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    } else if let obs = viewModel.aiCoachObservation {
-                        Text(obs)
-                            .font(.body)
-                            .foregroundColor(.primary)
-                    } else if let err = viewModel.aiCoachError {
-                        Text("Error: \(err)")
-                            .font(.body)
-                            .foregroundColor(.red)
-                    }
-                }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(12)
-
-                // Solo mostrar los títulos y gráficos cuando ya no está cargando
                 if !viewModel.isLoading {
+                    // AI Coach y spinner
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("AI Coach")
+                            .font(.title3).bold()
+                            .foregroundColor(.accentColor)
+                        if viewModel.aiCoachLoading {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                Text("Analizando actividad...")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if let obs = viewModel.aiCoachObservation {
+                            Text(obs)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                        } else if let err = viewModel.aiCoachError {
+                            Text("Error: \(err)")
+                                .font(.body)
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(12)
+
                     ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, displayTitle: "Elevation", showAverage: false, normalize: false)
                     ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, displayTitle: "Vertical Energy Cost")
                     ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, displayTitle: "Vertical Speed", showAverage: true, normalize: false)
@@ -280,13 +279,18 @@ struct ActivityDetailView: View {
             cacheManager.saveSummary(activityId: viewModel.activity.id, summary: summary)
 
             // Guardar métricas avanzadas
+            let verticalSpeedValues = viewModel.verticalSpeedData.map { $0.value }
+            let positiveVerticalSpeed = verticalSpeedValues.filter { $0 > 0 }
+            let negativeVerticalSpeed = verticalSpeedValues.filter { $0 < 0 }
+
             let metrics = ActivitySummaryMetrics(
                 activityId: viewModel.activity.id,
                 distance: viewModel.activity.distance,
                 elevation: viewModel.activity.elevationGain,
                 elevationAverage: viewModel.altitudeData.map { $0.value }.averageOrNil() ?? 0,
                 verticalEnergyCostAverage: viewModel.cvertData.map { $0.value }.averageOrNil() ?? 0,
-                verticalSpeedAverage: viewModel.verticalSpeedData.map { $0.value }.averageOrNil() ?? 0,
+                positiveVerticalSpeedAverage: positiveVerticalSpeed.averageOrNil() ?? 0,
+                negativeVerticalSpeedAverage: negativeVerticalSpeed.averageOrNil() ?? 0,
                 heartRateAverage: viewModel.heartRateData.map { $0.value }.averageOrNil() ?? 0,
                 powerAverage: viewModel.powerData.map { $0.value }.averageOrNil() ?? 0,
                 paceAverage: viewModel.paceData.map { $0.value }.averageOrNil() ?? 0,
@@ -303,81 +307,38 @@ struct ActivityDetailView: View {
         let data: [DataPoint]
         let color: Color
         let viewModel: ActivityDetailViewModel
-    // Eliminado didSave global, cada gráfico guarda su imagen independientemente
-    var displayTitle: String? = nil
-    var showAverage: Bool = true
-    var normalize: Bool = true // Nuevo flag para controlar normalización
+        var displayTitle: String? = nil
+        var showAverage: Bool = true
+        var normalize: Bool = true
+
+        private var chartTitle: String { displayTitle ?? title }
+        private var unit: String {
+            switch title {
+            case "VerticalEnergyCost": return "W/m"
+            case "VerticalSpeed": return "km/h"
+            case "Power": return "W"
+            case "Pace": return "min/km"
+            case "HeartRate": return "BPM"
+            case "StrideLength": return "m"
+            case "Cadence": return "RPM"
+            default: return ""
+            }
+        }
 
         var body: some View {
-            // Usar el nombre interno (title) para el mapeo, igual que en Analytics
-            let chartKey = title
-            let chartTitle = displayTitle ?? title
-            // Calcular promedio y unidad
-            // Siempre priorizar el caché si existe, para evitar promedios en 0 por arrays vacíos
-            let avg: Double? = {
-                if !data.isEmpty {
-                    switch chartKey {
-                    case "VerticalEnergyCost": return data.map { $0.value }.averageOrNil()
-                    case "VerticalSpeed": return data.filter { $0.value > 0 }.map { $0.value }.averageOrNil()
-                    case "Power": return data.map { $0.value }.averageOrNil()
-                    case "Pace": return data.map { $0.value }.averageOrNil()
-                    case "HeartRate": return data.map { $0.value }.averageOrNil()
-                    case "StrideLength": return data.map { $0.value }.averageOrNil()
-                    case "Cadence": return data.map { $0.value }.averageOrNil()
-                    default: return nil
-                    }
-                } else if let metrics = CacheManager().loadMetrics(activityId: viewModel.activity.id) {
-                    let value: Double? = {
-                        switch chartKey {
-                        case "VerticalEnergyCost": return metrics.verticalEnergyCostAverage
-                        case "VerticalSpeed": return metrics.verticalSpeedAverage
-                        case "Power": return metrics.powerAverage
-                        case "Pace": return metrics.paceAverage
-                        case "HeartRate": return metrics.heartRateAverage
-                        case "StrideLength": return metrics.strideLengthAverage
-                        case "Cadence": return metrics.cadenceAverage
-                        default: return nil
-                        }
-                    }()
-                    if let v = value {
-                        print("[CACHE] activityId=\(viewModel.activity.id) chart=\(chartKey) avg=\(v)")
-                    }
-                    return value
-                } else {
-                    return nil
-                }
-            }()
-            let unit: String = {
-                switch chartKey {
-                case "VerticalEnergyCost": return "W/m"
-                case "VerticalSpeed": return "km/h"
-                case "Power": return "W"
-                case "Pace": return "min/km"
-                case "HeartRate": return "BPM"
-                case "StrideLength": return "m"
-                case "Cadence": return "RPM"
-                default: return ""
-                }
-            }()
-            let avgString: String? = {
-                guard let avg = avg, !unit.isEmpty, chartKey != "Elevation" else { return nil }
-                if chartKey == "Pace" || chartKey == "VerticalSpeed" {
-                    return String(format: "AVG: %.2f %@", avg, unit)
-                } else {
-                    return String(format: "AVG: %.0f %@", avg, unit)
-                }
-            }()
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(chartTitle)
                         .font(.headline)
-                    if let avgString = avgString {
-                        Text(avgString)
+                    
+                    if showAverage {
+                        averageView
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
                 .padding(.leading, 8)
+
                 if let imageData = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title),
                    let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
@@ -385,22 +346,22 @@ struct ActivityDetailView: View {
                         .scaledToFit()
                         .frame(height: 200)
                 } else if !data.isEmpty {
-                    // El snapshot solo incluye el gráfico, sin el título
                     let chartContent = VStack(spacing: 0) {
                         TimeSeriesChartView(
                             data: data,
-                            title: "", // No pasar título
+                            title: "",
                             yAxisLabel: "",
                             color: color,
                             showAverage: showAverage,
                             normalize: normalize
                         )
-                        Spacer().frame(height: 70) // Espacio extra para el eje X
+                        Spacer().frame(height: 70)
                     }
                     .frame(height: 210)
                     .padding(.horizontal, 0)
                     .padding(.vertical, 0)
                     .background(Color(.secondarySystemBackground))
+
                     chartContent
                         .background(
                             GeometryReader { geo in
@@ -416,6 +377,54 @@ struct ActivityDetailView: View {
                         )
                 }
             }
+        }
+
+        @ViewBuilder
+        private var averageView: some View {
+            if title == "VerticalSpeed" {
+                let (positiveAvg, negativeAvg) = getVerticalSpeedAverages()
+                
+                if let pAvg = positiveAvg {
+                    Text(String(format: "Avg ↗: %.2f %@", pAvg, unit))
+                }
+                if let nAvg = negativeAvg {
+                    Text(String(format: "Avg ↘: %.2f %@", nAvg, unit))
+                }
+
+            } else if title != "Elevation" {
+                if let avg = getGenericAverage() {
+                    let format = (title == "Pace") ? "AVG: %.2f %@" : "AVG: %.0f %@"
+                    Text(String(format: format, avg, unit))
+                }
+            }
+        }
+
+        private func getVerticalSpeedAverages() -> (Double?, Double?) {
+            if !data.isEmpty {
+                let positive = data.filter { $0.value > 0 }.map { $0.value }.averageOrNil()
+                let negative = data.filter { $0.value < 0 }.map { $0.value }.averageOrNil()
+                return (positive, negative)
+            } else if let metrics = CacheManager().loadMetrics(activityId: viewModel.activity.id) {
+                return (metrics.positiveVerticalSpeedAverage, metrics.negativeVerticalSpeedAverage)
+            }
+            return (nil, nil)
+        }
+
+        private func getGenericAverage() -> Double? {
+            if !data.isEmpty {
+                return data.map { $0.value }.averageOrNil()
+            } else if let metrics = CacheManager().loadMetrics(activityId: viewModel.activity.id) {
+                switch title {
+                case "VerticalEnergyCost": return metrics.verticalEnergyCostAverage
+                case "Power": return metrics.powerAverage
+                case "Pace": return metrics.paceAverage
+                case "HeartRate": return metrics.heartRateAverage
+                case "StrideLength": return metrics.strideLengthAverage
+                case "Cadence": return metrics.cadenceAverage
+                default: return nil
+                }
+            }
+            return nil
         }
     }
     
