@@ -107,13 +107,14 @@ struct AdvancedAnalyticsView: View {
     }
     
     let advancedMetricCards: [AdvancedMetricCard] = [
-        AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \ActivitySummaryMetrics.verticalEnergyCostAverage, label: "W/m"),
-        AdvancedMetricCard(title: "Vertical Speed (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \ActivitySummaryMetrics.verticalSpeedAverage, label: "km/h"),
-        AdvancedMetricCard(title: "Power (W)", systemImage: "bolt.circle", color: .orange, keyPath: \ActivitySummaryMetrics.powerAverage, label: "W"),
-        AdvancedMetricCard(title: "Pace (min/km)", systemImage: "speedometer", color: .pink, keyPath: \ActivitySummaryMetrics.paceAverage, label: "min/km"),
-        AdvancedMetricCard(title: "Heart Rate (BPM)", systemImage: "heart.fill", color: .red, keyPath: \ActivitySummaryMetrics.heartRateAverage, label: "BPM"),
-        AdvancedMetricCard(title: "Stride Length (m)", systemImage: "figure.run", color: .indigo, keyPath: \ActivitySummaryMetrics.strideLengthAverage, label: "m"),
-        AdvancedMetricCard(title: "Cadence (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \ActivitySummaryMetrics.cadenceAverage, label: "RPM")
+        AdvancedMetricCard(title: "Vertical Energy Cost (W/m)", systemImage: "bolt.fill", color: .purple, keyPath: \.verticalEnergyCostAverage, label: "W/m"),
+        AdvancedMetricCard(title: "Vertical Speed (Ascent) (km/h)", systemImage: "arrow.up.right", color: .teal, keyPath: \.positiveVerticalSpeedAverage, label: "km/h"),
+        AdvancedMetricCard(title: "Vertical Speed (Descent) (km/h)", systemImage: "arrow.down.right", color: .indigo, keyPath: \.negativeVerticalSpeedAverage, label: "km/h"),
+        AdvancedMetricCard(title: "Power (W)", systemImage: "bolt.circle", color: .orange, keyPath: \.powerAverage, label: "W"),
+        AdvancedMetricCard(title: "Pace (min/km)", systemImage: "speedometer", color: .pink, keyPath: \.paceAverage, label: "min/km"),
+        AdvancedMetricCard(title: "Heart Rate (BPM)", systemImage: "heart.fill", color: .red, keyPath: \.heartRateAverage, label: "BPM"),
+        AdvancedMetricCard(title: "Stride Length (m)", systemImage: "figure.run", color: .indigo, keyPath: \.strideLengthAverage, label: "m"),
+        AdvancedMetricCard(title: "Cadence (RPM)", systemImage: "metronome.fill", color: .cyan, keyPath: \.cadenceAverage, label: "RPM")
     ]
     
     // Gráfico genérico para métricas avanzadas
