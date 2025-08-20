@@ -192,18 +192,20 @@ struct ActivityDetailView: View {
 
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
+                // This HStack for the title is now the stable part of the view
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(chartTitle)
                         .font(.headline)
                     
-                    if showAverage {
-                        averageView
+                    if let avgStr = getAverageString() {
+                        Text(avgStr)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
                 .padding(.leading, 8)
 
+                // The content part (chart or image)
                 if let imageData = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title),
                    let uiImage = UIImage(data: imageData) {
                     Image(uiImage: uiImage)
@@ -211,56 +213,59 @@ struct ActivityDetailView: View {
                         .scaledToFit()
                         .frame(height: 200)
                 } else if !data.isEmpty {
-                    let chartContent = VStack(spacing: 0) {
-                        TimeSeriesChartView(
-                            data: data,
-                            title: "",
-                            yAxisLabel: "",
-                            color: color,
-                            showAverage: showAverage,
-                            normalize: normalize
-                        )
-                        Spacer().frame(height: 70)
-                    }
-                    .frame(height: 210)
-                    .padding(.horizontal, 0)
-                    .padding(.vertical, 0)
-                    .background(Color(.secondarySystemBackground))
+                    // This is the non-cached path that was causing issues.
+                    // We wrap the chart in a GeometryReader with a fixed frame.
+                    GeometryReader { geo in
+                        let chartContent = VStack(spacing: 0) {
+                            TimeSeriesChartView(
+                                data: data,
+                                title: "",
+                                yAxisLabel: "",
+                                color: color,
+                                showAverage: false, // Average is shown above
+                                normalize: normalize
+                            )
+                            Spacer().frame(height: 70)
+                        }
+                        .background(Color(.secondarySystemBackground))
 
-                    chartContent
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear
-                                    .onAppear {
-                                        if CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title) == nil {
-                                            if let imageData = ViewSnapshotter.snapshot(of: chartContent, size: geo.size) {
-                                                CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
-                                            }
-                                        }
+                        chartContent
+                            .onAppear {
+                                // The snapshot logic remains the same, using the size from the GeometryReader
+                                if CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title) == nil {
+                                    if let imageData = ViewSnapshotter.snapshot(of: chartContent, size: geo.size) {
+                                        CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
                                     }
+                                }
                             }
-                        )
+                    }
+                    .frame(height: 210) // Give the GeometryReader a stable frame
                 }
             }
         }
 
-        @ViewBuilder
-        private var averageView: some View {
+        private func getAverageString() -> String? {
+            guard showAverage, title != "Elevation" else { return nil }
+
             if title == "VerticalSpeed" {
                 let (positiveAvg, negativeAvg) = getVerticalSpeedAverages()
-                
+                var components: [String] = []
                 if let pAvg = positiveAvg {
-                    Text(String(format: "Avg ↗: %.2f %@", pAvg, unit))
+                    components.append(String(format: "Avg ↗: %.2f", pAvg))
                 }
                 if let nAvg = negativeAvg {
-                    Text(String(format: "Avg ↘: %.2f %@", nAvg, unit))
+                    components.append(String(format: "Avg ↘: %.2f", abs(nAvg)))
                 }
+                
+                if components.isEmpty {
+                    return nil
+                }
+                return components.joined(separator: " | ") + " \(unit)"
 
-            } else if title != "Elevation" {
-                if let avg = getGenericAverage() {
-                    let format = (title == "Pace" || title == "StrideLength") ? "AVG: %.2f %@" : "AVG: %.0f %@"
-                    Text(String(format: format, avg, unit))
-                }
+            } else {
+                guard let avg = getGenericAverage() else { return nil }
+                let format = (title == "Pace" || title == "StrideLength") ? "AVG: %.2f %@" : "AVG: %.0f %@"
+                return String(format: format, avg, unit)
             }
         }
 
