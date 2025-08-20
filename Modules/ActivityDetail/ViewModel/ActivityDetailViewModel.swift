@@ -106,16 +106,35 @@ class ActivityDetailViewModel: ObservableObject {
         self.calculateStrideLength() // No longer takes distanceData as parameter
         self.calculatePace() // No longer takes distanceData as parameter
 
-        // Guardar métricas avanzadas solo si no existen en caché y los promedios son válidos
+        // Guardar resumen y métricas en caché
         let cacheManager = CacheManager()
+        
+        if cacheManager.loadSummary(activityId: self.activity.id) != nil && cacheManager.loadMetrics(activityId: self.activity.id) != nil {
+            return
+        }
+
+        let summary = ActivitySummary(
+            activityId: self.activity.id,
+            date: self.activity.date,
+            distance: self.activity.distance,
+            elevation: self.activity.elevationGain,
+            duration: self.activity.duration,
+            averageHeartRate: self.heartRateData.map { $0.value }.averageOrNil(),
+            averagePower: self.powerData.map { $0.value }.averageOrNil(),
+            averagePace: self.paceData.map { $0.value }.averageOrNil(),
+            averageCadence: self.cadenceData.map { $0.value }.averageOrNil(),
+            averageStrideLength: self.strideLengthData.map { $0.value }.averageOrNil()
+        )
+        cacheManager.saveSummary(activityId: self.activity.id, summary: summary)
+
         let verticalSpeedValues = self.verticalSpeedData.map { $0.value }
         let positiveVerticalSpeed = verticalSpeedValues.filter { $0 > 0 }
         let negativeVerticalSpeed = verticalSpeedValues.filter { $0 < 0 }
 
         let metrics = ActivitySummaryMetrics(
-            activityId: activity.id,
-            distance: activity.distance,
-            elevation: activity.elevationGain,
+            activityId: self.activity.id,
+            distance: self.activity.distance,
+            elevation: self.activity.elevationGain,
             elevationAverage: self.altitudeData.map { $0.value }.averageOrNil() ?? 0,
             verticalEnergyCostAverage: self.cvertData.map { $0.value }.averageOrNil() ?? 0,
             positiveVerticalSpeedAverage: positiveVerticalSpeed.averageOrNil() ?? 0,
@@ -126,29 +145,43 @@ class ActivityDetailViewModel: ObservableObject {
             strideLengthAverage: self.strideLengthData.map { $0.value }.averageOrNil() ?? 0,
             cadenceAverage: self.cadenceData.map { $0.value }.averageOrNil() ?? 0
         )
-        // Permitir verticalSpeed negativo
-        let allValid = metrics.elevationAverage > 0 && metrics.verticalEnergyCostAverage > 0 && metrics.heartRateAverage > 0 && metrics.powerAverage > 0 && metrics.paceAverage > 0 && metrics.strideLengthAverage > 0 && metrics.cadenceAverage > 0
-        let metricsFileExists = cacheManager.loadMetrics(activityId: activity.id) != nil
-        print("[DEBUG] Métricas para actividad \(activity.id):")
-        print("  elevation=\(metrics.elevationAverage)")
-        print("  verticalEnergyCost=\(metrics.verticalEnergyCostAverage)")
-        print("  positiveVerticalSpeed=\(metrics.positiveVerticalSpeedAverage)")
-        print("  negativeVerticalSpeed=\(metrics.negativeVerticalSpeedAverage)")
-        print("  heartRate=\(metrics.heartRateAverage)")
-        print("  power=\(metrics.powerAverage)")
-        print("  pace=\(metrics.paceAverage)")
-        print("  strideLength=\(metrics.strideLengthAverage)")
-        print("  cadence=\(metrics.cadenceAverage)")
-        print("[DEBUG] ¿Archivo de métricas ya existe?: \(metricsFileExists)")
-        print("[DEBUG] ¿Todos los promedios son válidos?: \(allValid)")
-        if !metricsFileExists && allValid {
-            cacheManager.saveMetrics(activityId: activity.id, metrics: metrics)
-            if let fileURL = cacheManager.metricsFileURL(for: activity.id) {
-                print("[NOCACHE] Saved metrics for activity \(activity.id) at \(fileURL.path):" +
-                      " elevation=\(metrics.elevationAverage), verticalEnergyCost=\(metrics.verticalEnergyCostAverage), positiveVerticalSpeed=\(metrics.positiveVerticalSpeedAverage), negativeVerticalSpeed=\(metrics.negativeVerticalSpeedAverage), heartRate=\(metrics.heartRateAverage), power=\(metrics.powerAverage), pace=\(metrics.paceAverage), strideLength=\(metrics.strideLengthAverage), cadence=\(metrics.cadenceAverage)")
-            } else {
-                print("[NOCACHE] Saved metrics for activity \(activity.id):" +
-                      " elevation=\(metrics.elevationAverage), verticalEnergyCost=\(metrics.verticalEnergyCostAverage), positiveVerticalSpeed=\(metrics.positiveVerticalSpeedAverage), negativeVerticalSpeed=\(metrics.negativeVerticalSpeedAverage), heartRate=\(metrics.heartRateAverage), power=\(metrics.powerAverage), pace=\(metrics.paceAverage), strideLength=\(metrics.strideLengthAverage), cadence=\(metrics.cadenceAverage)")
+        cacheManager.saveMetrics(activityId: self.activity.id, metrics: metrics)
+
+        self.fetchAICoachObservation(summary: summary)
+    }
+
+    private func fetchAICoachObservation(summary: ActivitySummary) {
+        func tienePromediosValidos(summary: ActivitySummary) -> Bool {
+            return summary.averageHeartRate != nil || summary.averagePower != nil || summary.averagePace != nil || summary.averageCadence != nil || summary.averageStrideLength != nil
+        }
+
+        if self.aiCoachObservation != nil {
+            self.aiCoachLoading = false
+            return
+        }
+        
+        let cacheManager = CacheManager()
+        if let cachedText = cacheManager.loadAICoachText(activityId: self.activity.id) {
+            self.aiCoachObservation = cachedText
+            self.aiCoachLoading = false
+            return
+        }
+
+        guard tienePromediosValidos(summary: summary) else {
+            self.aiCoachError = "No hay resumen de la actividad con datos válidos."
+            self.aiCoachLoading = false
+            return
+        }
+        
+        self.aiCoachLoading = true
+        GeminiCoachService.fetchObservation(summary: summary) { [weak self] obs in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.aiCoachObservation = obs ?? "No se pudo obtener observación de la IA."
+                if let obs = obs {
+                    cacheManager.saveAICoachText(activityId: self.activity.id, text: obs)
+                }
+                self.aiCoachLoading = false
             }
         }
     }
