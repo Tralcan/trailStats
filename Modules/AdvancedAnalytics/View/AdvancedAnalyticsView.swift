@@ -44,11 +44,11 @@ struct AdvancedAnalyticsView: View {
                     
                     // Selector de rango de entrenamientos
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Select trainings")
+                        Text("Select number of trainings")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .padding(.leading, 8)
-                        Picker("Select trainings", selection: $selectedRange) {
+                        Picker("Select number of trainings", selection: $selectedRange) {
                             ForEach(TrainingRange.allCases) { range in
                                 Text(range.description).tag(range)
                             }
