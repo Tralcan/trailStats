@@ -33,11 +33,28 @@ class HomeViewModel: ObservableObject {
     @Published var advancedSearchDistance: Double? = nil
     @Published var advancedSearchElevation: Double? = nil
     @Published var advancedSearchDuration: TimeInterval? = nil
-    
+    @Published private(set) var cachedActivityIds = Set<Int>()
+
     private let stravaService = StravaService()
     private let cacheManager = CacheManager()
     private var currentPage = 1
     @Published var canLoadMoreActivities = true
+
+    func refreshCacheStatus() {
+        for activity in activities {
+            if cacheManager.loadMetrics(activityId: activity.id) != nil {
+                cachedActivityIds.insert(activity.id)
+            }
+        }
+    }
+
+    func isActivityCached(activityId: Int) -> Bool {
+        return cachedActivityIds.contains(activityId)
+    }
+
+    func markActivityAsCached(activityId: Int) {
+        cachedActivityIds.insert(activityId)
+    }
     
     var filteredActivities: [Activity] {
         var filtered = activities
@@ -116,6 +133,12 @@ class HomeViewModel: ObservableObject {
     activities = [] // Clear activities on logout
     }
     
+    func shouldLoadMoreActivities(activity: Activity) -> Bool {
+        let isLastActivity = activity.id == filteredActivities.last?.id
+        let isSearchActive = !searchText.isEmpty || !advancedSearchName.isEmpty || advancedSearchDate != nil || advancedSearchDistance != nil || advancedSearchElevation != nil || advancedSearchDuration != nil
+        return isLastActivity && !isSearchActive && canLoadMoreActivities
+    }
+
     func fetchActivities() {
         guard !isLoading, canLoadMoreActivities else { return }
         isLoading = true

@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 /// The primary view for the first tab.
@@ -48,9 +47,7 @@ struct HomeView: View {
     @State private var isShowingAdvancedSearch = false
     
     private var activityList: some View {
-        let cacheManager = CacheManager()
-
-        return VStack {
+        VStack {
             HStack {
                 Spacer()
                 Button("Advanced Search") {
@@ -60,13 +57,13 @@ struct HomeView: View {
             }
             List {
                 ForEach(viewModel.filteredActivities) { activity in
-                    let isCached = cacheManager.loadMetrics(activityId: activity.id) != nil
-                    ActivityRowView(activity: activity, isCached: isCached)
+                    ActivityRowView(activity: activity, isCached: viewModel.isActivityCached(activityId: activity.id))
                         .onTapGesture {
+                            viewModel.markActivityAsCached(activityId: activity.id)
                             selectedActivity = activity
                         }
                         .onAppear {
-                            if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil && viewModel.canLoadMoreActivities {
+                            if viewModel.shouldLoadMoreActivities(activity: activity) {
                                 viewModel.fetchActivities()
                             }
                         }
@@ -77,6 +74,7 @@ struct HomeView: View {
                 }
             }
             .listStyle(.plain)
+            .onAppear(perform: viewModel.refreshCacheStatus)
             .sheet(item: $selectedActivity) { activity in
                 ActivityDetailView(activity: activity)
             }
