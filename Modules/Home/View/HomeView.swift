@@ -47,7 +47,9 @@ struct HomeView: View {
     @State private var isShowingAdvancedSearch = false
     
     private var activityList: some View {
-        VStack {
+        let cacheManager = CacheManager()
+
+        return VStack {
             HStack {
                 Spacer()
                 Button("Advanced Search") {
@@ -58,7 +60,8 @@ struct HomeView: View {
             List {
                 ForEach(viewModel.filteredActivities) { activity in
                     NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                        ActivityRowView(activity: activity)
+                        let isCached = cacheManager.loadMetrics(activityId: activity.id) != nil
+                        ActivityRowView(activity: activity, isCached: isCached)
                             .onAppear {
                                 if activity.id == viewModel.filteredActivities.last?.id && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil && viewModel.canLoadMoreActivities {
                                     viewModel.fetchActivities()
