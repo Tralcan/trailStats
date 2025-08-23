@@ -258,20 +258,28 @@ class CacheManager {
         }
     }
 
-    /// Deletes all local caches, including activities and activity streams.
+    /// Deletes all local caches, including activities, activity streams, and summaries.
     func clearAllCaches() {
         clearCache() // Clear activities cache
 
-        guard let streamsURL = streamsDirectoryURL, FileManager.default.fileExists(atPath: streamsURL.path) else {
-            print("Activity streams cache directory does not exist.")
-            return
+        // Clear activity streams cache
+        if let streamsURL = streamsDirectoryURL, FileManager.default.fileExists(atPath: streamsURL.path) {
+            do {
+                try FileManager.default.removeItem(at: streamsURL)
+                print("Successfully cleared all activity streams cache.")
+            } catch {
+                print("Error clearing activity streams cache: \(error.localizedDescription)")
+            }
         }
 
-        do {
-            try FileManager.default.removeItem(at: streamsURL)
-            print("Successfully cleared all activity streams cache.")
-        } catch {
-            print("Error clearing activity streams cache: \(error.localizedDescription)")
+        // Clear activity summaries cache (metrics, AI coach, charts, summaries)
+        if let summariesURL = summariesDirectoryURL, FileManager.default.fileExists(atPath: summariesURL.path) {
+            do {
+                try FileManager.default.removeItem(at: summariesURL)
+                print("Successfully cleared all activity summaries cache.")
+            } catch {
+                print("Error clearing activity summaries cache: \(error.localizedDescription)")
+            }
         }
     }
 }

@@ -74,6 +74,9 @@ struct HomeView: View {
                 }
             }
             .listStyle(.plain)
+            .refreshable {
+                viewModel.refreshActivities()
+            }
             .onAppear(perform: viewModel.refreshCacheStatus)
             .sheet(item: $selectedActivity) { activity in
                 ActivityDetailView(activity: activity)

@@ -139,6 +139,13 @@ class HomeViewModel: ObservableObject {
         return isLastActivity && !isSearchActive && canLoadMoreActivities
     }
 
+    func refreshActivities() {
+        currentPage = 1
+        canLoadMoreActivities = true
+        // No limpiar 'activities' para mantener las existentes y solo añadir las nuevas
+        fetchActivities()
+    }
+
     func fetchActivities() {
         guard !isLoading, canLoadMoreActivities else { return }
         isLoading = true
@@ -148,22 +155,28 @@ class HomeViewModel: ObservableObject {
                 self.isLoading = false
                 switch result {
                 case .success(let newActivities):
-                    if newActivities.isEmpty {
+                    if newActivities.isEmpty { // Solo se pone a false si Strava devuelve una página vacía
                         self.canLoadMoreActivities = false
                         return
                     }
+
                     let trailRuns = newActivities.filter { $0.sportType == "TrailRun" }
-                    // Evitar duplicados por id
                     let existingIds = Set(self.activities.map { $0.id })
                     let uniqueNew = trailRuns.filter { !existingIds.contains($0.id) }
+
                     self.activities.append(contentsOf: uniqueNew)
-                    // Ordenar siempre por fecha descendente
-                    self.activities.sort { $0.date > $1.date }
+                    self.activities.sort { $0.date > $1.date } // Reordenar toda la lista
                     self.cacheManager.saveActivities(self.activities)
-                    // Siempre avanzar de página si la respuesta no está vacía
+
+                    // Siempre avanzar de página si Strava devolvió actividades, incluso si eran duplicados
+                    // Esto asegura que avanzamos más allá de las páginas que podrían contener solo duplicados
                     self.currentPage += 1
                 case .failure(let error):
                     print("Failed to fetch activities: \(error.localizedDescription)")
+                    if let stravaError = error as? StravaAuthError, stravaError == .invalidRefreshToken {
+                        print("Invalid refresh token detected. Logging out.")
+                        self.logout()
+                    }
                 }
             }
         }
