@@ -49,6 +49,7 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var paceData: [ChartDataPoint] = []
     @Published var distanceData: [ChartDataPoint] = []
     @Published var isLoading = false
+    @Published var isLoadingGraphData = false
     @Published var errorMessage: String? = nil
     @Published var isGeneratingGPX = false
     @Published var gpxDataToShare: Data? = nil
@@ -92,6 +93,23 @@ class ActivityDetailViewModel: ObservableObject {
             self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
             self.performanceByGrade = cachedMetrics.performanceByGrade
             self.efficiencyIndex = cachedMetrics.efficiencyIndex
+        }
+
+        // Load activity streams from cache or fetch them
+        if let cachedStreams = cacheManager.loadActivityStreams(activityId: activity.id) {
+            // Si los streams están en caché, procesarlos de forma asíncrona
+            self.isLoadingGraphData = true
+            Task { @MainActor in
+                self.processAndCalculateGraphData(streamsDictionary: cachedStreams)
+                self.isLoadingGraphData = false
+            }
+        } else {
+            // Si no están en caché, iniciar la carga asíncrona de los streams
+            // y luego procesarlos.
+            // La propiedad isLoading se usa para la carga inicial de la actividad,
+            // no para los streams de gráficos.
+            // La carga de streams se maneja con isLoadingGraphData.
+            self.fetchActivityStreams()
         }
     }
 
@@ -141,19 +159,21 @@ class ActivityDetailViewModel: ObservableObject {
         // Only fetch if data is not already loaded (e.g., from cache)
         guard heartRateData.isEmpty else { return } // Assuming heartRateData is always populated if streams are processed
 
-        isLoading = true
+        isLoadingGraphData = true // Iniciar la carga de datos de gráficos
+        errorMessage = nil // Limpiar cualquier error previo
         
         stravaService.getActivityStreams(activityId: activity.id) { [weak self] result in
             DispatchQueue.main.async {
-                self?.isLoading = false
+                guard let self = self else { return }
+                self.isLoadingGraphData = false // Finalizar la carga de datos de gráficos
                 switch result {
                 case .success(let streamsDictionary):
-                    self?.process(streamsDictionary: streamsDictionary)
+                    self.processAndCalculateGraphData(streamsDictionary: streamsDictionary)
                 case .failure(let error):
                     if let stravaAuthError = error as? StravaAuthError, case .apiError(let message) = stravaAuthError {
-                        self?.errorMessage = message
+                        self.errorMessage = message
                     } else {
-                        self?.errorMessage = "Failed to fetch activity streams: \(error.localizedDescription)"
+                        self.errorMessage = "Failed to fetch activity streams: \(error.localizedDescription)"
                     }
                     print("Failed to fetch activity streams: \(error.localizedDescription)")
                 }
@@ -161,12 +181,16 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
     
-    private func process(streamsDictionary: [String: Stream]) {
+    private func processAndCalculateGraphData(streamsDictionary: [String: Stream]) {
+        // Guardar streams en caché
+        let cacheManager = CacheManager()
+        cacheManager.saveActivityStreams(activityId: activity.id, streams: streamsDictionary)
+
         guard let timeStream = streamsDictionary["time"]?.data.compactMap({ $0 as? Double }) else { return }
 
         if let hrStream = streamsDictionary["heartrate"]?.data.compactMap({ $0 as? Double }) {
             let rawHR = zip(timeStream, hrStream).map { ChartDataPoint(time: Int($0), value: $1) }
-            self.heartRateData = movingMedian(data: rawHR, windowSize: 31)
+            self.heartRateData = rawHR
         }
         
         if let cadenceStream = streamsDictionary["cadence"]?.data.compactMap({ $0 as? Double }) {
@@ -207,7 +231,6 @@ class ActivityDetailViewModel: ObservableObject {
             performanceByGrade: self.performanceByGrade,
             efficiencyIndex: self.efficiencyIndex
         )
-        let cacheManager = CacheManager()
         cacheManager.saveProcessedMetrics(activityId: activity.id, metrics: processedMetrics)
     }
 

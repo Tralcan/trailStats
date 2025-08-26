@@ -95,7 +95,13 @@ struct ActivityDetailView: View {
     
     @ViewBuilder
     private var interactiveChartSection: some View {
-        if !viewModel.isLoading && !viewModel.altitudeData.isEmpty {
+        if viewModel.isLoadingGraphData {
+            ProgressView("Cargando gráficos...")
+                .padding()
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(12)
+        } else if !viewModel.altitudeData.isEmpty {
             InteractiveChartView(
                 altitudeData: viewModel.altitudeData,
                 overlayData: [
@@ -145,12 +151,20 @@ struct ActivityDetailView: View {
                     headerView
                     trailKPIsSection
 
-                    if let distribution = viewModel.heartRateZoneDistribution {
-                        HeartRateZoneView(distribution: distribution)
-                    }
+                    if viewModel.isLoadingGraphData {
+                        ProgressView("Calculando zonas de FC y rendimiento por pendiente...")
+                            .padding()
+                            .frame(maxWidth: .infinity, minHeight: 150)
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(12)
+                    } else {
+                        if let distribution = viewModel.heartRateZoneDistribution {
+                            HeartRateZoneView(distribution: distribution)
+                        }
 
-                    if !viewModel.performanceByGrade.isEmpty {
-                        PerformanceByGradeView(performanceData: viewModel.performanceByGrade)
+                        if !viewModel.performanceByGrade.isEmpty {
+                            PerformanceByGradeView(performanceData: viewModel.performanceByGrade)
+                        }
                     }
 
                     segmentsSection
