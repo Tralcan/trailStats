@@ -60,7 +60,10 @@ struct ActivityDetailView: View {
                 .foregroundColor(.primary)
 
             VStack(spacing: 16) {
-                KPICardView(title: "Ritmo Ajustado (GAP)", value: viewModel.gradeAdjustedPace?.toPaceFormat(), unit: "", icon: "speedometer", color: .cyan)
+                HStack(spacing: 16) {
+                    KPICardView(title: "Ritmo Ajustado (GAP)", value: viewModel.gradeAdjustedPace?.toPaceFormat(), unit: "", icon: "speedometer", color: .cyan)
+                    KPICardView(title: "Desacoplamiento Cardíaco", value: viewModel.cardiacDecoupling.map { String(format: "%.1f", $0) }, unit: "%", icon: "heart.slash.circle.fill", color: (viewModel.cardiacDecoupling ?? 0) > 10 ? .red : ((viewModel.cardiacDecoupling ?? 0) > 5 ? .yellow : .green))
+                }
                 
                 HStack(spacing: 16) {
                     KPICardView(title: "Vel. Vertical (Ascenso)", value: viewModel.verticalSpeedVAM.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
@@ -71,8 +74,6 @@ struct ActivityDetailView: View {
                     KPICardView(title: "Potencia Normalizada", value: viewModel.normalizedPower.map { String(format: "%.0f", $0) }, unit: "W", icon: "bolt.circle.fill", color: .green)
                     KPICardView(title: "Índice Eficiencia", value: viewModel.efficiencyIndex.map { String(format: "%.3f", $0) }, unit: "", icon: "leaf.arrow.triangle.circlepath", color: .mint)
                 }
-
-                KPICardView(title: "Desacoplamiento Cardíaco", value: viewModel.cardiacDecoupling.map { String(format: "%.1f", $0) }, unit: "%", icon: "heart.slash.circle.fill", color: (viewModel.cardiacDecoupling ?? 0) > 10 ? .red : ((viewModel.cardiacDecoupling ?? 0) > 5 ? .yellow : .green))
             }
         }
     }

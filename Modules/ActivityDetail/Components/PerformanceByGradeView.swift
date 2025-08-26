@@ -18,6 +18,8 @@ struct PerformanceByGradeView: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 Text("VAM")
                     .frame(maxWidth: .infinity, alignment: .trailing)
+                Text("Cadencia")
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 Text("Tiempo")
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -39,6 +41,9 @@ struct PerformanceByGradeView: View {
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         
                         Text(data.verticalSpeed != nil ? String(format: "%.0f", data.verticalSpeed!) : "--")
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+
+                        Text(data.averageCadence != nil ? String(format: "%.0f", data.averageCadence!) : "--")
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         
                         Text(Int(data.time).toHoursMinutesSeconds())

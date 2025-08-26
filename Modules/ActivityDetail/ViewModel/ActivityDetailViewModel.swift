@@ -178,16 +178,18 @@ class ActivityDetailViewModel: ObservableObject {
     }
 
     private func calculatePerformanceByGrade() {
-        guard distanceData.count > 1, distanceData.count == altitudeData.count else {
+        guard distanceData.count > 1, distanceData.count == altitudeData.count, !cadenceData.isEmpty else {
             self.performanceByGrade = []
             return
         }
 
         let bucketLabels = ["<-15%", "-15% to -10%", "-10% to -5%", "-5% to 0%", "0% to 5%", "5% to 10%", "10% to 15%", ">15%"]
-        var bucketedData: [String: (distance: Double, time: TimeInterval, elevation: Double)] = [:]
+        var bucketedData: [String: (distance: Double, time: TimeInterval, elevation: Double, weightedCadenceSum: Double, timeWithCadence: TimeInterval)] = [:]
         for label in bucketLabels {
-            bucketedData[label] = (0, 0, 0)
+            bucketedData[label] = (0, 0, 0, 0, 0)
         }
+
+        let cadenceDict = Dictionary(uniqueKeysWithValues: cadenceData.map { ($0.time, $0.value) })
 
         for i in 1..<distanceData.count {
             let segmentDistance = distanceData[i].value - distanceData[i-1].value
@@ -211,6 +213,11 @@ class ActivityDetailViewModel: ObservableObject {
             bucketedData[bucketLabel]?.distance += segmentDistance
             bucketedData[bucketLabel]?.time += segmentTime
             bucketedData[bucketLabel]?.elevation += segmentAltitude
+            
+            if let cadence = cadenceDict[distanceData[i].time] {
+                bucketedData[bucketLabel]?.weightedCadenceSum += cadence * segmentTime
+                bucketedData[bucketLabel]?.timeWithCadence += segmentTime
+            }
         }
 
         var performanceData: [PerformanceByGrade] = []
@@ -221,7 +228,9 @@ class ActivityDetailViewModel: ObservableObject {
                         gradeBucket: label,
                         distance: data.distance,
                         time: data.time,
-                        elevation: data.elevation
+                        elevation: data.elevation,
+                        weightedCadenceSum: data.weightedCadenceSum,
+                        timeWithCadence: data.timeWithCadence
                     )
                 )
             }

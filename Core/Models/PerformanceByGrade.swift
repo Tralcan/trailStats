@@ -7,6 +7,8 @@ struct PerformanceByGrade: Identifiable {
     let distance: Double
     let time: TimeInterval
     let elevation: Double
+    let weightedCadenceSum: Double
+    let timeWithCadence: TimeInterval
     
     var averagePace: Double {
         guard distance > 0, time > 0 else { return 0 }
@@ -17,5 +19,10 @@ struct PerformanceByGrade: Identifiable {
         guard elevation > 0, time > 0 else { return nil }
         let timeInHours = time / 3600.0
         return elevation / timeInHours
+    }
+    
+    var averageCadence: Double? {
+        guard timeWithCadence > 0 else { return nil }
+        return weightedCadenceSum / timeWithCadence
     }
 }
