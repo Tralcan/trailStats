@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents the distribution of time spent in different heart rate zones during an activity.
-struct HeartRateZoneDistribution {
+struct HeartRateZoneDistribution: Codable {
     let timeInZone1: TimeInterval
     let timeInZone2: TimeInterval
     let timeInZone3: TimeInterval

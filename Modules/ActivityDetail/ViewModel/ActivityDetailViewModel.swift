@@ -1,7 +1,7 @@
 import SwiftUI
 
 // NUEVO: Estructura para representar segmentos clave de la actividad (subidas, bajadas).
-struct ActivitySegment: Identifiable, Hashable {
+struct ActivitySegment: Identifiable, Hashable, Codable {
     let id = UUID()
     let type: SegmentType
     let startDistance: Double
@@ -14,7 +14,7 @@ struct ActivitySegment: Identifiable, Hashable {
     let averageHeartRate: Double?
     let verticalSpeed: Double? // m/h, solo para subidas
 
-    enum SegmentType: String {
+    enum SegmentType: String, Codable {
         case climb = "Subida"
         case descent = "Bajada"
     }
@@ -74,9 +74,24 @@ class ActivityDetailViewModel: ObservableObject {
     init(activity: Activity) {
         self.activity = activity
         let cacheManager = CacheManager()
+        
+        // Load AI Coach observation from cache
         if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
             self.aiCoachObservation = cachedText
             self.aiCoachLoading = false
+        }
+
+        // Load processed metrics from cache
+        if let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
+            self.verticalSpeedVAM = cachedMetrics.verticalSpeedVAM
+            self.cardiacDecoupling = cachedMetrics.cardiacDecoupling
+            self.climbSegments = cachedMetrics.climbSegments
+            self.descentVerticalSpeed = cachedMetrics.descentVerticalSpeed
+            self.normalizedPower = cachedMetrics.normalizedPower
+            self.gradeAdjustedPace = cachedMetrics.gradeAdjustedPace
+            self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
+            self.performanceByGrade = cachedMetrics.performanceByGrade
+            self.efficiencyIndex = cachedMetrics.efficiencyIndex
         }
     }
 
@@ -114,6 +129,9 @@ class ActivityDetailViewModel: ObservableObject {
     }
     
     func fetchActivityStreams() {
+        // Only fetch if data is not already loaded (e.g., from cache)
+        guard heartRateData.isEmpty else { return } // Assuming heartRateData is always populated if streams are processed
+
         isLoading = true
         
         stravaService.getActivityStreams(activityId: activity.id) { [weak self] result in
@@ -167,6 +185,21 @@ class ActivityDetailViewModel: ObservableObject {
         self.calculatePace()
 
         self.calculateTrailKPIs()
+
+        // Save processed metrics to cache
+        let processedMetrics = ActivityProcessedMetrics(
+            verticalSpeedVAM: self.verticalSpeedVAM,
+            cardiacDecoupling: self.cardiacDecoupling,
+            climbSegments: self.climbSegments,
+            descentVerticalSpeed: self.descentVerticalSpeed,
+            normalizedPower: self.normalizedPower,
+            gradeAdjustedPace: self.gradeAdjustedPace,
+            heartRateZoneDistribution: self.heartRateZoneDistribution,
+            performanceByGrade: self.performanceByGrade,
+            efficiencyIndex: self.efficiencyIndex
+        )
+        let cacheManager = CacheManager()
+        cacheManager.saveProcessedMetrics(activityId: activity.id, metrics: processedMetrics)
     }
 
     // MARK: - Métodos de Cálculo para Trail Running
@@ -258,6 +291,7 @@ class ActivityDetailViewModel: ObservableObject {
             if let data = bucketedData[label], data.time > 1.0 {
                 performanceData.append(
                     PerformanceByGrade(
+                        id: UUID(), // Add missing ID
                         gradeBucket: label,
                         distance: data.distance,
                         time: data.time,

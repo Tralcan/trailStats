@@ -55,6 +55,35 @@ class CacheManager {
         return try? String(contentsOf: fileURL, encoding: .utf8)
     }
 
+    // Guarda las métricas procesadas de una actividad
+    func saveProcessedMetrics(activityId: Int, metrics: ActivityProcessedMetrics) {
+        guard let folder = summaryFolderURL(for: activityId) else { return }
+        let fileURL = folder.appendingPathComponent("processed_metrics.json")
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(metrics)
+            try data.write(to: fileURL, options: .atomic)
+            print("Saved processed metrics for activity \(activityId)")
+        } catch {
+            print("Error saving processed metrics for activity \(activityId): \(error.localizedDescription)")
+        }
+    }
+
+    // Carga las métricas procesadas de una actividad
+    func loadProcessedMetrics(activityId: Int) -> ActivityProcessedMetrics? {
+        guard let folder = summaryFolderURL(for: activityId) else { return nil }
+        let fileURL = folder.appendingPathComponent("processed_metrics.json")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let decoder = JSONDecoder()
+            return try decoder.decode(ActivityProcessedMetrics.self, from: data)
+        } catch {
+            print("Error loading processed metrics for activity \(activityId): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     // MARK: - Summaries & Chart Images
 
     private var summariesDirectoryURL: URL? {

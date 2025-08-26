@@ -1,8 +1,8 @@
 import Foundation
 
 /// Represents performance metrics for a specific grade bucket.
-struct PerformanceByGrade: Identifiable {
-    let id = UUID()
+struct PerformanceByGrade: Identifiable, Codable {
+    let id: UUID
     let gradeBucket: String
     let distance: Double
     let time: TimeInterval
