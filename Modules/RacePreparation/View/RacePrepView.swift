@@ -1,31 +1,204 @@
-
 import SwiftUI
-
 struct RacePrepView: View {
     @StateObject private var viewModel = RacePrepViewModel()
+    @State private var showingAddRaceSheet = false
+    @State private var selectedRace: Race? = nil // New state for selected race
+    @State private var showingRaceDetailSheet = false // New state for detail sheet
 
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Image(systemName: "flag.checkered.2.crossed")
-                    .font(.system(size: 60))
-                    .foregroundColor(.secondary)
-                
-                Text("Race Preparation")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Text("The AI-powered race preparation module is coming soon!")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                if viewModel.races.isEmpty {
+                    Image(systemName: "flag.checkered.2.crossed")
+                        .font(.system(size: 60))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Race Preparation")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    Text("The AI-powered race preparation module is coming soon!")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    List {
+                        ForEach(viewModel.races) { race in
+                            Button(action: {
+                                selectedRace = race
+                                showingRaceDetailSheet = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "medal.fill") // Icono de medalla grande
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 40, height: 40) // Ajustar tamaño
+                                        .foregroundColor(.yellow)
+                                        .padding(.trailing, 8)
+
+                                    VStack(alignment: .leading) {
+                                        HStack {
+                                            Text(race.name)
+                                                .font(.headline)
+                                                .foregroundColor(.primary)
+                                            Spacer()
+                                            Text("\(daysRemaining(for: race.date)) días") // Días restantes
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        HStack {
+                                            Image(systemName: "location.fill")
+                                                .foregroundColor(.red)
+                                            Text("\(String(format: "%.2f", race.distance / 1000)) km")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                            Spacer()
+                                            Image(systemName: "mountain.2.fill")
+                                                .foregroundColor(.green)
+                                            Text("\(String(format: "%.0f", race.elevationGain)) m")
+                                                .font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 4) // Ajustar padding vertical
+                            }
+                        }
+                    }
+                }
             }
             .padding()
             .navigationTitle("Races")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Agregar Carrera") {
+                        showingAddRaceSheet = true
+                    }
+                }
+            }
+            .sheet(isPresented: $showingAddRaceSheet) {
+                AddRaceView(viewModel: viewModel, isShowingSheet: $showingAddRaceSheet)
+            }
+        }
+    }
+
+    private func daysRemaining(for date: Date) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let raceDay = calendar.startOfDay(for: date)
+        let components = calendar.dateComponents([.day], from: today, to: raceDay)
+        return components.day ?? 0
+    }
+} // Cierre de RacePrepView
+
+#Preview {
+    RacePrepView()
+}
+
+struct AddRaceView: View {
+    @ObservedObject var viewModel: RacePrepViewModel
+    @Binding var isShowingSheet: Bool
+
+    @State private var raceName: String = ""
+    @State private var raceDistance: String = ""
+    @State private var raceElevationGain: String = ""
+    @State private var raceDate: Date = Date() // New state for race date
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Detalles de la Carrera")) {
+                    HStack {
+                        Image(systemName: "medal.fill") // Icono de medalla para el nombre de la carrera
+                            .foregroundColor(.yellow) // Color amarillo para la medalla
+                        TextField("Nombre de la Carrera", text: $raceName)
+                            .autocorrectionDisabled()
+                    }
+                    HStack {
+                        Image(systemName: "location.fill") // Usar el mismo icono para distancia
+                            .foregroundColor(.red)
+                        TextField("Distancia (kilómetros)", text: $raceDistance)
+                            .keyboardType(.decimalPad)
+                    }
+                    HStack {
+                        Image(systemName: "mountain.2.fill")
+                            .foregroundColor(.green)
+                        TextField("Desnivel Acumulado (metros)", text: $raceElevationGain)
+                            .keyboardType(.decimalPad)
+                    }
+                    HStack {
+                        Image(systemName: "clock.fill") // Icono de reloj para la fecha
+                            .foregroundColor(.blue)
+                        DatePicker("Fecha de la Carrera", selection: $raceDate, displayedComponents: .date)
+                    }
+                }
+            }
+            .navigationTitle("Nueva Carrera")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancelar") {
+                        isShowingSheet = false
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Guardar") {
+                        if let distanceKm = Double(raceDistance),
+                           let elevationGain = Double(raceElevationGain) {
+                            // Convertir kilómetros a metros antes de guardar
+                            viewModel.addRace(name: raceName, distance: distanceKm * 1000, elevationGain: elevationGain, date: raceDate)
+                            isShowingSheet = false
+                        }
+                    }
+                    .disabled(raceName.isEmpty || raceDistance.isEmpty || raceElevationGain.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+struct RaceDetailView: View {
+    let race: Race
+    @Binding var isShowingSheet: Bool
+
+    var body: some View {
+        NavigationView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text(race.name)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.bottom, 10)
+
+                HStack {
+                    Image(systemName: "location.fill")
+                        .foregroundColor(.red)
+                    Text("\(String(format: "%.2f", race.distance / 1000)) km")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                HStack {
+                    Image(systemName: "mountain.2.fill")
+                        .foregroundColor(.green)
+                    Text("\(String(format: "%.0f", race.elevationGain)) m")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+            .padding()
+            .navigationTitle(race.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cerrar") {
+                        isShowingSheet = false
+                    }
+                }
+            }
         }
     }
 }
 
 #Preview {
-    RacePrepView()
+    RaceDetailView(race: Race(name: "Sample Race", distance: 10000, elevationGain: 500, date: Date()), isShowingSheet: .constant(true))
 }
