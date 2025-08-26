@@ -92,6 +92,7 @@ struct TimeSeriesChartView: View {
                 .chartXScale(domain: [0, (data.last?.time ?? 0) / 60])
                 .chartYScale(domain: min...max)
             } else {
+                let max = data.map { $0.value }.max() ?? 0
                 Chart(data) { dataPoint in
                     LineMark(
                         x: .value("Time", dataPoint.time / 60),
@@ -121,6 +122,7 @@ struct TimeSeriesChartView: View {
                     }
                 }
                 .chartXScale(domain: [0, (data.last?.time ?? 0) / 60])
+                .chartYScale(domain: 0...(max * 1.1))
             }
         }
         .background(Color(.secondarySystemBackground))

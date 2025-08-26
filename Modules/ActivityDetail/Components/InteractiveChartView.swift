@@ -81,9 +81,9 @@ struct InteractiveChartView: View {
                     data: altitudeData,
                     title: "Perfil de Altimetría",
                     yAxisLabel: "m",
-                    color: .gray,
+                    color: .purple,
                     showAverage: false,
-                    normalize: false // La altitud no se debe normalizar
+                    normalize: false
                 )
                 .frame(height: 120)
             } else {
