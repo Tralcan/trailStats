@@ -32,19 +32,6 @@ struct TimeSeriesChartView: View {
         }
     }
 
-    var unit: String {
-        switch title {
-        case "Cadence": return "RPM"
-        case "Power": return "W"
-        case "Heart Rate": return "BPM"
-        case "Vertical Energy Cost": return "W/m"
-        case "Vertical Speed": return "km/h"
-        case "Stride Length": return "m"
-        case "Pace": return "min/km"
-        default: return ""
-        }
-    }
-
     var body: some View {
         VStack(alignment: .leading) {
             if !title.isEmpty {
@@ -53,7 +40,7 @@ struct TimeSeriesChartView: View {
                         .font(.headline)
                     Spacer()
                     if showAverage {
-                        Text("Avg: " + String(format: "%.2f", averageValue) + " \(unit)")
+                        Text("Avg: " + String(format: "%.2f", averageValue) + " \(yAxisLabel)")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                     }
