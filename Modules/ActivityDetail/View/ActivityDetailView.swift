@@ -143,7 +143,6 @@ struct ActivityDetailView: View {
                         .fontWeight(.bold)
                     
                     headerView
-                    aiCoachSection // MOVIDO ARRIBA
                     trailKPIsSection
 
                     if let distribution = viewModel.heartRateZoneDistribution {
@@ -156,7 +155,8 @@ struct ActivityDetailView: View {
 
                     segmentsSection
                     interactiveChartSection
-                    shareButtonSection // MOVIDO ABAJO
+                    aiCoachSection // NEW POSITION
+                    shareButtonSection
                 }
                 .padding()
             }
@@ -168,9 +168,7 @@ struct ActivityDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            if viewModel.heartRateData.isEmpty {
-                viewModel.fetchActivityStreams()
-            }
+            viewModel.fetchActivityStreams()
         }
         .onChange(of: viewModel.gpxDataToShare) { gpxData in
             if gpxData != nil {

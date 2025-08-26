@@ -98,13 +98,22 @@ class ActivityDetailViewModel: ObservableObject {
     // MARK: - AI Coach Interaction
 
     func getAICoachObservation() {
-        // Prevent fetching if already loading or if a successful observation exists.
+        // If already loading, do nothing.
         if aiCoachLoading { return }
-        if aiCoachObservation != nil && aiCoachError == nil { return }
 
-        // Reset state for a new fetch (or a retry on error)
+        let cacheManager = CacheManager()
+        // Check cache again to ensure aiCoachObservation is up-to-date
+        if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
+            self.aiCoachObservation = cachedText // Ensure ViewModel property is set
+            self.aiCoachLoading = false // Ensure loading state is off
+            self.aiCoachError = nil // Clear any error
+            return // Data loaded from cache, no need to fetch
+        }
+
+        // If we reach here, it means aiCoachObservation is nil (no cached data or previous fetch failed)
+        // Set loading state
         aiCoachLoading = true
-        aiCoachError = nil
+        aiCoachError = nil // Clear previous error if retrying
 
         // 1. Gather all necessary KPIs
         let kpis = gatherActivityKPIs()
