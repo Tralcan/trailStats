@@ -79,6 +79,39 @@ class ActivityDetailViewModel: ObservableObject {
             self.aiCoachLoading = false
         }
     }
+
+    // MARK: - AI Coach Interaction
+
+    func getAICoachObservation() {
+        // Prevent fetching if already loading or if a successful observation exists.
+        if aiCoachLoading { return }
+        if aiCoachObservation != nil && aiCoachError == nil { return }
+
+        // Reset state for a new fetch (or a retry on error)
+        aiCoachLoading = true
+        aiCoachError = nil
+
+        // 1. Gather all necessary KPIs
+        let kpis = gatherActivityKPIs()
+        
+        // 2. Call the service with the collected KPIs
+        GeminiCoachService.fetchObservation(kpis: kpis) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+
+                self.aiCoachLoading = false
+                switch result {
+                case .success(let observation):
+                    self.aiCoachObservation = observation
+                    // Cache the successful observation
+                    let cacheManager = CacheManager()
+                    cacheManager.saveAICoachText(activityId: self.activity.id, text: observation)
+                case .failure(let error):
+                    self.aiCoachError = "Análisis del IA Coach no disponible: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
     
     func fetchActivityStreams() {
         isLoading = true
@@ -686,6 +719,73 @@ class ActivityDetailViewModel: ObservableObject {
         return result
     }
     
+    // MARK: - AI Coach Data Collection
+
+    private func gatherActivityKPIs() -> [String: String] {
+        var kpis: [String: String] = [:]
+
+        // Basic Activity Data
+        kpis["Nombre de la Actividad"] = activity.name
+        kpis["Fecha"] = Formatters.dateFormatter.string(from: activity.date)
+        kpis["Distancia"] = Formatters.formatDistance(activity.distance)
+        kpis["Tiempo en Movimiento"] = Formatters.formatTime(Int(activity.duration))
+        kpis["Desnivel Positivo"] = Formatters.formatElevation(activity.elevationGain)
+
+        // Main KPIs from Activity object
+        if let avgHR = activity.averageHeartRate {
+            kpis["Frecuencia Cardíaca Promedio"] = Formatters.formatHeartRate(avgHR)
+        }
+        if let avgCadence = activity.averageCadence {
+            kpis["Cadencia Promedio"] = Formatters.formatCadence(avgCadence)
+        }
+        if let avgPower = activity.averagePower {
+            kpis["Potencia Promedio"] = Formatters.formatPower(avgPower)
+        }
+
+        // Calculated KPIs from ViewModel
+        if let vam = verticalSpeedVAM {
+            kpis["VAM (Velocidad de Ascenso Media)"] = Formatters.formatVerticalSpeed(vam)
+        }
+        if let decoupling = cardiacDecoupling {
+            kpis["Desacoplamiento Cardíaco (Ritmo:FC)"] = Formatters.formatDecoupling(decoupling)
+        }
+        if let descentV = descentVerticalSpeed {
+            kpis["Velocidad de Descenso Media"] = Formatters.formatVerticalSpeed(descentV)
+        }
+        if let np = normalizedPower {
+            kpis["Potencia Normalizada (NP)"] = Formatters.formatPower(np)
+        }
+        if let gap = gradeAdjustedPace {
+            kpis["Ritmo Ajustado por Pendiente (GAP)"] = gap.toPaceFormat()
+        }
+        if let efficiency = efficiencyIndex {
+            kpis["Índice de Eficiencia (Velocidad/FC)"] = Formatters.formatEfficiencyIndex(efficiency)
+        }
+
+        // Complex KPIs formatting
+        if let hrZones = heartRateZoneDistribution {
+            let zonesSummary = "Z1: \(Int(hrZones.timeInZone1).toHoursMinutesSeconds()), Z2: \(Int(hrZones.timeInZone2).toHoursMinutesSeconds()), Z3: \(Int(hrZones.timeInZone3).toHoursMinutesSeconds()), Z4: \(Int(hrZones.timeInZone4).toHoursMinutesSeconds()), Z5: \(Int(hrZones.timeInZone5).toHoursMinutesSeconds())"
+            kpis["Distribución de Zonas de FC"] = zonesSummary
+        }
+
+        if !performanceByGrade.isEmpty {
+            let performanceSummary = performanceByGrade.map { performance -> String in
+                "\(performance.gradeBucket): \(performance.averagePace.toPaceFormat())"
+            }.joined(separator: " | ")
+            kpis["Rendimiento por Pendiente"] = performanceSummary
+        }
+        
+        if !climbSegments.isEmpty {
+            let climbs = climbSegments.filter { $0.type == .climb }
+            let climbSummary = climbs.map { "Subida de \(Formatters.formatDistance($0.distance)) al \(Formatters.formatGrade($0.averageGrade))" }.joined(separator: ", ")
+            if !climbSummary.isEmpty {
+                kpis["Segmentos de Subida Clave"] = climbSummary
+            }
+        }
+
+        return kpis
+    }
+
     func shareGPX() {
         isGeneratingGPX = true
         gpxDataToShare = nil
