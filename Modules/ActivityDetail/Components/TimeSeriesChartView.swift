@@ -57,7 +57,8 @@ struct TimeSeriesChartView: View {
                     .interpolationMethod(.catmullRom)
                     AreaMark(
                         x: .value("Time", dataPoint.time / 60),
-                        y: .value(yAxisLabel, dataPoint.value)
+                        yStart: .value(yAxisLabel, min),
+                        yEnd: .value(yAxisLabel, dataPoint.value)
                     )
                     .foregroundStyle(LinearGradient(colors: [color.opacity(0.4), .clear], startPoint: .top, endPoint: .bottom))
                     .interpolationMethod(.catmullRom)
@@ -89,7 +90,8 @@ struct TimeSeriesChartView: View {
                     .interpolationMethod(.catmullRom)
                     AreaMark(
                         x: .value("Time", dataPoint.time / 60),
-                        y: .value(yAxisLabel, dataPoint.value)
+                        yStart: .value(yAxisLabel, 0),
+                        yEnd: .value(yAxisLabel, dataPoint.value)
                     )
                     .foregroundStyle(LinearGradient(colors: [color.opacity(0.4), .clear], startPoint: .top, endPoint: .bottom))
                     .interpolationMethod(.catmullRom)
