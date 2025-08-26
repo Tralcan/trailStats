@@ -116,16 +116,32 @@ struct ActivityDetailView: View {
             )
         }
     }
+    
+    private var shareButtonSection: some View {
+        Button(action: { viewModel.shareGPX() }) {
+            Label("Exportar como GPX", systemImage: "square.and.arrow.up")
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.accentColor)
+        .disabled(viewModel.isGeneratingGPX)
+    }
 
     var body: some View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    Text(viewModel.activity.name)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
                     headerView
+                    aiCoachSection // MOVIDO ARRIBA
                     trailKPIsSection
                     segmentsSection
                     interactiveChartSection
-                    aiCoachSection
+                    shareButtonSection // MOVIDO ABAJO
                 }
                 .padding()
             }
@@ -135,14 +151,6 @@ struct ActivityDetailView: View {
         }
         .navigationTitle(viewModel.activity.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { viewModel.shareGPX() }) {
-                    Image(systemName: "square.and.arrow.up")
-                }
-                .disabled(viewModel.isGeneratingGPX)
-            }
-        }
         .background(Color(.systemGroupedBackground))
         .onAppear {
             if viewModel.heartRateData.isEmpty {
@@ -165,7 +173,6 @@ struct ActivityDetailView: View {
         }
     }
     
-    // CORREGIDO: Vista de carga con fondo oscuro para mejor contraste.
     private var loadingView: some View {
         ZStack {
             Color.black.opacity(0.6).ignoresSafeArea()
@@ -216,7 +223,6 @@ struct ActivityDetailView: View {
     }
 }
 
-// CORREGIDO: Vista de KPI ahora maneja valores opcionales.
 private struct KPICardView: View {
     let title: String
     let value: String?
@@ -248,7 +254,6 @@ private struct KPICardView: View {
     }
 }
 
-// Vista para una fila de segmento
 private struct SegmentRowView: View {
     let segment: ActivitySegment
     
@@ -294,7 +299,6 @@ private struct SegmentRowView: View {
     }
 }
 
-// Las vistas auxiliares para compartir GPX permanecen aquí debajo.
 private class GPXFile: NSObject, UIActivityItemSource {
     let data: Data
     let filename: String

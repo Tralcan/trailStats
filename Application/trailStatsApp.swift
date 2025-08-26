@@ -24,6 +24,7 @@ struct trailStatsApp: App {
                         .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 }
             }
+            .preferredColorScheme(.dark)
         }
     }
 }

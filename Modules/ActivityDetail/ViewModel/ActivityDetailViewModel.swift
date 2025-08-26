@@ -98,7 +98,6 @@ class ActivityDetailViewModel: ObservableObject {
     }
     
     private func process(streamsDictionary: [String: Stream]) {
-        // CORREGIDO: Aceptar el tiempo como Double, que es como viene de la API.
         guard let timeStream = streamsDictionary["time"]?.data.compactMap({ $0 as? Double }) else { return }
 
         if let hrStream = streamsDictionary["heartrate"]?.data.compactMap({ $0 as? Double }) {
@@ -117,7 +116,8 @@ class ActivityDetailViewModel: ObservableObject {
         }
         
         if let altitudeStream = streamsDictionary["altitude"]?.data.compactMap({ $0 as? Double }) {
-            self.altitudeData = zip(timeStream, altitudeStream).map { ChartDataPoint(time: Int($0), value: $1) }
+            let rawAltitude = zip(timeStream, altitudeStream).map { ChartDataPoint(time: Int($0), value: $1) }
+            self.altitudeData = rawAltitude.filter { $0.value.isFinite }
         }
 
         if let distStream = streamsDictionary["distance"]?.data.compactMap({ $0 as? Double }) {
@@ -152,6 +152,7 @@ class ActivityDetailViewModel: ObservableObject {
     }
     
     private func calculateDescentVerticalSpeed() {
+        
         guard !altitudeData.isEmpty else {
             self.descentVerticalSpeed = 0
             return
@@ -502,7 +503,8 @@ class ActivityDetailViewModel: ObservableObject {
                 case .success(let streamsDictionary):
                     if let gpxString = GPXGenerator.generateGPX(from: streamsDictionary, startDate: self?.activity.date ?? Date()) {
                         self?.gpxDataToShare = gpxString.data(using: .utf8)
-                    } else {
+                    }
+                    else {
                         self?.errorMessage = "Failed to generate GPX data."
                     }
                 case .failure(let error):

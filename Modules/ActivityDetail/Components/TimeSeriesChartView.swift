@@ -53,15 +53,9 @@ struct TimeSeriesChartView: View {
                         .font(.headline)
                     Spacer()
                     if showAverage {
-                        if title == "Pace" || title == "Vertical Speed" {
-                            Text("Avg: " + String(format: "%.2f", averageValue) + " \(unit)")
+                        Text("Avg: " + String(format: "%.2f", averageValue) + " \(unit)")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
-                        } else {
-                            Text("Avg: " + String(format: "%.0f", averageValue) + " \(unit)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
                     }
                 }
                 .padding(.horizontal)
