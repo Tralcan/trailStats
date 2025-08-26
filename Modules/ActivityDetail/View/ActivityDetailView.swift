@@ -208,7 +208,7 @@ struct ActivityDetailView: View {
     
     private var aiCoachSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("AI Coach")
+            Text("Análisis IA")
                 .font(.title2).bold()
                 .foregroundColor(.primary)
             
@@ -225,15 +225,25 @@ struct ActivityDetailView: View {
                         .font(.body)
                         .foregroundColor(.primary)
                 } else if let err = viewModel.aiCoachError {
-                    Text("Error: \(err)")
-                        .font(.body)
-                        .foregroundColor(.red)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(err)
+                            .font(.body)
+                            .foregroundColor(.red)
+                        Button("Reintentar Análisis") {
+                            viewModel.getAICoachObservation()
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.accentColor)
+                    }
                 }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.secondarySystemBackground))
             .cornerRadius(12)
+        }
+        .onAppear {
+            viewModel.getAICoachObservation()
         }
     }
 }

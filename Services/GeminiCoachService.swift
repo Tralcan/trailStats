@@ -9,9 +9,8 @@ struct GeminiCoachService {
     static func fetchObservation(kpis: [String: String], completion: @escaping (Result<String, Error>) -> Void) {
         // 1. Define the new system prompt
         let systemPrompt = """
-        Eres un entrenador experto de trail running. Analiza los siguientes datos de una actividad.
-        Estructura tu respuesta en dos partes: primero, tus 'Hallazgos' clave sobre el rendimiento y, segundo, tus 'Sugerencias' para mejorar.
-        Sé breve y conciso, con un máximo de 120 palabras en total. Basa tu análisis únicamente en los datos proporcionados.
+        Eres un entrenador experto de trail running. Analiza los siguientes datos de una actividad y entrega un informe breve y conciso, de no más de 120 palabras. 
+        Comienza con tus hallazgos clave sobre el rendimiento, seguidos de tus sugerencias para mejorar (la cadencia siempre considerala multiplicado por 2). Basa tu análisis únicamente en los datos proporcionados.
         """
 
         // 2. Format the KPIs into a string
