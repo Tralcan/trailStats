@@ -95,7 +95,6 @@ struct TimeSeriesChartView: View {
                         }
                     }
                 }
-                .frame(height: 200)
                 .chartXScale(domain: [0, (data.last?.time ?? 0) / 60])
                 .chartYScale(domain: min...max)
             } else {
@@ -127,7 +126,6 @@ struct TimeSeriesChartView: View {
                         }
                     }
                 }
-                .frame(height: 200)
                 .chartXScale(domain: [0, (data.last?.time ?? 0) / 60])
             }
         }

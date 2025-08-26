@@ -52,39 +52,23 @@ struct ActivityDetailView: View {
         .cornerRadius(12)
     }
     
-    // Sección para los KPIs de Trail Running
+    // Sección de KPIs rediseñada y robusta
     private var trailKPIsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Análisis de Trail")
                 .font(.title2).bold()
                 .foregroundColor(.primary)
 
-            HStack(spacing: 16) {
-                if let vam = viewModel.verticalSpeedVAM {
-                    VStack(alignment: .leading) {
-                        Label("Velocidad Vertical", systemImage: "arrow.up.right.circle.fill")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Text(String(format: "%.0f m/h", vam))
-                            .font(.title).bold()
-                            .foregroundColor(.orange)
-                    }
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    KPICardView(title: "Vel. Vertical (Ascenso)", value: viewModel.verticalSpeedVAM.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
+                    KPICardView(title: "Vel. Vertical (Descenso)", value: viewModel.descentVerticalSpeed.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
                 }
-                Spacer()
-                if let decoupling = viewModel.cardiacDecoupling {
-                    VStack(alignment: .leading) {
-                        Label("Desacoplamiento", systemImage: "heart.slash.circle.fill")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        Text(String(format: "%.1f %%", decoupling))
-                            .font(.title).bold()
-                            .foregroundColor(decoupling > 10 ? .red : (decoupling > 5 ? .yellow : .green))
-                    }
+                HStack(spacing: 16) {
+                    KPICardView(title: "Potencia Normalizada", value: viewModel.normalizedPower.map { String(format: "%.0f", $0) }, unit: "W", icon: "bolt.circle.fill", color: .green)
+                    KPICardView(title: "Desacoplamiento", value: viewModel.cardiacDecoupling.map { String(format: "%.1f", $0) }, unit: "%", icon: "heart.slash.circle.fill", color: (viewModel.cardiacDecoupling ?? 0) > 10 ? .red : ((viewModel.cardiacDecoupling ?? 0) > 5 ? .yellow : .green))
                 }
             }
-            .padding()
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
         }
     }
 
@@ -111,17 +95,23 @@ struct ActivityDetailView: View {
                 overlayData: [
                     "Ritmo": viewModel.paceData,
                     "Frec. Cardíaca": viewModel.heartRateData,
-                    "Cadencia": viewModel.cadenceData
+                    "Cadencia": viewModel.cadenceData,
+                    "Potencia": viewModel.powerData,
+                    "Zancada": viewModel.strideLengthData
                 ],
                 overlayColors: [
                     "Ritmo": .purple,
                     "Frec. Cardíaca": .red,
-                    "Cadencia": .blue
+                    "Cadencia": .blue,
+                    "Potencia": .green,
+                    "Zancada": .orange
                 ],
                 overlayUnits: [
                     "Ritmo": "min/km",
                     "Frec. Cardíaca": "BPM",
-                    "Cadencia": "spm"
+                    "Cadencia": "spm",
+                    "Potencia": "W",
+                    "Zancada": "m"
                 ]
             )
         }
@@ -175,12 +165,13 @@ struct ActivityDetailView: View {
         }
     }
     
+    // CORREGIDO: Vista de carga con fondo oscuro para mejor contraste.
     private var loadingView: some View {
         ZStack {
-            Color.black.opacity(0.4).ignoresSafeArea()
+            Color.black.opacity(0.6).ignoresSafeArea()
             VStack(spacing: 16) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .accentColor))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(2)
                 Text("Analizando actividad...")
                     .font(.headline)
@@ -188,7 +179,7 @@ struct ActivityDetailView: View {
                     .padding(.top, 8)
             }
             .padding(32)
-            .background(Color(.secondarySystemBackground))
+            .background(Material.ultraThinMaterial)
             .cornerRadius(16)
         }
     }
@@ -222,6 +213,38 @@ struct ActivityDetailView: View {
             .background(Color(.secondarySystemBackground))
             .cornerRadius(12)
         }
+    }
+}
+
+// CORREGIDO: Vista de KPI ahora maneja valores opcionales.
+private struct KPICardView: View {
+    let title: String
+    let value: String?
+    let unit: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: icon)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            HStack(alignment: .firstTextBaseline) {
+                Text(value ?? "--")
+                    .font(.title2).bold()
+                    .foregroundColor(color)
+                if value != nil {
+                    Text(unit)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
     }
 }
 
