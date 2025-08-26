@@ -18,6 +18,7 @@ struct Activity: Identifiable, Codable {
     let averageHeartRate: Double?
     let averageCadence: Double?
     let averagePower: Double?
+    let gradeAdjustedPace: Double?
     
     // Location Data
     let startCoordinate: CLLocationCoordinate2D?
@@ -36,6 +37,7 @@ struct Activity: Identifiable, Codable {
         case averagePower = "average_watts"
         case startCoordinate = "start_latlng"
         case polyline = "map"
+        case gradeAdjustedPace = "grade_adjusted_pace"
     }
     
     enum MapKeys: String, CodingKey {
@@ -54,6 +56,7 @@ struct Activity: Identifiable, Codable {
         averageHeartRate = try container.decodeIfPresent(Double.self, forKey: .averageHeartRate)
         averageCadence = try container.decodeIfPresent(Double.self, forKey: .averageCadence)
         averagePower = try container.decodeIfPresent(Double.self, forKey: .averagePower)
+        gradeAdjustedPace = try container.decodeIfPresent(Double.self, forKey: .gradeAdjustedPace)
         
         if let latlng = try container.decodeIfPresent([Double].self, forKey: .startCoordinate), latlng.count == 2 {
             startCoordinate = CLLocationCoordinate2D(latitude: latlng[0], longitude: latlng[1])
@@ -80,6 +83,7 @@ struct Activity: Identifiable, Codable {
         try container.encodeIfPresent(averageHeartRate, forKey: .averageHeartRate)
         try container.encodeIfPresent(averageCadence, forKey: .averageCadence)
         try container.encodeIfPresent(averagePower, forKey: .averagePower)
+        try container.encodeIfPresent(gradeAdjustedPace, forKey: .gradeAdjustedPace)
         
         if let coordinate = startCoordinate {
             try container.encode([coordinate.latitude, coordinate.longitude], forKey: .startCoordinate)

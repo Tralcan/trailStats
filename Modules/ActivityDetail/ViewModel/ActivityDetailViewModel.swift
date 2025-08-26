@@ -64,6 +64,8 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var climbSegments: [ActivitySegment] = []
     @Published var descentVerticalSpeed: Double?
     @Published var normalizedPower: Double?
+    @Published var gradeAdjustedPace: Double?
+    @Published var heartRateZoneDistribution: HeartRateZoneDistribution?
 
     private let stravaService = StravaService()
     
@@ -140,6 +142,105 @@ class ActivityDetailViewModel: ObservableObject {
         calculateNormalizedPower()
         calculateCardiacDecoupling()
         analyzeAndSetSegments()
+        calculateGradeAdjustedPace()
+        calculateHeartRateZoneDistribution()
+    }
+
+    private func calculateHeartRateZoneDistribution() {
+        guard !heartRateData.isEmpty else {
+            self.heartRateZoneDistribution = nil
+            return
+        }
+
+        // TODO: This should be user-configurable in the future.
+        let maxHeartRate = 190.0
+
+        let zoneBoundaries = [
+            0.0, // Zone 1 start
+            maxHeartRate * 0.6, // Zone 2 start
+            maxHeartRate * 0.7, // Zone 3 start
+            maxHeartRate * 0.8, // Zone 4 start
+            maxHeartRate * 0.9, // Zone 5 start
+            Double.infinity // Zone 5 end
+        ]
+
+        var timeInZones: [TimeInterval] = Array(repeating: 0.0, count: 5)
+
+        for i in 1..<heartRateData.count {
+            let previousTime = heartRateData[i-1].time
+            let currentTime = heartRateData[i].time
+            let segmentTime = TimeInterval(currentTime - previousTime)
+
+            // Use the average HR in the segment to determine the zone
+            let avgHeartRateInSegment = (heartRateData[i-1].value + heartRateData[i].value) / 2.0
+
+            if avgHeartRateInSegment < zoneBoundaries[1] {
+                timeInZones[0] += segmentTime
+            } else if avgHeartRateInSegment < zoneBoundaries[2] {
+                timeInZones[1] += segmentTime
+            } else if avgHeartRateInSegment < zoneBoundaries[3] {
+                timeInZones[2] += segmentTime
+            } else if avgHeartRateInSegment < zoneBoundaries[4] {
+                timeInZones[3] += segmentTime
+            } else {
+                timeInZones[4] += segmentTime
+            }
+        }
+
+        self.heartRateZoneDistribution = HeartRateZoneDistribution(
+            timeInZone1: timeInZones[0],
+            timeInZone2: timeInZones[1],
+            timeInZone3: timeInZones[2],
+            timeInZone4: timeInZones[3],
+            timeInZone5: timeInZones[4]
+        )
+    }
+
+    private func calculateGradeAdjustedPace() {
+        guard distanceData.count > 1,
+              distanceData.count == altitudeData.count else {
+            self.gradeAdjustedPace = nil
+            return
+        }
+
+        var equivalentTime: Double = 0
+        
+        for i in 1..<distanceData.count {
+            let dist_prev = distanceData[i-1].value
+            let dist_curr = distanceData[i].value
+            let alt_prev = altitudeData[i-1].value
+            let alt_curr = altitudeData[i].value
+            let time_prev = distanceData[i-1].time
+            let time_curr = distanceData[i].time
+
+            let segmentDistance = dist_curr - dist_prev
+            let segmentAltitudeChange = alt_curr - alt_prev
+            let segmentTime = time_curr - time_prev
+
+            guard segmentDistance > 0, segmentTime > 0 else { continue }
+
+            let grade = segmentAltitudeChange / segmentDistance
+            
+            var cost: Double
+            if grade >= 0 { // Uphill or flat
+                cost = 1.0 + 3.5 * grade
+            } else { // Downhill
+                cost = 1.0 + 1.8 * grade
+            }
+            
+            if cost < 0.3 { cost = 0.3 }
+
+            equivalentTime += Double(segmentTime) * cost
+        }
+
+        guard activity.distance > 0 else {
+            self.gradeAdjustedPace = nil
+            return
+        }
+        
+        let gapInSecondsPerKm = (equivalentTime / activity.distance) * 1000
+        
+        self.gradeAdjustedPace = gapInSecondsPerKm / 60.0
     }
 
     private func calculateVerticalSpeedVAM() {

@@ -61,6 +61,9 @@ struct ActivityDetailView: View {
 
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
+                    KPICardView(title: "Ritmo Ajustado (GAP)", value: viewModel.gradeAdjustedPace?.toPaceFormat(), unit: "", icon: "speedometer", color: .cyan)
+                }
+                HStack(spacing: 16) {
                     KPICardView(title: "Vel. Vertical (Ascenso)", value: viewModel.verticalSpeedVAM.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
                     KPICardView(title: "Vel. Vertical (Descenso)", value: viewModel.descentVerticalSpeed.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
                 }
@@ -139,6 +142,11 @@ struct ActivityDetailView: View {
                     headerView
                     aiCoachSection // MOVIDO ARRIBA
                     trailKPIsSection
+
+                    if let distribution = viewModel.heartRateZoneDistribution {
+                        HeartRateZoneView(distribution: distribution)
+                    }
+
                     segmentsSection
                     interactiveChartSection
                     shareButtonSection // MOVIDO ABAJO
