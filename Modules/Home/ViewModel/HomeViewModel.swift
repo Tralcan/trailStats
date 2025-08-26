@@ -149,7 +149,7 @@ class HomeViewModel: ObservableObject {
     func fetchActivities() {
         guard !isLoading, canLoadMoreActivities else { return }
         isLoading = true
-        stravaService.getActivities(page: currentPage, perPage: 10) { [weak self] result in
+        stravaService.getActivities(page: currentPage, perPage: 50) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.isLoading = false

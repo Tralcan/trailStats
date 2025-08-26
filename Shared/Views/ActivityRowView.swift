@@ -7,6 +7,13 @@ struct ActivityRowView: View {
     let activity: Activity
     let isCached: Bool
     
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }
+    
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
@@ -14,7 +21,7 @@ struct ActivityRowView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                 
-                Text(activity.formattedDate)
+                Text(dateFormatter.string(from: activity.date))
                     .font(.caption)
                     .foregroundColor(.gray)
                 
@@ -23,7 +30,7 @@ struct ActivityRowView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "figure.walk")
                             .foregroundColor(.red)
-                        Text(activity.formattedDistance)
+                        Text(String(format: "%.2f km", activity.distance / 1000))
                             .font(.caption)
                             .foregroundColor(.red)
                     }
@@ -32,7 +39,7 @@ struct ActivityRowView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "mountain.2")
                             .foregroundColor(.green)
-                        Text(activity.formattedElevation)
+                        Text(String(format: "%.0f m", activity.elevationGain))
                             .font(.caption)
                             .foregroundColor(.green)
                     }
@@ -41,7 +48,7 @@ struct ActivityRowView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "hourglass")
                             .foregroundColor(.blue)
-                        Text(activity.formattedDuration)
+                        Text(Int(activity.duration).toHoursMinutesSeconds())
                             .font(.caption)
                             .foregroundColor(.blue)
                     }

@@ -1,32 +1,74 @@
 import SwiftUI
 
+// NUEVO: Estructura para representar segmentos clave de la actividad (subidas, bajadas).
+struct ActivitySegment: Identifiable, Hashable {
+    let id = UUID()
+    let type: SegmentType
+    let startDistance: Double
+    let endDistance: Double
+    let distance: Double
+    let elevationChange: Double
+    let averageGrade: Double
+    let time: Int
+    let averagePace: Double
+    let averageHeartRate: Double?
+    let verticalSpeed: Double? // m/h, solo para subidas
+
+    enum SegmentType: String {
+        case climb = "Subida"
+        case descent = "Bajada"
+    }
+    
+    // Conformance to Hashable
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    // Conformance to Equatable
+    static func == (lhs: ActivitySegment, rhs: ActivitySegment) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+// CORREGIDO: La estructura para los gráficos ahora se llama ChartDataPoint para evitar conflictos.
+struct ChartDataPoint: Identifiable {
+    let id = UUID()
+    let time: Int
+    let value: Double
+}
+
+
 @MainActor
 class ActivityDetailViewModel: ObservableObject {
     @Published var activity: Activity
-    @Published var heartRateData: [DataPoint] = []
-    @Published var cadenceData: [DataPoint] = []
-    @Published var powerData: [DataPoint] = []
-    @Published var altitudeData: [DataPoint] = []
-    @Published var cvertData: [DataPoint] = []
-    @Published var verticalSpeedData: [DataPoint] = []
-    @Published var strideLengthData: [DataPoint] = []
-    @Published var paceData: [DataPoint] = []
-    @Published var distanceData: [DataPoint] = [] // New: Add distanceData as a published property
+    @Published var heartRateData: [ChartDataPoint] = []
+    @Published var cadenceData: [ChartDataPoint] = []
+    @Published var powerData: [ChartDataPoint] = []
+    @Published var altitudeData: [ChartDataPoint] = []
+    @Published var cvertData: [ChartDataPoint] = []
+    @Published var verticalSpeedData: [ChartDataPoint] = []
+    @Published var strideLengthData: [ChartDataPoint] = []
+    @Published var paceData: [ChartDataPoint] = []
+    @Published var distanceData: [ChartDataPoint] = []
     @Published var isLoading = false
-    @Published var errorMessage: String? = nil // New: Add errorMessage property
-    @Published var isGeneratingGPX = false // New: Indicate if GPX generation is in progress
-    @Published var gpxDataToShare: Data? = nil // New: Hold generated GPX data for sharing
+    @Published var errorMessage: String? = nil
+    @Published var isGeneratingGPX = false
+    @Published var gpxDataToShare: Data? = nil
 
     // Persistencia de AI Coach
     @Published var aiCoachObservation: String? = nil
     @Published var aiCoachLoading: Bool = false
     @Published var aiCoachError: String? = nil
     
+    // NUEVO: Propiedades para los KPIs de Trail Running
+    @Published var verticalSpeedVAM: Double?
+    @Published var cardiacDecoupling: Double?
+    @Published var climbSegments: [ActivitySegment] = []
+
     private let stravaService = StravaService()
     
     init(activity: Activity) {
         self.activity = activity
-        // Cargar AI Coach desde caché si existe
         let cacheManager = CacheManager()
         if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
             self.aiCoachObservation = cachedText
@@ -59,7 +101,7 @@ class ActivityDetailViewModel: ObservableObject {
         guard let timeStream = streamsDictionary["time"]?.data.compactMap({ $0 }) else { return }
 
         if let hrStream = streamsDictionary["heartrate"]?.data.compactMap({ $0 }) {
-            let rawHR = zip(timeStream, hrStream).map { DataPoint(time: $0, value: $1) }
+            let rawHR = zip(timeStream, hrStream).map { ChartDataPoint(time: Int($0), value: $1) }
             let window = 31
             if rawHR.count >= window {
                 self.heartRateData = movingMedian(data: rawHR, windowSize: window)
@@ -69,7 +111,7 @@ class ActivityDetailViewModel: ObservableObject {
         }
         
         if let cadenceStream = streamsDictionary["cadence"]?.data.compactMap({ $0 }) {
-            let rawCadence = zip(timeStream, cadenceStream).map { DataPoint(time: $0, value: $1 * 2) }
+            let rawCadence = zip(timeStream, cadenceStream).map { ChartDataPoint(time: Int($0), value: $1 * 2) }
             let window = 31
             if rawCadence.count >= window {
                 self.cadenceData = movingMedian(data: rawCadence, windowSize: window)
@@ -79,9 +121,8 @@ class ActivityDetailViewModel: ObservableObject {
         }
         
         if let powerStream = streamsDictionary["watts"]?.data.compactMap({ $0 }) {
-            // Filtrar valores fuera de rango antes de suavizar
             let filteredPower = zip(timeStream, powerStream)
-                .map { DataPoint(time: $0, value: $1) }
+                .map { ChartDataPoint(time: Int($0), value: $1) }
                 .filter { $0.value >= 90 && $0.value <= 500 }
             let window = 31
             if filteredPower.count >= window {
@@ -92,21 +133,20 @@ class ActivityDetailViewModel: ObservableObject {
         }
         
         if let altitudeStream = streamsDictionary["altitude"]?.data.compactMap({ $0 }) {
-            self.altitudeData = zip(timeStream, altitudeStream).map { DataPoint(time: $0, value: $1) }
+            self.altitudeData = zip(timeStream, altitudeStream).map { ChartDataPoint(time: Int($0), value: $1) }
         }
 
-        var distanceData: [DataPoint] = []
-        // Assign processed distance stream to the published property
         if let distStream = streamsDictionary["distance"]?.data.compactMap({ $0 }) {
-            self.distanceData = zip(timeStream, distStream).map { DataPoint(time: $0, value: $1) }
+            self.distanceData = zip(timeStream, distStream).map { ChartDataPoint(time: Int($0), value: $1) }
         }
 
         self.calculateCvert()
         self.calculateVerticalSpeed()
-        self.calculateStrideLength() // No longer takes distanceData as parameter
-        self.calculatePace() // No longer takes distanceData as parameter
+        self.calculateStrideLength()
+        self.calculatePace()
 
-        // Guardar resumen y métricas en caché
+        self.calculateTrailKPIs()
+
         let cacheManager = CacheManager()
         
         if cacheManager.loadSummary(activityId: self.activity.id) != nil && cacheManager.loadMetrics(activityId: self.activity.id) != nil {
@@ -150,6 +190,151 @@ class ActivityDetailViewModel: ObservableObject {
         self.fetchAICoachObservation(summary: summary)
     }
 
+    // MARK: - Métodos de Cálculo para Trail Running
+    
+    private func calculateTrailKPIs() {
+        calculateVerticalSpeedVAM()
+        calculateCardiacDecoupling()
+        analyzeAndSetSegments()
+    }
+
+    private func calculateVerticalSpeedVAM() {
+        guard activity.elevationGain > 0 && activity.duration > 0 else {
+            self.verticalSpeedVAM = 0
+            return
+        }
+        let movingTimeInHours = activity.duration / 3600.0
+        self.verticalSpeedVAM = activity.elevationGain / movingTimeInHours
+    }
+
+    private func calculateCardiacDecoupling() {
+        guard heartRateData.count > 10 && paceData.count > 10 else {
+            self.cardiacDecoupling = nil
+            return
+        }
+
+        let combinedData = paceData.compactMap { pacePoint -> (pace: Double, hr: Double)? in
+            guard let hrPoint = heartRateData.first(where: { $0.time == pacePoint.time }) else { return nil }
+            guard pacePoint.value > 0 && hrPoint.value > 0 else { return nil }
+            return (pace: pacePoint.value, hr: hrPoint.value)
+        }
+
+        guard combinedData.count > 10 else {
+            self.cardiacDecoupling = nil
+            return
+        }
+
+        let halfIndex = combinedData.count / 2
+        let firstHalf = combinedData[0..<halfIndex]
+        let secondHalf = combinedData[halfIndex..<combinedData.count]
+
+        let firstHalfRatioSum = firstHalf.reduce(0) { $0 + ($1.pace / $1.hr) }
+        let firstHalfAverageRatio = firstHalfRatioSum / Double(firstHalf.count)
+
+        let secondHalfRatioSum = secondHalf.reduce(0) { $0 + ($1.pace / $1.hr) }
+        let secondHalfAverageRatio = secondHalfRatioSum / Double(secondHalf.count)
+
+        guard firstHalfAverageRatio > 0 else {
+            self.cardiacDecoupling = nil
+            return
+        }
+
+        let decoupling = ((firstHalfAverageRatio - secondHalfAverageRatio) / firstHalfAverageRatio) * 100.0
+        self.cardiacDecoupling = decoupling
+    }
+    
+    private func analyzeAndSetSegments() {
+        guard distanceData.count > 1, altitudeData.count == distanceData.count else { return }
+
+        var segments: [ActivitySegment] = []
+        var currentSegmentPoints: [(dist: Double, alt: Double, time: Int)] = []
+        var isClimbing: Bool? = nil
+
+        let minElevationChangeForSegment: Double = 10
+        let minDistanceForSegment: Double = 100
+
+        for i in 1..<altitudeData.count {
+            let prevPoint = (dist: distanceData[i-1].value, alt: altitudeData[i-1].value, time: altitudeData[i-1].time)
+            let currentPoint = (dist: distanceData[i].value, alt: altitudeData[i].value, time: altitudeData[i].time)
+            
+            let elevationChange = currentPoint.alt - prevPoint.alt
+            let currentlyClimbing = elevationChange > 0.1
+
+            if isClimbing == nil {
+                isClimbing = currentlyClimbing
+            }
+
+            if currentlyClimbing == isClimbing {
+                if currentSegmentPoints.isEmpty {
+                    currentSegmentPoints.append(prevPoint)
+                }
+                currentSegmentPoints.append(currentPoint)
+            } else {
+                if let startPoint = currentSegmentPoints.first, let endPoint = currentSegmentPoints.last {
+                    let segmentElevationChange = endPoint.alt - startPoint.alt
+                    let segmentDistance = endPoint.dist - startPoint.dist
+                    
+                    if abs(segmentElevationChange) >= minElevationChangeForSegment && segmentDistance >= minDistanceForSegment {
+                        let segment = createSegment(from: currentSegmentPoints, type: isClimbing! ? .climb : .descent)
+                        segments.append(segment)
+                    }
+                }
+                
+                currentSegmentPoints = [prevPoint, currentPoint]
+                isClimbing = currentlyClimbing
+            }
+        }
+
+        if let startPoint = currentSegmentPoints.first, let endPoint = currentSegmentPoints.last {
+            let segmentElevationChange = endPoint.alt - startPoint.alt
+            let segmentDistance = endPoint.dist - startPoint.dist
+            if abs(segmentElevationChange) >= minElevationChangeForSegment && segmentDistance >= minDistanceForSegment {
+                let segment = createSegment(from: currentSegmentPoints, type: isClimbing! ? .climb : .descent)
+                segments.append(segment)
+            }
+        }
+        
+        self.climbSegments = segments
+    }
+
+    private func createSegment(from points: [(dist: Double, alt: Double, time: Int)], type: ActivitySegment.SegmentType) -> ActivitySegment {
+        let startPoint = points.first!
+        let endPoint = points.last!
+
+        let distance = endPoint.dist - startPoint.dist
+        let elevationChange = endPoint.alt - startPoint.alt
+        let time = endPoint.time - startPoint.time
+        
+        let averageGrade = distance > 0 ? (elevationChange / distance) * 100 : 0
+        let averagePace = time > 0 && distance > 0 ? (Double(time) / 60.0) / (distance / 1000.0) : 0
+        
+        var verticalSpeed: Double? = nil
+        if type == .climb && time > 0 {
+            let timeInHours = Double(time) / 3600.0
+            verticalSpeed = elevationChange / timeInHours
+        }
+        
+        let timeRange = startPoint.time...endPoint.time
+        let hrInSegment = heartRateData.filter { timeRange.contains($0.time) }.map { $0.value }
+        let averageHeartRate = hrInSegment.averageOrNil()
+
+        return ActivitySegment(
+            type: type,
+            startDistance: startPoint.dist,
+            endDistance: endPoint.dist,
+            distance: distance,
+            elevationChange: elevationChange,
+            averageGrade: averageGrade,
+            time: time,
+            averagePace: averagePace,
+            averageHeartRate: averageHeartRate,
+            verticalSpeed: verticalSpeed
+        )
+    }
+
+
+    // MARK: - Métodos de Ayuda y Cálculos Anteriores
+
     private func fetchAICoachObservation(summary: ActivitySummary) {
         func tienePromediosValidos(summary: ActivitySummary) -> Bool {
             return summary.averageHeartRate != nil || summary.averagePower != nil || summary.averagePace != nil || summary.averageCadence != nil || summary.averageStrideLength != nil
@@ -192,42 +377,39 @@ class ActivityDetailViewModel: ObservableObject {
             return
         }
 
-        var rawPacePoints: [DataPoint] = []
+        var rawPacePoints: [ChartDataPoint] = []
         for i in 1..<distanceData.count {
             let currentTime = distanceData[i].time
             let previousTime = distanceData[i-1].time
             let currentDistance = distanceData[i].value
             let previousDistance = distanceData[i-1].value
 
-            let distanceChange = currentDistance - previousDistance // meters
-            let timeChange = currentTime - previousTime // seconds
+            let distanceChange = currentDistance - previousDistance
+            let timeChange = currentTime - previousTime
 
-            var paceValue: Double = 0.0 // minutes per kilometer
-            if distanceChange > 0 { // Only calculate pace if moving forward
-                let distanceChangeKm = distanceChange / 1000.0 // kilometers
-                let timeChangeMinutes = timeChange / 60.0 // minutes
+            var paceValue: Double = 0.0
+            if distanceChange > 0 {
+                let distanceChangeKm = distanceChange / 1000.0
+                let timeChangeMinutes = Double(timeChange) / 60.0
                 paceValue = timeChangeMinutes / distanceChangeKm
             }
-            rawPacePoints.append(DataPoint(time: currentTime, value: paceValue))
+            rawPacePoints.append(ChartDataPoint(time: currentTime, value: paceValue))
         }
 
-        // Calculate initial average pace from valid (non-zero) pace points
         let validPaces = rawPacePoints.filter { $0.value > 0 }.map { $0.value }
         var averagePace: Double = 0.0
         if !validPaces.isEmpty {
             averagePace = validPaces.reduce(0.0, +) / Double(validPaces.count)
         }
 
-        // Filter out outliers
-        var filteredPacePoints: [DataPoint] = []
-        let outlierThreshold = averagePace * 3.0 // 3 times the average
+        var filteredPacePoints: [ChartDataPoint] = []
+        let outlierThreshold = averagePace * 3.0
         
         for dataPoint in rawPacePoints {
             if dataPoint.value > 0 && dataPoint.value < outlierThreshold {
                 filteredPacePoints.append(dataPoint)
             } else {
-                // Discard or set to 0. Setting to 0 for now to keep the time alignment.
-                filteredPacePoints.append(DataPoint(time: dataPoint.time, value: 0.0))
+                filteredPacePoints.append(ChartDataPoint(time: dataPoint.time, value: 0.0))
             }
         }
         let window = 31
@@ -238,39 +420,36 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
 
-    private func calculateStrideLength() { // No longer takes distanceData as parameter
-        guard !self.distanceData.isEmpty && !cadenceData.isEmpty else { // Use self.distanceData
+    private func calculateStrideLength() {
+        guard !self.distanceData.isEmpty && !cadenceData.isEmpty else {
             strideLengthData = []
             return
         }
 
-        var strideLengthPoints: [DataPoint] = []
-        for i in 1..<self.distanceData.count { // Use self.distanceData
+        var strideLengthPoints: [ChartDataPoint] = []
+        for i in 1..<self.distanceData.count {
             let currentTime = self.distanceData[i].time
             let previousTime = self.distanceData[i-1].time
             let currentDistance = self.distanceData[i].value
             let previousDistance = self.distanceData[i-1].value
 
-            let distanceChange = currentDistance - previousDistance // meters
-            let timeChange = currentTime - previousTime // seconds
+            let distanceChange = currentDistance - previousDistance
+            let timeChange = currentTime - previousTime
 
-            var currentSpeed: Double = 0.0 // meters/second
+            var currentSpeed: Double = 0.0
             if timeChange > 0 {
-                currentSpeed = distanceChange / timeChange
+                currentSpeed = distanceChange / Double(timeChange)
             }
 
-            // Find corresponding cadence data point
             if let currentCadenceDataPoint = cadenceData.first(where: { $0.time == currentTime }) {
-                let currentCadence = currentCadenceDataPoint.value // in SPM (steps per minute)
+                let currentCadence = currentCadenceDataPoint.value
 
-                var strideLengthValue: Double = 0.0 // meters/stride
+                var strideLengthValue: Double = 0.0
                 if currentCadence > 0 {
-                    // Convert cadence from SPM to steps per second
                     let cadenceInSPS = currentCadence / 60.0
-                    // Stride Length (meters/stride) = Speed (meters/second) / Cadence (strides/second)
                     strideLengthValue = currentSpeed / cadenceInSPS
                 }
-                strideLengthPoints.append(DataPoint(time: currentTime, value: strideLengthValue))
+                strideLengthPoints.append(ChartDataPoint(time: currentTime, value: strideLengthValue))
             }
         }
         let window = 31
@@ -287,7 +466,7 @@ class ActivityDetailViewModel: ObservableObject {
             return
         }
 
-        var verticalSpeedPoints: [DataPoint] = []
+        var verticalSpeedPoints: [ChartDataPoint] = []
         for i in 1..<altitudeData.count {
             let currentTime = altitudeData[i].time
             let previousTime = altitudeData[i-1].time
@@ -298,13 +477,11 @@ class ActivityDetailViewModel: ObservableObject {
             let timeChange = currentTime - previousTime
 
             var verticalSpeedValue: Double = 0.0
-            if timeChange > 0 { // Avoid division by zero
-                // Calculate vertical speed in meters per second (m/s)
-                let metersPerSecond = altitudeChange / timeChange
-                // Convert m/s to km/h (1 m/s = 3.6 km/h)
-                verticalSpeedValue = metersPerSecond * 3.6
+            if timeChange > 0 {
+                let metersPerSecond = altitudeChange / Double(timeChange)
+                verticalSpeedValue = metersPerSecond * 3600.0 // Convertido a m/h
             }
-            verticalSpeedPoints.append(DataPoint(time: currentTime, value: verticalSpeedValue))
+            verticalSpeedPoints.append(ChartDataPoint(time: currentTime, value: verticalSpeedValue))
         }
         self.verticalSpeedData = verticalSpeedPoints
     }
@@ -315,7 +492,7 @@ class ActivityDetailViewModel: ObservableObject {
             return
         }
 
-        var cvertPoints: [DataPoint] = []
+        var cvertPoints: [ChartDataPoint] = []
         for i in 1..<altitudeData.count {
             let currentTime = altitudeData[i].time
             let currentAltitude = altitudeData[i].value
@@ -326,33 +503,28 @@ class ActivityDetailViewModel: ObservableObject {
             let altitudeChange = currentAltitude - previousAltitude
 
             var cvertValue: Double = 0.0
-            let minAltitudeChangeThreshold: Double = 0.2 // Define a threshold, e.g., 0.2 meters
+            let minAltitudeChangeThreshold: Double = 0.2
             
-            if altitudeChange > minAltitudeChangeThreshold { // Only consider uphill segments with significant altitude change
+            if altitudeChange > minAltitudeChangeThreshold {
                 cvertValue = currentPower / altitudeChange
             }
-            // Forzar a cero si es negativo o NaN
             if cvertValue.isNaN || cvertValue < 0 {
                 cvertValue = 0.0
             }
-            cvertPoints.append(DataPoint(time: currentTime, value: cvertValue))
+            cvertPoints.append(ChartDataPoint(time: currentTime, value: cvertValue))
         }
-        // Usar ventana 21 (impar más cercano a 20) para evitar crash y mejorar suavizado
-        // Aplicar mediana móvil (moving median) con ventana 21
-    let window = 31
+        let window = 31
         if cvertPoints.count >= window {
             self.cvertData = movingMedian(data: cvertPoints, windowSize: window)
         } else {
             self.cvertData = cvertPoints
         }
-
     }
 
-    // Mediana móvil para suavizar series temporales
-    private func movingMedian(data: [DataPoint], windowSize: Int) -> [DataPoint] {
+    private func movingMedian(data: [ChartDataPoint], windowSize: Int) -> [ChartDataPoint] {
         guard windowSize % 2 == 1, data.count >= windowSize else { return data }
         let halfWindow = windowSize / 2
-        var result: [DataPoint] = []
+        var result: [ChartDataPoint] = []
         for i in 0..<data.count {
             let start = max(0, i - halfWindow)
             let end = min(data.count - 1, i + halfWindow)
@@ -365,46 +537,14 @@ class ActivityDetailViewModel: ObservableObject {
             } else {
                 median = (sorted[count / 2 - 1] + sorted[count / 2]) / 2.0
             }
-            result.append(DataPoint(time: data[i].time, value: median))
+            result.append(ChartDataPoint(time: data[i].time, value: median))
         }
         return result
-    }
-
-    // Filtro Savitzky-Golay para suavizar series temporales
-    private func savitzkyGolayFilter(data: [DataPoint], windowSize: Int, polynomialOrder: Int) -> [DataPoint] {
-        guard windowSize % 2 == 1, windowSize > polynomialOrder, data.count >= windowSize else { return data }
-        let halfWindow = windowSize / 2
-        let coeffs = savitzkyGolayCoefficients(windowSize: windowSize, polynomialOrder: polynomialOrder)
-        var result: [DataPoint] = []
-        for i in 0..<data.count {
-            var acc = 0.0
-            for j in -halfWindow...halfWindow {
-                let idx = min(max(i + j, 0), data.count - 1)
-                acc += coeffs[j + halfWindow] * data[idx].value
-            }
-            result.append(DataPoint(time: data[i].time, value: acc))
-        }
-        return result
-    }
-
-    // Coeficientes Savitzky-Golay para ventana y polinomio dados (grado 3, ventana 31)
-    private func savitzkyGolayCoefficients(windowSize: Int, polynomialOrder: Int) -> [Double] {
-        // Para ventana 21 y grado 3, coeficientes estándar (21 elementos):
-        if windowSize == 21 && polynomialOrder == 3 {
-            // Coeficientes generados para Savitzky-Golay (grado 3, ventana 21, simétrico)
-            return [
-                -305, -183, -85, -8, 48, 85, 105, 111, 105, 89, 65, 35, 1, -37, -77, -119, -161, -203, -243, -281, -317
-            ].map { $0 / 2024.0 }
-        }
-        // Si se requieren otros, devolver ventana centrada (sin suavizado)
-        var coeffs = [Double](repeating: 0, count: windowSize)
-        coeffs[windowSize/2] = 1.0
-        return coeffs
     }
 
     func shareGPX() {
         isGeneratingGPX = true
-        gpxDataToShare = nil // Clear previous data
+        gpxDataToShare = nil
 
         stravaService.getActivityStreams(activityId: activity.id) { [weak self] result in
             DispatchQueue.main.async {

@@ -19,11 +19,6 @@ struct Activity: Identifiable, Codable {
     let averageCadence: Double?
     let averagePower: Double?
     
-    // Data for Charts
-    let heartRateData: [DataPoint]
-    let cadenceData: [DataPoint]
-    let powerData: [DataPoint]
-    
     // Location Data
     let startCoordinate: CLLocationCoordinate2D?
     let polyline: String? // Encoded polyline for map view
@@ -71,11 +66,6 @@ struct Activity: Identifiable, Codable {
         } else {
             polyline = nil
         }
-        
-        // Initialize with empty arrays as these are not part of the Strava API response
-        heartRateData = []
-        cadenceData = []
-        powerData = []
     }
     
     func encode(to encoder: Encoder) throws {
@@ -97,28 +87,5 @@ struct Activity: Identifiable, Codable {
         
         var mapContainer = container.nestedContainer(keyedBy: MapKeys.self, forKey: .polyline)
         try mapContainer.encodeIfPresent(polyline, forKey: .summary_polyline)
-    }
-    
-    // Formatted Properties for UI
-    var formattedDistance: String {
-        return String(format: "%.2f km", distance / 1000)
-    }
-    
-    var formattedDuration: String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute, .second]
-        formatter.unitsStyle = .abbreviated
-        return formatter.string(from: duration) ?? "0s"
-    }
-    
-    var formattedElevation: String {
-        return String(format: "%.0f m", elevationGain)
-    }
-    
-    var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }

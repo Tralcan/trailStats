@@ -1,10 +1,11 @@
 import SwiftUI
+import UIKit
 
 /// Displays the detailed metrics and charts for a single activity.
 struct ActivityDetailView: View {
     
     @StateObject var viewModel: ActivityDetailViewModel
-    @State private var showShareSheet = false // New: State to control share sheet presentation
+    @State private var showShareSheet = false
     
     init(activity: Activity) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
@@ -15,34 +16,34 @@ struct ActivityDetailView: View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: "location.fill") // Red icon for distance
+                    Image(systemName: "location.fill")
                         .foregroundColor(.red)
                     Text("Distance")
                         .font(.subheadline).foregroundColor(.secondary)
                 }
-                Text(viewModel.activity.formattedDistance)
+                Text(String(format: "%.2f km", viewModel.activity.distance / 1000))
                     .font(.title3).fontWeight(.bold)
             }
             Spacer()
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: "mountain.2.fill") // Green icon for elevation
+                    Image(systemName: "mountain.2.fill")
                         .foregroundColor(.green)
                     Text("Elevation")
                         .font(.subheadline).foregroundColor(.secondary)
                 }
-                Text(viewModel.activity.formattedElevation)
+                Text(String(format: "%.0f m", viewModel.activity.elevationGain))
                     .font(.title3).fontWeight(.bold)
             }
             Spacer()
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: "clock.fill") // Blue clock icon for time
+                    Image(systemName: "clock.fill")
                         .foregroundColor(.blue)
                     Text("Time")
                         .font(.subheadline).foregroundColor(.secondary)
                 }
-                Text(viewModel.activity.formattedDuration)
+                Text(Int(viewModel.activity.duration).toHoursMinutesSeconds())
                     .font(.title3).fontWeight(.bold)
             }
         }
@@ -51,35 +52,102 @@ struct ActivityDetailView: View {
         .cornerRadius(12)
     }
     
+    // Sección para los KPIs de Trail Running
+    private var trailKPIsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Análisis de Trail")
+                .font(.title2).bold()
+                .foregroundColor(.primary)
+
+            HStack(spacing: 16) {
+                if let vam = viewModel.verticalSpeedVAM {
+                    VStack(alignment: .leading) {
+                        Label("Velocidad Vertical", systemImage: "arrow.up.right.circle.fill")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "%.0f m/h", vam))
+                            .font(.title).bold()
+                            .foregroundColor(.orange)
+                    }
+                }
+                Spacer()
+                if let decoupling = viewModel.cardiacDecoupling {
+                    VStack(alignment: .leading) {
+                        Label("Desacoplamiento", systemImage: "heart.slash.circle.fill")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "%.1f %%", decoupling))
+                            .font(.title).bold()
+                            .foregroundColor(decoupling > 10 ? .red : (decoupling > 5 ? .yellow : .green))
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+        }
+    }
+
+    @ViewBuilder
+    private var segmentsSection: some View {
+        if !viewModel.climbSegments.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Segmentos Clave")
+                    .font(.title2).bold()
+                    .foregroundColor(.primary)
+
+                ForEach(viewModel.climbSegments) { segment in
+                    SegmentRowView(segment: segment)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var interactiveChartSection: some View {
+        if !viewModel.isLoading && !viewModel.altitudeData.isEmpty {
+            InteractiveChartView(
+                altitudeData: viewModel.altitudeData,
+                overlayData: [
+                    "Ritmo": viewModel.paceData,
+                    "Frec. Cardíaca": viewModel.heartRateData,
+                    "Cadencia": viewModel.cadenceData
+                ],
+                overlayColors: [
+                    "Ritmo": .purple,
+                    "Frec. Cardíaca": .red,
+                    "Cadencia": .blue
+                ],
+                overlayUnits: [
+                    "Ritmo": "min/km",
+                    "Frec. Cardíaca": "BPM",
+                    "Cadencia": "spm"
+                ]
+            )
+        }
+    }
+
     var body: some View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     headerView
-                    ChartSaverView(viewModel: viewModel)
+                    trailKPIsSection
+                    segmentsSection
+                    interactiveChartSection
+                    aiCoachSection
                 }
                 .padding()
             }
             if viewModel.isLoading {
-                Color.clear.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .accentColor))
-                        .scaleEffect(2)
-                    Text("Loading data...")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .padding(.top, 8)
-                }
+                loadingView
             }
         }
         .navigationTitle(viewModel.activity.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    viewModel.shareGPX()
-                }) {
+                Button(action: { viewModel.shareGPX() }) {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .disabled(viewModel.isGeneratingGPX)
@@ -87,20 +155,7 @@ struct ActivityDetailView: View {
         }
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            // let startTime = Date()
-            // print("[PERF] onAppear ActivityDetailView: \(startTime)")
-            // Solo cargar streams si falta alguna imagen de gráfico
-            let chartNames = ["HeartRate", "Power", "Pace", "Cadence", "StrideLength", "Elevation", "VerticalEnergyCost", "VerticalSpeed"]
-            var missingImages: [String] = []
-            let allImagesExist = chartNames.allSatisfy { name in
-                let exists = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: name) != nil
-                if !exists { missingImages.append(name) }
-                return exists
-            }
-            // print("[PERF] allImagesExist: \(allImagesExist) - \(Date().timeIntervalSince(startTime))s")
-            if !allImagesExist {
-                // print("[PERF] Faltan imágenes de gráficos en caché: \(missingImages)")
-                // print("[PERF] fetchActivityStreams llamado")
+            if viewModel.heartRateData.isEmpty {
                 viewModel.fetchActivityStreams()
             }
         }
@@ -120,236 +175,148 @@ struct ActivityDetailView: View {
         }
     }
     
-    // Vista auxiliar para renderizar y guardar los gráficos y el resumen automáticamente
-    struct ChartSaverView: View {
-        @ObservedObject var viewModel: ActivityDetailViewModel
-
-        var body: some View {
-            VStack(spacing: 52) {
-                if !viewModel.isLoading {
-                    // AI Coach y spinner
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("AI Coach")
-                            .font(.title3).bold()
-                            .foregroundColor(.accentColor)
-                        if viewModel.aiCoachLoading {
-                            HStack(spacing: 8) {
-                                ProgressView()
-                                Text("Analizando actividad...")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        } else if let obs = viewModel.aiCoachObservation {
-                            Text(obs)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                        } else if let err = viewModel.aiCoachError {
-                            Text("Error: \(err)")
-                                .font(.body)
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
-
-                    ChartSnapshotter(title: "Elevation", data: viewModel.altitudeData, color: .purple, viewModel: viewModel, displayTitle: "Elevation", showAverage: false, normalize: false)
-                    ChartSnapshotter(title: "VerticalEnergyCost", data: viewModel.cvertData, color: .brown, viewModel: viewModel, displayTitle: "Vertical Energy Cost")
-                    ChartSnapshotter(title: "VerticalSpeed", data: viewModel.verticalSpeedData, color: .cyan, viewModel: viewModel, displayTitle: "Vertical Speed", showAverage: true, normalize: false)
-                    ChartSnapshotter(title: "Power", data: viewModel.powerData, color: .green, viewModel: viewModel, displayTitle: "Power")
-                    ChartSnapshotter(title: "Pace", data: viewModel.paceData, color: .purple, viewModel: viewModel, displayTitle: "Pace")
-                    ChartSnapshotter(title: "HeartRate", data: viewModel.heartRateData, color: .red, viewModel: viewModel, displayTitle: "Heart Rate")
-                    ChartSnapshotter(title: "StrideLength", data: viewModel.strideLengthData, color: .orange, viewModel: viewModel, displayTitle: "Stride Length")
-                    ChartSnapshotter(title: "Cadence", data: viewModel.cadenceData, color: .blue, viewModel: viewModel, displayTitle: "Cadence")
-                }
+    private var loadingView: some View {
+        ZStack {
+            Color.black.opacity(0.4).ignoresSafeArea()
+            VStack(spacing: 16) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .accentColor))
+                    .scaleEffect(2)
+                Text("Analizando actividad...")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.top, 8)
             }
+            .padding(32)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(16)
         }
     }
     
-    // Vista auxiliar para capturar y guardar la imagen de cada gráfico
-    struct ChartSnapshotter: View {
-        let title: String
-        let data: [DataPoint]
-        let color: Color
-        let viewModel: ActivityDetailViewModel
-        var displayTitle: String? = nil
-        var showAverage: Bool = true
-        var normalize: Bool = true
-
-        private var chartTitle: String { displayTitle ?? title }
-        private var unit: String {
-            switch title {
-            case "VerticalEnergyCost": return "W/m"
-            case "VerticalSpeed": return "km/h"
-            case "Power": return "W"
-            case "Pace": return "min/km"
-            case "HeartRate": return "BPM"
-            case "StrideLength": return "m"
-            case "Cadence": return "RPM"
-            default: return ""
-            }
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
-                // This HStack for the title is now the stable part of the view
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(chartTitle)
-                        .font(.headline)
-                    
-                    if let avgStr = getAverageString() {
-                        Text(avgStr)
-                            .font(.caption)
+    private var aiCoachSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("AI Coach")
+                .font(.title2).bold()
+                .foregroundColor(.primary)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                if viewModel.aiCoachLoading {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Generando análisis...")
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
+                } else if let obs = viewModel.aiCoachObservation {
+                    Text(obs)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                } else if let err = viewModel.aiCoachError {
+                    Text("Error: \(err)")
+                        .font(.body)
+                        .foregroundColor(.red)
                 }
-                .padding(.leading, 8)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+        }
+    }
+}
 
-                // The content part (chart or image)
-                if let imageData = CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title),
-                   let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 200)
-                } else if !data.isEmpty {
-                    // This is the non-cached path that was causing issues.
-                    // We wrap the chart in a GeometryReader with a fixed frame.
-                    GeometryReader { geo in
-                        let chartContent = VStack(spacing: 0) {
-                            TimeSeriesChartView(
-                                data: data,
-                                title: "",
-                                yAxisLabel: "",
-                                color: color,
-                                showAverage: false, // Average is shown above
-                                normalize: normalize
-                            )
-                            Spacer().frame(height: 70)
-                        }
-                        .background(Color(.secondarySystemBackground))
-
-                        chartContent
-                            .onAppear {
-                                // The snapshot logic remains the same, using the size from the GeometryReader
-                                if CacheManager().loadChartImage(activityId: viewModel.activity.id, chartName: title) == nil {
-                                    if let imageData = ViewSnapshotter.snapshot(of: chartContent, size: geo.size) {
-                                        CacheManager().saveChartImage(activityId: viewModel.activity.id, chartName: title, imageData: imageData)
-                                    }
-                                }
-                            }
+// Vista para una fila de segmento
+private struct SegmentRowView: View {
+    let segment: ActivitySegment
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: segment.type == .climb ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill")
+                    .foregroundColor(segment.type == .climb ? .green : .blue)
+                Text(segment.type.rawValue)
+                    .font(.headline).bold()
+                Spacer()
+                Text(String(format: "%.2f km @ %.1f%%", segment.distance / 1000, segment.averageGrade))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading) {
+                    Text("Ritmo").font(.caption).foregroundColor(.secondary)
+                    Text(segment.averagePace.toPaceFormat())
+                }
+                VStack(alignment: .leading) {
+                    Text("Desnivel").font(.caption).foregroundColor(.secondary)
+                    Text(String(format: "%@%.0f m", segment.elevationChange > 0 ? "+" : "", segment.elevationChange))
+                }
+                if let vam = segment.verticalSpeed {
+                    VStack(alignment: .leading) {
+                        Text("VAM").font(.caption).foregroundColor(.secondary)
+                        Text(String(format: "%.0f m/h", vam))
                     }
-                    .frame(height: 210) // Give the GeometryReader a stable frame
+                }
+                if let hr = segment.averageHeartRate {
+                    VStack(alignment: .leading) {
+                        Text("FC Media").font(.caption).foregroundColor(.secondary)
+                        Text(String(format: "%.0f", hr))
+                    }
                 }
             }
+            .font(.footnote)
         }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+}
 
-        private func getAverageString() -> String? {
-            guard showAverage, title != "Elevation" else { return nil }
-
-            if title == "VerticalSpeed" {
-                let (positiveAvg, negativeAvg) = getVerticalSpeedAverages()
-                var components: [String] = []
-                if let pAvg = positiveAvg {
-                    components.append(String(format: "Avg ↗: %.2f", pAvg))
-                }
-                if let nAvg = negativeAvg {
-                    components.append(String(format: "Avg ↘: %.2f", abs(nAvg)))
-                }
-                
-                if components.isEmpty {
-                    return nil
-                }
-                return components.joined(separator: " | ") + " \(unit)"
-
-            } else {
-                guard let avg = getGenericAverage() else { return nil }
-                let format = (title == "Pace" || title == "StrideLength") ? "AVG: %.2f %@" : "AVG: %.0f %@"
-                return String(format: format, avg, unit)
-            }
-        }
-
-        private func getVerticalSpeedAverages() -> (Double?, Double?) {
-            if !data.isEmpty {
-                let positive = data.filter { $0.value > 0 }.map { $0.value }.averageOrNil()
-                let negative = data.filter { $0.value < 0 }.map { $0.value }.averageOrNil()
-                return (positive, negative)
-            } else if let metrics = CacheManager().loadMetrics(activityId: viewModel.activity.id) {
-                return (metrics.positiveVerticalSpeedAverage, metrics.negativeVerticalSpeedAverage)
-            }
-            return (nil, nil)
-        }
-
-        private func getGenericAverage() -> Double? {
-            if !data.isEmpty {
-                return data.map { $0.value }.averageOrNil()
-            } else if let metrics = CacheManager().loadMetrics(activityId: viewModel.activity.id) {
-                switch title {
-                case "VerticalEnergyCost": return metrics.verticalEnergyCostAverage
-                case "Power": return metrics.powerAverage
-                case "Pace": return metrics.paceAverage
-                case "HeartRate": return metrics.heartRateAverage
-                case "StrideLength": return metrics.strideLengthAverage
-                case "Cadence": return metrics.cadenceAverage
-                default: return nil
-                }
-            }
+// Las vistas auxiliares para compartir GPX permanecen aquí debajo.
+private class GPXFile: NSObject, UIActivityItemSource {
+    let data: Data
+    let filename: String
+    
+    init(data: Data, filename: String) {
+        self.data = data
+        self.filename = filename
+    }
+    
+    var url: URL? {
+        let tempDirectory = FileManager.default.temporaryDirectory
+        let fileURL = tempDirectory.appendingPathComponent(filename)
+        do {
+            try data.write(to: fileURL)
+            return fileURL
+        } catch {
             return nil
         }
     }
     
-    
-    
-    // Helper class to represent a GPX file for sharing
-    class GPXFile: NSObject, UIActivityItemSource {
-        let data: Data
-        let filename: String
-        
-        init(data: Data, filename: String) {
-            self.data = data
-            self.filename = filename
-        }
-        
-        var url: URL? {
-            let tempDirectory = FileManager.default.temporaryDirectory
-            let fileURL = tempDirectory.appendingPathComponent(filename)
-            do {
-                try data.write(to: fileURL)
-                return fileURL
-            } catch {
-                // print("Error writing GPX data to temporary file: \(error.localizedDescription)")
-                return nil
-            }
-        }
-        
-        @objc func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
-            return ""
-        }
-        
-        @objc func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
-            return url
-        }
-        
-        @objc func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
-            return filename
-        }
-        
-        @objc func activityViewController(_ activityViewController: UIActivityViewController, dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
-            return "com.topografix.gpx" // GPX UTI
-        }
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        return ""
     }
     
-    // UIViewControllerRepresentable for UIActivityViewController
-    struct ShareSheet: UIViewControllerRepresentable {
-        var activityItems: [Any]
-        var applicationActivities: [UIActivity]? = nil
-        
-        func makeUIViewController(context: UIViewControllerRepresentableContext<ShareSheet>) -> UIActivityViewController {
-            let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
-            return controller
-        }
-        
-        func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ShareSheet>) {}
+    func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
+        return url
     }
     
+    func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
+        return filename
+    }
+    
+    func activityViewController(_ activityViewController: UIActivityViewController, dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
+        return "com.topografix.gpx"
+    }
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    var activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

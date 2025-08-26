@@ -3,14 +3,14 @@ import Charts
 
 /// A reusable chart view for displaying time-series data like cadence or heart rate.
 struct TimeSeriesChartView: View {
-    let data: [DataPoint]
+    let data: [ChartDataPoint]
     let title: String
     let yAxisLabel: String
     let color: Color
     let showAverage: Bool
     let normalize: Bool
 
-    init(data: [DataPoint], title: String, yAxisLabel: String, color: Color, showAverage: Bool = true, normalize: Bool = true) {
+    init(data: [ChartDataPoint], title: String, yAxisLabel: String, color: Color, showAverage: Bool = true, normalize: Bool = true) {
         self.data = data
         self.title = title
         self.yAxisLabel = yAxisLabel
