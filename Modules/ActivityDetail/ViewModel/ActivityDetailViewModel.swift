@@ -82,7 +82,7 @@ class ActivityDetailViewModel: ObservableObject {
             self.aiCoachLoading = false
         }
 
-        // Load processed metrics from cache
+        // Load processed metrics from cache (estos son los datos "rápidos" que el usuario quiere ver inmediatamente)
         if let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
             self.verticalSpeedVAM = cachedMetrics.verticalSpeedVAM
             self.cardiacDecoupling = cachedMetrics.cardiacDecoupling
@@ -90,27 +90,13 @@ class ActivityDetailViewModel: ObservableObject {
             self.descentVerticalSpeed = cachedMetrics.descentVerticalSpeed
             self.normalizedPower = cachedMetrics.normalizedPower
             self.gradeAdjustedPace = cachedMetrics.gradeAdjustedPace
-            self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
-            self.performanceByGrade = cachedMetrics.performanceByGrade
+            self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution // <-- Asignar directamente
+            self.performanceByGrade = cachedMetrics.performanceByGrade // <-- Asignar directamente
             self.efficiencyIndex = cachedMetrics.efficiencyIndex
         }
 
-        // Load activity streams from cache or fetch them
-        if let cachedStreams = cacheManager.loadActivityStreams(activityId: activity.id) {
-            // Si los streams están en caché, procesarlos de forma asíncrona
-            self.isLoadingGraphData = true
-            Task { @MainActor in
-                self.processAndCalculateGraphData(streamsDictionary: cachedStreams)
-                self.isLoadingGraphData = false
-            }
-        } else {
-            // Si no están en caché, iniciar la carga asíncrona de los streams
-            // y luego procesarlos.
-            // La propiedad isLoading se usa para la carga inicial de la actividad,
-            // no para los streams de gráficos.
-            // La carga de streams se maneja con isLoadingGraphData.
-            self.fetchActivityStreams()
-        }
+        // Iniciar la carga y procesamiento de streams de forma asíncrona
+        self.loadAndProcessStreams()
     }
 
     // MARK: - AI Coach Interaction
@@ -155,31 +141,7 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
     
-    func fetchActivityStreams() {
-        // Only fetch if data is not already loaded (e.g., from cache)
-        guard heartRateData.isEmpty else { return } // Assuming heartRateData is always populated if streams are processed
-
-        isLoadingGraphData = true // Iniciar la carga de datos de gráficos
-        errorMessage = nil // Limpiar cualquier error previo
-        
-        stravaService.getActivityStreams(activityId: activity.id) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.isLoadingGraphData = false // Finalizar la carga de datos de gráficos
-                switch result {
-                case .success(let streamsDictionary):
-                    self.processAndCalculateGraphData(streamsDictionary: streamsDictionary)
-                case .failure(let error):
-                    if let stravaAuthError = error as? StravaAuthError, case .apiError(let message) = stravaAuthError {
-                        self.errorMessage = message
-                    } else {
-                        self.errorMessage = "Failed to fetch activity streams: \(error.localizedDescription)"
-                    }
-                    print("Failed to fetch activity streams: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
+    
     
     private func processAndCalculateGraphData(streamsDictionary: [String: Stream]) {
         // Guardar streams en caché
@@ -217,7 +179,13 @@ class ActivityDetailViewModel: ObservableObject {
         self.calculateStrideLength()
         self.calculatePace()
 
-        self.calculateTrailKPIs()
+        // Solo recalcular KPIs de trail si no se cargaron desde caché
+        // o si los streams son nuevos (no de caché).
+        // La forma más sencilla es verificar si heartRateZoneDistribution ya tiene un valor.
+        // Si ya tiene un valor, significa que se cargó desde caché en el init.
+        if self.heartRateZoneDistribution == nil || self.performanceByGrade.isEmpty {
+            self.calculateTrailKPIs()
+        }
 
         // Save processed metrics to cache
         let processedMetrics = ActivityProcessedMetrics(
@@ -227,8 +195,8 @@ class ActivityDetailViewModel: ObservableObject {
             descentVerticalSpeed: self.descentVerticalSpeed,
             normalizedPower: self.normalizedPower,
             gradeAdjustedPace: self.gradeAdjustedPace,
-            heartRateZoneDistribution: self.heartRateZoneDistribution,
-            performanceByGrade: self.performanceByGrade,
+            heartRateZoneDistribution: self.heartRateZoneDistribution, // Usar el valor actual (cargado o recalculado)
+            performanceByGrade: self.performanceByGrade, // Usar el valor actual (cargado o recalculado)
             efficiencyIndex: self.efficiencyIndex
         )
         cacheManager.saveProcessedMetrics(activityId: activity.id, metrics: processedMetrics)
@@ -872,6 +840,38 @@ class ActivityDetailViewModel: ObservableObject {
                         self?.errorMessage = message
                     } else {
                         self?.errorMessage = "Failed to fetch activity streams for GPX: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
+    }
+
+    private func loadAndProcessStreams() {
+        isLoadingGraphData = true
+        errorMessage = nil
+
+        Task { @MainActor in
+            let cacheManager = CacheManager()
+            if let cachedStreams = cacheManager.loadActivityStreams(activityId: activity.id) {
+                self.processAndCalculateGraphData(streamsDictionary: cachedStreams)
+                self.isLoadingGraphData = false // Desactivar si se cargó desde caché
+            } else {
+                // Si no están en caché, obtener de la red
+                stravaService.getActivityStreams(activityId: activity.id) { [weak self] result in
+                    DispatchQueue.main.async {
+                        guard let self = self else { return }
+                        switch result {
+                        case .success(let streamsDictionary):
+                            self.processAndCalculateGraphData(streamsDictionary: streamsDictionary)
+                        case .failure(let error):
+                            if let stravaAuthError = error as? StravaAuthError, case .apiError(let message) = stravaAuthError {
+                                self.errorMessage = message
+                            } else {
+                                self.errorMessage = "Failed to fetch activity streams: \(error.localizedDescription)"
+                            }
+                            print("Failed to fetch activity streams: \(error.localizedDescription)")
+                        }
+                        self.isLoadingGraphData = false // Desactivar si se cargó de la red
                     }
                 }
             }

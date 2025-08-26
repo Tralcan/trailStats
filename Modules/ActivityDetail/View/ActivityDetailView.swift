@@ -174,7 +174,7 @@ struct ActivityDetailView: View {
                 }
                 .padding()
             }
-            if viewModel.isLoading {
+            if viewModel.isLoadingGraphData {
                 loadingView
             }
         }
@@ -182,7 +182,7 @@ struct ActivityDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            viewModel.fetchActivityStreams()
+            
         }
         .onChange(of: viewModel.gpxDataToShare) { gpxData in
             if gpxData != nil {
