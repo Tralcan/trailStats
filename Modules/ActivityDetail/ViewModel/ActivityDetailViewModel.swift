@@ -66,6 +66,8 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var normalizedPower: Double?
     @Published var gradeAdjustedPace: Double?
     @Published var heartRateZoneDistribution: HeartRateZoneDistribution?
+    @Published var performanceByGrade: [PerformanceByGrade] = []
+    @Published var efficiencyIndex: Double?
 
     private let stravaService = StravaService()
     
@@ -144,6 +146,88 @@ class ActivityDetailViewModel: ObservableObject {
         analyzeAndSetSegments()
         calculateGradeAdjustedPace()
         calculateHeartRateZoneDistribution()
+        calculatePerformanceByGrade()
+        calculateEfficiencyIndex()
+    }
+
+    private func calculateEfficiencyIndex() {
+        guard !paceData.isEmpty, !heartRateData.isEmpty else {
+            self.efficiencyIndex = nil
+            return
+        }
+
+        let combinedData = paceData.compactMap { pacePoint -> (pace: Double, hr: Double)? in
+            guard let hrPoint = heartRateData.first(where: { $0.time == pacePoint.time }) else { return nil }
+            // Ensure data is valid for calculation
+            guard pacePoint.value > 0, hrPoint.value > 0 else { return nil }
+            return (pace: pacePoint.value, hr: hrPoint.value)
+        }
+
+        guard !combinedData.isEmpty else {
+            self.efficiencyIndex = nil
+            return
+        }
+
+        let efficiencyRatios = combinedData.map { (pace, hr) -> Double in
+            // Convert pace (min/km) to speed (m/s)
+            let speedMetersPerSecond = 1000 / (pace * 60)
+            return speedMetersPerSecond / hr
+        }
+
+        self.efficiencyIndex = efficiencyRatios.averageOrNil()
+    }
+
+    private func calculatePerformanceByGrade() {
+        guard distanceData.count > 1, distanceData.count == altitudeData.count else {
+            self.performanceByGrade = []
+            return
+        }
+
+        let bucketLabels = ["<-15%", "-15% to -10%", "-10% to -5%", "-5% to 0%", "0% to 5%", "5% to 10%", "10% to 15%", ">15%"]
+        var bucketedData: [String: (distance: Double, time: TimeInterval, elevation: Double)] = [:]
+        for label in bucketLabels {
+            bucketedData[label] = (0, 0, 0)
+        }
+
+        for i in 1..<distanceData.count {
+            let segmentDistance = distanceData[i].value - distanceData[i-1].value
+            let segmentAltitude = altitudeData[i].value - altitudeData[i-1].value
+            let segmentTime = TimeInterval(distanceData[i].time - distanceData[i-1].time)
+
+            guard segmentDistance > 0.1 else { continue }
+
+            let grade = segmentAltitude / segmentDistance
+            
+            let bucketLabel: String
+            if grade < -0.15 { bucketLabel = bucketLabels[0] }
+            else if grade < -0.10 { bucketLabel = bucketLabels[1] }
+            else if grade < -0.05 { bucketLabel = bucketLabels[2] }
+            else if grade <= 0.0 { bucketLabel = bucketLabels[3] }
+            else if grade < 0.05 { bucketLabel = bucketLabels[4] }
+            else if grade < 0.10 { bucketLabel = bucketLabels[5] }
+            else if grade < 0.15 { bucketLabel = bucketLabels[6] }
+            else { bucketLabel = bucketLabels[7] }
+
+            bucketedData[bucketLabel]?.distance += segmentDistance
+            bucketedData[bucketLabel]?.time += segmentTime
+            bucketedData[bucketLabel]?.elevation += segmentAltitude
+        }
+
+        var performanceData: [PerformanceByGrade] = []
+        for label in bucketLabels {
+            if let data = bucketedData[label], data.time > 1.0 {
+                performanceData.append(
+                    PerformanceByGrade(
+                        gradeBucket: label,
+                        distance: data.distance,
+                        time: data.time,
+                        elevation: data.elevation
+                    )
+                )
+            }
+        }
+        
+        self.performanceByGrade = performanceData
     }
 
     private func calculateHeartRateZoneDistribution() {
