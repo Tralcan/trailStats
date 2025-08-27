@@ -65,15 +65,15 @@ class RaceGeminiCoachService {
         Datos de carreras anteriores (últimas 30):
         \(activitiesDataString)
 
-        Para una carrera futura con Distancia: \(Formatters.formatDistance(race.distance)) y Desnivel: \(Formatters.formatElevation(race.elevationGain)), ¿cuánto tiempo estimado, consideraciones importantes y recomendaciones de nutrición darías?
+        Para una carrera futura con Distancia: \(Formatters.formatDistance(race.distance)) y Desnivel: \(Formatters.formatElevation(race.elevationGain)), ¿cuánto tiempo estimado, consideraciones importantes a considerar en la carrera misma y recomendaciones de nutrición durante la carrera? Nada genérico, que sea muy orientado a la persona que correrá.
         """
 
         let finalPrompt = "\(systemPrompt)\n\n\(userPrompt)"
-
+        print("[DEBUG] \(finalPrompt)");
         let requestBody: [String: Any] = [
             "contents": [ ["parts": [ ["text": finalPrompt] ]] ],
             "generationConfig": [
-                "maxOutputTokens": 500 // Ajustado para una respuesta más detallada
+                "maxOutputTokens": 2048 // Ajustado para una respuesta más detallada
             ]
         ]
 

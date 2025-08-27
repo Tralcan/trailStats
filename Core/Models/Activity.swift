@@ -31,6 +31,7 @@ struct Activity: Identifiable, Codable {
         case date = "start_date"
         case distance
         case duration = "moving_time"
+        case elapsedTime = "elapsed_time"
         case elevationGain = "total_elevation_gain"
         case averageHeartRate = "average_heartrate"
         case averageCadence = "average_cadence"

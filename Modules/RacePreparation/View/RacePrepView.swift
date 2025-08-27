@@ -169,59 +169,74 @@ struct RaceDetailView: View {
 
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 20) {
-                // New layout
-                VStack(alignment: .leading) {
-                    Text("Carrera")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    HStack {
-                        Text(race.name)
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                        Spacer()
-                        Text("\(daysRemaining(for: race.date)) días")
-                            .font(.title2)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // New layout
+                    VStack(alignment: .leading) {
+                        Text("Carrera")
+                            .font(.caption)
                             .foregroundColor(.secondary)
+                        HStack {
+                            Text(race.name)
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                            Spacer()
+                            Text("\(daysRemaining(for: race.date)) días")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                        }
+                        HStack {
+                            Image(systemName: "location.fill")
+                                .foregroundColor(.red)
+                            Text("\(String(format: "%.2f", race.distance / 1000)) km")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Image(systemName: "mountain.2.fill")
+                                .foregroundColor(.green)
+                            Text("\(String(format: "%.0f", race.elevationGain)) m")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    HStack {
-                        Image(systemName: "location.fill")
-                            .foregroundColor(.red)
-                        Text("\(String(format: "%.2f", race.distance / 1000)) km")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Image(systemName: "mountain.2.fill")
-                            .foregroundColor(.green)
-                        Text("\(String(format: "%.0f", race.elevationGain)) m")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                    }
-                }
 
-                if let response = geminiResponse {
-                    HStack {
-                        Image(systemName: "clock.fill")
-                            .foregroundColor(.blue)
-                        Text(response.tiempo)
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                    }
-                    Text("Consideraciones Importantes: \(response.importante)")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Text("Recomendación Nutricional: \(response.nutricion)")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                } else {
-                    Text("Estimando tiempo y recomendaciones con Gemini...")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                }
+                    if let response = geminiResponse {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "clock.fill")
+                                .foregroundColor(.blue)
+                            Text(response.tiempo)
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                            Spacer()
+                        }
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Importante")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(response.importante)
+                                .font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
 
-                Spacer()
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Nutrición")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            Text(response.nutricion)
+                                .font(.body)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    } else {
+                        Text("Estimando tiempo y recomendaciones con Gemini...")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+                }
+                .padding()
             }
-            .padding()
             .navigationTitle("Detalle de Carrera") // Changed navigation title
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
