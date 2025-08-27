@@ -755,6 +755,30 @@ class ActivityDetailViewModel: ObservableObject {
     
     // MARK: - AI Coach Data Collection
 
+    func generateAnalysisString() -> String {
+        var analysis = "*Análisis de la Actividad: \(activity.name)*\n\n"
+
+        let kpis = gatherActivityKPIs()
+        
+        // Ordenar KPIs para una presentación consistente
+        let orderedKeys = [
+            "Fecha", "Distancia", "Tiempo en Movimiento", "Desnivel Positivo",
+            "Ritmo Ajustado por Pendiente (GAP)", "Frecuencia Cardíaca Promedio",
+            "VAM (Velocidad de Ascenso Media)", "Velocidad de Descenso Media",
+            "Desacoplamiento Cardíaco (Ritmo:FC)", "Potencia Normalizada (NP)",
+            "Potencia Promedio", "Cadencia Promedio", "Índice de Eficiencia (Velocidad/FC)",
+            "Distribución de Zonas de FC", "Rendimiento por Pendiente", "Segmentos de Subida Clave"
+        ]
+        
+        for key in orderedKeys {
+            if let value = kpis[key], !value.isEmpty, value != "--" {
+                analysis += "*\(key):* \(value)\n"
+            }
+        }
+
+        return analysis
+    }
+
     private func gatherActivityKPIs() -> [String: String] {
         var kpis: [String: String] = [:]
 
@@ -798,15 +822,21 @@ class ActivityDetailViewModel: ObservableObject {
 
         // Complex KPIs formatting
         if let hrZones = heartRateZoneDistribution {
-            let zonesSummary = "Z1: \(Int(hrZones.timeInZone1).toHoursMinutesSeconds()), Z2: \(Int(hrZones.timeInZone2).toHoursMinutesSeconds()), Z3: \(Int(hrZones.timeInZone3).toHoursMinutesSeconds()), Z4: \(Int(hrZones.timeInZone4).toHoursMinutesSeconds()), Z5: \(Int(hrZones.timeInZone5).toHoursMinutesSeconds())"
-            kpis["Distribución de Zonas de FC"] = zonesSummary
+            let zones = [
+                "Z1: \(Int(hrZones.timeInZone1).toHoursMinutesSeconds())",
+                "Z2: \(Int(hrZones.timeInZone2).toHoursMinutesSeconds())",
+                "Z3: \(Int(hrZones.timeInZone3).toHoursMinutesSeconds())",
+                "Z4: \(Int(hrZones.timeInZone4).toHoursMinutesSeconds())",
+                "Z5: \(Int(hrZones.timeInZone5).toHoursMinutesSeconds())"
+            ]
+            kpis["Distribución de Zonas de FC"] = "\n" + zones.joined(separator: "\n")
         }
 
         if !performanceByGrade.isEmpty {
             let performanceSummary = performanceByGrade.map { performance -> String in
                 "\(performance.gradeBucket): \(performance.averagePace.toPaceFormat())"
-            }.joined(separator: " | ")
-            kpis["Rendimiento por Pendiente"] = performanceSummary
+            }.joined(separator: "\n")
+            kpis["Rendimiento por Pendiente"] = "\n" + performanceSummary
         }
         
         if !climbSegments.isEmpty {

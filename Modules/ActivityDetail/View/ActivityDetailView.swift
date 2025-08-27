@@ -5,7 +5,7 @@ import UIKit
 struct ActivityDetailView: View {
     
     @StateObject var viewModel: ActivityDetailViewModel
-    @State private var showShareSheet = false
+    @State private var showGpxShareSheet = false
     
     init(activity: Activity) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
@@ -167,7 +167,23 @@ struct ActivityDetailView: View {
 
                     segmentsSection
                     interactiveChartSection
-                    aiCoachSection // NEW POSITION
+                    aiCoachSection
+                    
+                    // Botón para compartir análisis
+                    Button(action: {
+                        let analysisText = viewModel.generateAnalysisString()
+                        share(items: [analysisText])
+                    }) {
+                        Label("Compartir Análisis", systemImage: "text.quote")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.accentColor)
+                            .cornerRadius(12)
+                    }
+                    .padding(.top)
+
                 }
                 .padding()
             }
@@ -183,10 +199,10 @@ struct ActivityDetailView: View {
         }
         .onChange(of: viewModel.gpxDataToShare) { gpxData in
             if gpxData != nil {
-                showShareSheet = true
+                showGpxShareSheet = true
             }
         }
-        .sheet(isPresented: $showShareSheet) {
+        .sheet(isPresented: $showGpxShareSheet) {
             if let gpxData = viewModel.gpxDataToShare {
                 let sanitizedName = viewModel.activity.name
                     .replacingOccurrences(of: "[^a-zA-Z0-9_-]", with: "_", options: .regularExpression)
@@ -195,6 +211,29 @@ struct ActivityDetailView: View {
                 ShareSheet(activityItems: [GPXFile(data: gpxData, filename: filename)])
             }
         }
+    }
+    
+    private func share(items: [Any]) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              var topViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController else { return }
+
+        // Traverse up the view controller hierarchy to find the topmost one
+        while let presentedViewController = topViewController.presentedViewController {
+            topViewController = presentedViewController
+        }
+
+        let activityViewController = UIActivityViewController(activityItems: items, applicationActivities: nil)
+
+        if let popoverController = activityViewController.popoverPresentationController {
+            popoverController.sourceView = topViewController.view
+            popoverController.sourceRect = CGRect(x: topViewController.view.bounds.midX,
+                                                  y: topViewController.view.bounds.midY,
+                                                  width: 0,
+                                                  height: 0)
+            popoverController.permittedArrowDirections = []
+        }
+
+        topViewController.present(activityViewController, animated: true)
     }
     
     private var loadingView: some View {
