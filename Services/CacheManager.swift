@@ -84,6 +84,20 @@ class CacheManager {
         }
     }
 
+    /// Checks a list of activity IDs and returns a Set containing the IDs that have cached processed metrics.
+    func getExistingMetricIds(for activityIds: [Int]) -> Set<Int> {
+        var existingIds = Set<Int>()
+        for id in activityIds {
+            if let folder = summaryFolderURL(for: id) {
+                let fileURL = folder.appendingPathComponent("processed_metrics.json")
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    existingIds.insert(id)
+                }
+            }
+        }
+        return existingIds
+    }
+
     // MARK: - Summaries & Chart Images
 
     private var summariesDirectoryURL: URL? {
@@ -162,7 +176,7 @@ class CacheManager {
             decoder.dateDecodingStrategy = .iso8601
             return try decoder.decode(ActivitySummary.self, from: data)
         } catch {
-            print("Error loading summary: \(error.localizedDescription)")
+            print("Error loading summary: \(activityId): \(error.localizedDescription)")
             return nil
         }
     }
@@ -378,4 +392,3 @@ class CacheManager {
         }
     }
 }
-

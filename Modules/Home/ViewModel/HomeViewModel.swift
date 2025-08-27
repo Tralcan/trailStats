@@ -1,4 +1,3 @@
-
 import Foundation
 
 /// ViewModel for the Home screen.
@@ -41,11 +40,8 @@ class HomeViewModel: ObservableObject {
     @Published var canLoadMoreActivities = true
 
     func refreshCacheStatus() {
-        for activity in activities {
-            if cacheManager.loadMetrics(activityId: activity.id) != nil {
-                cachedActivityIds.insert(activity.id)
-            }
-        }
+        let allActivityIds = activities.map { $0.id }
+        cachedActivityIds = cacheManager.getExistingMetricIds(for: allActivityIds)
     }
 
     func isActivityCached(activityId: Int) -> Bool {
@@ -100,9 +96,9 @@ class HomeViewModel: ObservableObject {
         _isAuthenticated = Published(initialValue: stravaService.isAuthenticated())
         if isAuthenticated {
             if let cachedActivities = cacheManager.loadActivities(), !cachedActivities.isEmpty {
-                // Mostrar instantáneamente el caché, pero siempre empezar el paginado en 1
                 self.activities = cachedActivities.sorted { $0.date > $1.date }
                 self.currentPage = 1
+                refreshCacheStatus() // Verificar estado del caché al iniciar
             } else {
                 fetchActivities()
             }
@@ -142,8 +138,7 @@ class HomeViewModel: ObservableObject {
     func refreshActivities() {
         currentPage = 1
         canLoadMoreActivities = true
-        // No limpiar 'activities' para mantener las existentes y solo añadir las nuevas
-        fetchActivities()
+        fetchActivities() // Solo busca la primera página para nuevas actividades
     }
 
     func fetchActivities() {
@@ -155,22 +150,38 @@ class HomeViewModel: ObservableObject {
                 self.isLoading = false
                 switch result {
                 case .success(let newActivities):
-                    if newActivities.isEmpty { // Solo se pone a false si Strava devuelve una página vacía
+                    if newActivities.isEmpty {
                         self.canLoadMoreActivities = false
                         return
                     }
 
                     let trailRuns = newActivities.filter { $0.sportType == "TrailRun" }
-                    let existingIds = Set(self.activities.map { $0.id })
-                    let uniqueNew = trailRuns.filter { !existingIds.contains($0.id) }
+                    
+                    // Si es la primera página, reemplazamos las actividades locales con las de Strava
+                    // para asegurar que el orden y los datos son los más recientes.
+                    if self.currentPage == 1 {
+                        let existingIds = Set(trailRuns.map { $0.id })
+                        var updatedActivities = trailRuns
+                        // Añadir actividades antiguas que no vinieron en la primera página
+                        for activity in self.activities {
+                            if !existingIds.contains(activity.id) {
+                                updatedActivities.append(activity)
+                            }
+                        }
+                        self.activities = updatedActivities
+                    } else {
+                        // Para páginas siguientes, solo añadimos las que no tengamos
+                        let existingIds = Set(self.activities.map { $0.id })
+                        let uniqueNew = trailRuns.filter { !existingIds.contains($0.id) }
+                        self.activities.append(contentsOf: uniqueNew)
+                    }
 
-                    self.activities.append(contentsOf: uniqueNew)
-                    self.activities.sort { $0.date > $1.date } // Reordenar toda la lista
+                    self.activities.sort { $0.date > $1.date }
                     self.cacheManager.saveActivities(self.activities)
+                    self.refreshCacheStatus() // Actualizar estado de caché después de cada carga
 
-                    // Siempre avanzar de página si Strava devolvió actividades, incluso si eran duplicados
-                    // Esto asegura que avanzamos más allá de las páginas que podrían contener solo duplicados
                     self.currentPage += 1
+
                 case .failure(let error):
                     print("Failed to fetch activities: \(error.localizedDescription)")
                     if let stravaError = error as? StravaAuthError, stravaError == .invalidRefreshToken {
