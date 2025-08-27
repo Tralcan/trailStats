@@ -311,5 +311,57 @@ class CacheManager {
             }
         }
     }
+
+    private var raceCoachingDirectoryURL: URL? {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("Error: Could not find documents directory.")
+            return nil
+        }
+        let raceCoachingDir = documentsDirectory.appendingPathComponent("raceCoaching")
+        if !FileManager.default.fileExists(atPath: raceCoachingDir.path) {
+            do {
+                try FileManager.default.createDirectory(at: raceCoachingDir, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print("Error creating raceCoaching directory: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return raceCoachingDir
+    }
+
+    private func raceCoachingFileURL(for raceId: UUID) -> URL? {
+        return raceCoachingDirectoryURL?.appendingPathComponent("\(raceId.uuidString).json")
+    }
+
+    func saveRaceGeminiCoachResponse(raceId: UUID, response: RaceGeminiCoachResponse) {
+        guard let url = raceCoachingFileURL(for: raceId) else { return }
+        
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(response)
+            try data.write(to: url, options: .atomic)
+            print("Successfully saved RaceGeminiCoachResponse for race \(raceId.uuidString) to cache.")
+        } catch {
+            print("Error saving RaceGeminiCoachResponse for race \(raceId.uuidString) to cache: \(error.localizedDescription)")
+        }
+    }
+
+    func loadRaceGeminiCoachResponse(raceId: UUID) -> RaceGeminiCoachResponse? {
+        guard let url = raceCoachingFileURL(for: raceId), FileManager.default.fileExists(atPath: url.path) else {
+            print("Cache file for race \(raceId.uuidString) does not exist.")
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            let response = try decoder.decode(RaceGeminiCoachResponse.self, from: data)
+            print("Successfully loaded RaceGeminiCoachResponse for race \(raceId.uuidString) from cache.")
+            return response
+        } catch {
+            print("Error loading RaceGeminiCoachResponse for race \(raceId.uuidString) from cache: \(error.localizedDescription)")
+            return nil
+        }
+    }
 }
 

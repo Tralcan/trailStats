@@ -201,14 +201,20 @@ struct RaceDetailView: View {
                     }
 
                     if let response = geminiResponse {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "clock.fill")
-                                .foregroundColor(.blue)
-                            Text(response.tiempo)
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                            Spacer()
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "clock.fill")
+                                    .foregroundColor(.blue)
+                                Text(response.tiempo)
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                Spacer()
+                            }
+                            Text(response.razon)
+                                .font(.caption)
+                                .italic()
+                                .multilineTextAlignment(.center)
                         }
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Importante")

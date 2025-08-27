@@ -1,7 +1,8 @@
 import Foundation
 
-struct RaceGeminiCoachResponse: Decodable {
+struct RaceGeminiCoachResponse: Decodable, Encodable {
     let tiempo: String
+    let razon: String
     let importante: String
     let nutricion: String
 }
@@ -10,6 +11,12 @@ class RaceGeminiCoachService {
     private let cacheManager = CacheManager()
 
     func getRaceEstimationAndRecommendations(for race: Race, completion: @escaping (Result<RaceGeminiCoachResponse, Error>) -> Void) {
+        // Try to load from cache first
+        if let cachedResponse = cacheManager.loadRaceGeminiCoachResponse(raceId: race.id) {
+            print("Loading RaceGeminiCoachResponse from cache for race \(race.id.uuidString)")
+            completion(.success(cachedResponse))
+            return
+        }
         guard let allActivities = cacheManager.loadActivities() else {
             completion(.failure(RaceGeminiCoachServiceError.noActivityData))
             return
@@ -55,10 +62,17 @@ class RaceGeminiCoachService {
         }
 
         let systemPrompt = """
-        Eres un experto entrenador de trail. Tu misión es calcular cuánto se demorará una persona en terminar una carrera, basándote en sus datos de carreras anteriores. 
-        Además, debes recomendar temas importantes a considerar durante la carrera y dar una recomendación de nutrición. 
-        Responde únicamente con un JSON en el siguiente formato: 
-        { \"tiempo\":\"tiempo calculado\", \"importante\":\"temas importantes a considerar durante la carrera\", \"nutricion\":\"recomendación de nutricion durante la carrera\" }
+        Eres un experto entrenador de trail. Tu misión es calcular el tiempo estimado de una carrera futura, basándote en los datos de carreras anteriores.
+        Para el cálculo del tiempo, considera que los datos de entrenamiento representan un 60% del esfuerzo y rendimiento real que se puede alcanzar en una competencia. Por lo tanto, tu estimación debe proyectar un tiempo optimista y agresivo, reflejando tu máximo potencial de carrera.
+        Aplica la siguiente lógica:
+        1.  **Ajusta el ritmo base:** Proyecta un ritmo base (GAP) de carrera que sea significativamente más rápido que el de los entrenamientos más largos (que están al 60% del esfuerzo), asumiendo que el día de la carrera correrás a un nivel de intensidad del 100%.
+        2.  **Aplica la fatiga:** Considera la fatiga como un factor que afectará el ritmo proyectado, no el ritmo de entrenamiento (que están al 60% del esfuerzo). Modera la proyección de ritmo en los tramos finales para reflejar un nivel de fatiga realista para una competencia. No bases este cálculo en el desacoplamiento de entrenamientos.
+        3.  **Usa los mejores datos:** Prioriza la información de tus mejores Ritmos Ajustados (GAP) y Velocidades de Ascenso y Descenso (VAM) para la proyección, ajustándolos para reflejar un rendimiento óptimo.
+        La carrera futura tiene una distancia y un desnivel específicos.
+        Además de la estimación de tiempo, debes recomendar temas importantes a considerar durante la carrera y una recomendación de nutrición.
+
+        Responde únicamente con un JSON en el siguiente formato, asegurándote de que la estimación de tiempo sea solo un número (ej. "4:30:00"). La explicación en 'razon' no debe exceder los 500 caracteres, el resto puede ser más largo y debe referirse a las carreras por su nombre, no por su ID.
+        { \"tiempo\":\"tiempo calculado\", \"razon\":\"razon del tiempo calculado\", \"importante\":\"temas importantes a considerar durante la carrera\", \"nutricion\":\"recomendación de nutricion durante la carrera\" }
         """
 
         let userPrompt = """
@@ -69,10 +83,11 @@ class RaceGeminiCoachService {
         """
 
         let finalPrompt = "\(systemPrompt)\n\n\(userPrompt)"
-        print("[DEBUG] \(finalPrompt)");
+        //print("[DEBUG] \(finalPrompt)");
         let requestBody: [String: Any] = [
             "contents": [ ["parts": [ ["text": finalPrompt] ]] ],
             "generationConfig": [
+                "temperature": 0.3,
                 "maxOutputTokens": 2048 // Ajustado para una respuesta más detallada
             ]
         ]
@@ -127,6 +142,7 @@ class RaceGeminiCoachService {
                 }
                 do {
                     let decodedResponse = try JSONDecoder().decode(RaceGeminiCoachResponse.self, from: jsonData)
+                    self.cacheManager.saveRaceGeminiCoachResponse(raceId: race.id, response: decodedResponse)
                     completion(.success(decodedResponse))
                 } catch {
                     print("JSON Decoding Error: \(error.localizedDescription)")
