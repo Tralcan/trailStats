@@ -23,7 +23,8 @@ struct RacePrepView: View {
                         .multilineTextAlignment(.center)
                 } else {
                     List {
-                        ForEach(viewModel.races) { race in
+                        ForEach(viewModel.races) {
+                            race in
                             Button(action: {
                                 selectedRace = race
                                 showingRaceDetailSheet = true
@@ -78,6 +79,9 @@ struct RacePrepView: View {
             }
             .sheet(isPresented: $showingAddRaceSheet) {
                 AddRaceView(viewModel: viewModel, isShowingSheet: $showingAddRaceSheet)
+            }
+            .sheet(item: $selectedRace) { race in // ADDED THIS SHEET
+                RaceDetailView(race: race, isShowingSheet: $showingRaceDetailSheet) // Pass the correct binding
             }
         }
     }
@@ -160,33 +164,65 @@ struct AddRaceView: View {
 struct RaceDetailView: View {
     let race: Race
     @Binding var isShowingSheet: Bool
+    @State private var geminiResponse: RaceGeminiCoachResponse? = nil
+    private let geminiCoachService = RaceGeminiCoachService()
 
     var body: some View {
         NavigationView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(race.name)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.bottom, 10)
+                // New layout
+                VStack(alignment: .leading) {
+                    Text("Carrera")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    HStack {
+                        Text(race.name)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        Spacer()
+                        Text("\(daysRemaining(for: race.date)) días")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Image(systemName: "location.fill")
+                            .foregroundColor(.red)
+                        Text("\(String(format: "%.2f", race.distance / 1000)) km")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Image(systemName: "mountain.2.fill")
+                            .foregroundColor(.green)
+                        Text("\(String(format: "%.0f", race.elevationGain)) m")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                    }
+                }
 
-                HStack {
-                    Image(systemName: "location.fill")
-                        .foregroundColor(.red)
-                    Text("\(String(format: "%.2f", race.distance / 1000)) km")
-                        .font(.title2)
+                if let response = geminiResponse {
+                    HStack {
+                        Image(systemName: "clock.fill")
+                            .foregroundColor(.blue)
+                        Text(response.tiempo)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                    }
+                    Text("Consideraciones Importantes: \(response.importante)")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Text("Recomendación Nutricional: \(response.nutricion)")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                } else {
+                    Text("Estimando tiempo y recomendaciones con Gemini...")
+                        .font(.headline)
                         .foregroundColor(.secondary)
                 }
-                HStack {
-                    Image(systemName: "mountain.2.fill")
-                        .foregroundColor(.green)
-                    Text("\(String(format: "%.0f", race.elevationGain)) m")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                }
+
                 Spacer()
             }
             .padding()
-            .navigationTitle(race.name)
+            .navigationTitle("Detalle de Carrera") // Changed navigation title
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -195,7 +231,26 @@ struct RaceDetailView: View {
                     }
                 }
             }
+            .onAppear {
+                geminiCoachService.getRaceEstimationAndRecommendations(for: race) { result in
+                    switch result {
+                    case .success(let response):
+                        self.geminiResponse = response
+                    case .failure(let error):
+                        print("Error getting Gemini response: \(error.localizedDescription)")
+                        // Handle error, maybe show an alert
+                    }
+                }
+            }
         }
+    }
+
+    private func daysRemaining(for date: Date) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let raceDay = calendar.startOfDay(for: date)
+        let components = calendar.dateComponents([.day], from: today, to: raceDay)
+        return components.day ?? 0
     }
 }
 
