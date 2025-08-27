@@ -7,6 +7,20 @@ struct ActivityDetailView: View {
     @StateObject var viewModel: ActivityDetailViewModel
     @State private var showGpxShareSheet = false
     
+    // Estado para controlar el KPI seleccionado y mostrar el popover.
+    @State private var selectedKpiInfo: KpiInfo?
+    
+    // Diccionario con las descripciones para cada KPI.
+    private let kpiInfoData: [String: String] = [
+        "Ritmo Ajustado (GAP)": "Calcula tu ritmo equivalente en terreno llano, ajustando el esfuerzo realizado en subidas y bajadas. Ayuda a comparar esfuerzos en terrenos variados.",
+        "Desacoplamiento Cardíaco": "Mide cómo tu frecuencia cardíaca aumenta con respecto a tu ritmo a lo largo del tiempo. Un valor bajo (idealmente < 5%) indica una excelente resistencia aeróbica.",
+        "Vel. Vertical (Ascenso)": "Mide los metros que asciendes por hora (m/h). Es un indicador clave de tu capacidad y eficiencia como escalador. También conocido como VAM.",
+        "Vel. Vertical (Descenso)": "Mide los metros que desciendes por hora (m/h). Un valor alto puede indicar una buena técnica y confianza en las bajadas.",
+        "Potencia Normalizada": "Estimación de la potencia que podrías haber mantenido con un esfuerzo constante. Es más precisa que la potencia media para esfuerzos variables como los del trail.",
+        "Índice Eficiencia": "Relaciona tu velocidad con tu frecuencia cardíaca. Un valor más alto sugiere que eres más eficiente, cubriendo más distancia por cada latido del corazón.",
+        "VAM (Velocidad de Ascenso Media)": "Mide los metros que asciendes por hora (m/h) específicamente en este rango de pendiente. Es un indicador clave de tu eficiencia como escalador en diferentes inclinaciones."
+    ]
+    
     init(activity: Activity) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
     }
@@ -62,17 +76,38 @@ struct ActivityDetailView: View {
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
                     KPICardView(title: "Ritmo Ajustado (GAP)", value: viewModel.gradeAdjustedPace?.toPaceFormat(), unit: "", icon: "speedometer", color: .cyan)
+                        .onTapGesture {
+                            selectedKpiInfo = KpiInfo(title: "Ritmo Ajustado (GAP)", description: kpiInfoData["Ritmo Ajustado (GAP)"]!)
+                        }
+                    
                     KPICardView(title: "Desacoplamiento Cardíaco", value: viewModel.cardiacDecoupling.map { String(format: "%.1f", $0) }, unit: "%", icon: "heart.slash.circle.fill", color: (viewModel.cardiacDecoupling ?? 0) > 10 ? .red : ((viewModel.cardiacDecoupling ?? 0) > 5 ? .yellow : .green))
+                        .onTapGesture {
+                            selectedKpiInfo = KpiInfo(title: "Desacoplamiento Cardíaco", description: kpiInfoData["Desacoplamiento Cardíaco"]!)
+                        }
                 }
                 
                 HStack(spacing: 16) {
                     KPICardView(title: "Vel. Vertical (Ascenso)", value: viewModel.verticalSpeedVAM.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
+                        .onTapGesture {
+                            selectedKpiInfo = KpiInfo(title: "Vel. Vertical (Ascenso)", description: kpiInfoData["Vel. Vertical (Ascenso)"]!)
+                        }
+
                     KPICardView(title: "Vel. Vertical (Descenso)", value: viewModel.descentVerticalSpeed.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
+                        .onTapGesture {
+                            selectedKpiInfo = KpiInfo(title: "Vel. Vertical (Descenso)", description: kpiInfoData["Vel. Vertical (Descenso)"]!)
+                        }
                 }
                 
                 HStack(spacing: 16) {
                     KPICardView(title: "Potencia Normalizada", value: viewModel.normalizedPower.map { String(format: "%.0f", $0) }, unit: "W", icon: "bolt.circle.fill", color: .green)
+                        .onTapGesture {
+                            selectedKpiInfo = KpiInfo(title: "Potencia Normalizada", description: kpiInfoData["Potencia Normalizada"]!)
+                        }
+
                     KPICardView(title: "Índice Eficiencia", value: viewModel.efficiencyIndex.map { String(format: "%.3f", $0) }, unit: "", icon: "leaf.arrow.triangle.circlepath", color: .mint)
+                        .onTapGesture {
+                            selectedKpiInfo = KpiInfo(title: "Índice Eficiencia", description: kpiInfoData["Índice Eficiencia"]!)
+                        }
                 }
             }
         }
@@ -161,7 +196,11 @@ struct ActivityDetailView: View {
                         }
 
                         if !viewModel.performanceByGrade.isEmpty {
-                            PerformanceByGradeView(performanceData: viewModel.performanceByGrade)
+                            PerformanceByGradeView(performanceData: viewModel.performanceByGrade, onKpiTapped: { kpiInfo in
+                                withAnimation {
+                                    selectedKpiInfo = kpiInfo
+                                }
+                            })
                         }
                     }
 
@@ -211,6 +250,24 @@ struct ActivityDetailView: View {
                 ShareSheet(activityItems: [GPXFile(data: gpxData, filename: filename)])
             }
         }
+        .overlay(
+            ZStack {
+                if let kpiInfo = selectedKpiInfo {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation {
+                                selectedKpiInfo = nil
+                            }
+                        }
+                    
+                    KpiInfoPopoverView(info: kpiInfo)
+                        .transition(.scale.combined(with: .opacity))
+                        .zIndex(1)
+                }
+            }
+            .animation(.easeInOut, value: selectedKpiInfo != nil)
+        )
     }
     
     private func share(items: [Any]) {
@@ -293,6 +350,26 @@ struct ActivityDetailView: View {
         .onAppear {
             viewModel.getAICoachObservation()
         }
+    }
+}
+
+private struct KpiInfoPopoverView: View {
+    let info: KpiInfo
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(info.title)
+                .font(.headline)
+                .foregroundColor(.white)
+            Text(info.description)
+                .font(.body)
+                .foregroundColor(.white.opacity(0.9))
+        }
+        .padding()
+        .background(Color.black.opacity(0.8))
+        .cornerRadius(12)
+        .shadow(radius: 20)
+        .padding()
     }
 }
 
