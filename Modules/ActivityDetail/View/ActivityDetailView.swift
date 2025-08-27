@@ -129,24 +129,22 @@ struct ActivityDetailView: View {
         }
     }
     
-    private var shareButtonSection: some View {
-        Button(action: { viewModel.shareGPX() }) {
-            Label("Exportar como GPX", systemImage: "square.and.arrow.up")
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(.accentColor)
-        .disabled(viewModel.isGeneratingGPX)
-    }
-
     var body: some View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text(viewModel.activity.name)
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                    HStack {
+                        Text(viewModel.activity.name)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        Spacer()
+                        Button(action: { viewModel.shareGPX() }) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                        }
+                        .disabled(viewModel.isGeneratingGPX)
+                    }
                     
                     headerView
                     trailKPIsSection
@@ -170,7 +168,6 @@ struct ActivityDetailView: View {
                     segmentsSection
                     interactiveChartSection
                     aiCoachSection // NEW POSITION
-                    shareButtonSection
                 }
                 .padding()
             }

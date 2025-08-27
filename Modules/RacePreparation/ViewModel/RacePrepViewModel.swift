@@ -19,6 +19,10 @@ class RacePrepViewModel: ObservableObject {
         races.append(newRace)
     }
 
+    func deleteRace(race: Race) {
+        races.removeAll { $0.id == race.id }
+    }
+
     private func saveRaces() {
         if let encoded = try? JSONEncoder().encode(races) {
             UserDefaults.standard.set(encoded, forKey: userDefaultsKey)

@@ -363,5 +363,19 @@ class CacheManager {
             return nil
         }
     }
+
+    func deleteRaceGeminiCoachResponse(raceId: UUID) {
+        guard let url = raceCoachingFileURL(for: raceId), FileManager.default.fileExists(atPath: url.path) else {
+            print("Cache file for race \(raceId.uuidString) does not exist.")
+            return
+        }
+        
+        do {
+            try FileManager.default.removeItem(at: url)
+            print("Successfully deleted RaceGeminiCoachResponse for race \(raceId.uuidString) from cache.")
+        } catch {
+            print("Error deleting RaceGeminiCoachResponse for race \(raceId.uuidString) from cache: \(error.localizedDescription)")
+        }
+    }
 }
 

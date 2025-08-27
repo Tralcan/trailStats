@@ -10,7 +10,7 @@ struct GeminiCoachService {
         // 1. Define the new system prompt
         let systemPrompt = """
         Eres un entrenador experto de trail running. Analiza los siguientes datos de una actividad y entrega un informe breve y conciso, de no más de 120 palabras. 
-        Comienza con tus hallazgos clave sobre el rendimiento, seguidos de tus sugerencias para mejorar. Basa tu análisis únicamente en los datos proporcionados. No escribir **
+        Comienza con tus hallazgos clave sobre el rendimiento (no menciones Hallazgos clave que sea un texto bien redactado y uno infiera que son hallazgos), seguidos de tus sugerencias para mejorar (tampoco menciones la palabra sugerencias que se infiera del texto). Basa tu análisis únicamente en los datos proporcionados. No escribir **
         """
 
         // 2. Format the KPIs into a string
