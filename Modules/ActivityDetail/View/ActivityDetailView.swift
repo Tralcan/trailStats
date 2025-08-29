@@ -12,6 +12,7 @@ struct ActivityDetailView: View {
     
     // Diccionario con las descripciones para cada KPI.
     private let kpiInfoData: [String: String] = [
+        "Esfuerzo Percibido (RPE)": "1 - 3 (Fácil): Podrías mantener una conversación completa sin problema. Sería un trote regenerativo.\n\n4 - 6 (Moderado): Te sientes cómodo y puedes hablar, pero con frases cortas. Es tu ritmo de resistencia.\n\n7 - 8 (Duro): Te cuesta mucho hablar. Estás en tu umbral o ritmo de carrera.\n\n9 - 10 (Máximo): Estás al límite, jadeando. Solo puedes mantenerlo por periodos muy cortos.",
         "Ritmo Ajustado (GAP)": "Calcula tu ritmo equivalente en terreno llano, ajustando el esfuerzo realizado en subidas y bajadas. Ayuda a comparar esfuerzos en terrenos variados.",
         "Desacoplamiento Cardíaco": "Mide cómo tu frecuencia cardíaca aumenta con respecto a tu ritmo a lo largo del tiempo. Un valor bajo (idealmente < 5%) indica una excelente resistencia aeróbica.",
         "Vel. Vertical (Ascenso)": "Mide los metros que asciendes por hora (m/h). Es un indicador clave de tu capacidad y eficiencia como escalador. También conocido como VAM.",
@@ -76,6 +77,9 @@ struct ActivityDetailView: View {
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(colorForRPE(value: viewModel.rpe))
+            }
+            .onTapGesture {
+                selectedKpiInfo = KpiInfo(title: "Esfuerzo Percibido (RPE)", description: kpiInfoData["Esfuerzo Percibido (RPE)"]!)
             }
             Slider(value: $viewModel.rpe, in: 1...10, step: 0.5)
                 .tint(colorForRPE(value: viewModel.rpe))
