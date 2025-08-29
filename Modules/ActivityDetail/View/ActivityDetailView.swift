@@ -129,14 +129,54 @@ struct ActivityDetailView: View {
     }
     
     @ViewBuilder
+    private var advancedAnalysisSection: some View {
+        // Si no hay datos de zonas de FC o de rendimiento por pendiente, mostramos un placeholder
+        if viewModel.heartRateZoneDistribution == nil && viewModel.performanceByGrade.isEmpty {
+            VStack(spacing: 10) {
+                ProgressView()
+                Text("Calculando análisis avanzado...")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, minHeight: 150)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+        } else {
+            // Si hay datos, mostramos las vistas correspondientes
+            if let distribution = viewModel.heartRateZoneDistribution {
+                HeartRateZoneView(distribution: distribution)
+            }
+
+            if !viewModel.performanceByGrade.isEmpty {
+                PerformanceByGradeView(performanceData: viewModel.performanceByGrade, onKpiTapped: { kpiInfo in
+                    withAnimation {
+                        selectedKpiInfo = kpiInfo
+                    }
+                })
+            }
+        }
+    }
+
+    @ViewBuilder
     private var interactiveChartSection: some View {
-        if viewModel.isLoadingGraphData {
-            ProgressView("Cargando gráficos...")
-                .padding()
-                .frame(maxWidth: .infinity, minHeight: 200)
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(12)
-        } else if !viewModel.altitudeData.isEmpty {
+        if viewModel.altitudeData.isEmpty {
+            VStack {
+                Text("Análisis Interactivo")
+                    .font(.title2).bold()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer()
+                ProgressView()
+                Text("Cargando datos del gráfico...")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding()
+            .frame(height: 300)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+        } else {
             InteractiveChartView(
                 altitudeData: viewModel.altitudeData,
                 overlayData: [
@@ -189,26 +229,7 @@ struct ActivityDetailView: View {
                         }
                     }
 
-                    if viewModel.isLoadingGraphData {
-                        ProgressView("Calculando zonas de FC y rendimiento por pendiente...")
-                            .padding()
-                            .frame(maxWidth: .infinity, minHeight: 150)
-                            .background(Color(.secondarySystemBackground))
-                            .cornerRadius(12)
-                    } else {
-                        if let distribution = viewModel.heartRateZoneDistribution {
-                            HeartRateZoneView(distribution: distribution)
-                        }
-
-                        if !viewModel.performanceByGrade.isEmpty {
-                            PerformanceByGradeView(performanceData: viewModel.performanceByGrade, onKpiTapped: { kpiInfo in
-                                withAnimation {
-                                    selectedKpiInfo = kpiInfo
-                                }
-                            })
-                        }
-                    }
-
+                    advancedAnalysisSection
                     segmentsSection
                     interactiveChartSection
                     aiCoachSection
@@ -231,15 +252,12 @@ struct ActivityDetailView: View {
                 }
                 .padding()
             }
-            if viewModel.isLoadingGraphData {
-                loadingView
-            }
         }
         .navigationTitle(viewModel.activity.name)
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemGroupedBackground))
-        .onAppear {
-            viewModel.loadActivityDetails()
+        .task {
+            await viewModel.loadActivityDetails()
         }
         .onChange(of: viewModel.gpxDataToShare) { gpxData in
             if gpxData != nil {
@@ -296,24 +314,6 @@ struct ActivityDetailView: View {
         }
 
         topViewController.present(activityViewController, animated: true)
-    }
-    
-    private var loadingView: some View {
-        ZStack {
-            Color.black.opacity(0.6).ignoresSafeArea()
-            VStack(spacing: 16) {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(2)
-                Text("Analizando actividad...")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.top, 8)
-            }
-            .padding(32)
-            .background(Material.ultraThinMaterial)
-            .cornerRadius(16)
-        }
     }
     
     private var aiCoachSection: some View {
