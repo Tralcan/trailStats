@@ -66,6 +66,35 @@ struct ActivityDetailView: View {
         .cornerRadius(12)
     }
     
+    private var rpeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Esfuerzo Percibido (RPE)")
+                    .font(.headline)
+                Spacer()
+                Text(String(format: "%.1f / 10", viewModel.rpe))
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(colorForRPE(value: viewModel.rpe))
+            }
+            Slider(value: $viewModel.rpe, in: 1...10, step: 0.5)
+                .tint(colorForRPE(value: viewModel.rpe))
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
+    private func colorForRPE(value: Double) -> Color {
+        let normalizedValue = (value - 1) / 9 // Normalize RPE from 1-10 to 0-1
+        
+        // As value goes from 0 to 1, red goes from 0 to 1, and blue goes from 1 to 0.
+        let redComponent = normalizedValue
+        let blueComponent = 1 - normalizedValue
+        
+        return Color(red: redComponent, green: 0.2, blue: blueComponent)
+    }
+
     // Sección de KPIs rediseñada y robusta
     private var trailKPIsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -222,6 +251,7 @@ struct ActivityDetailView: View {
                     }
                     
                     headerView
+                    rpeSection
                     trailKPIsSection
                     RunningDynamicsView(activity: viewModel.activity) { kpiInfo in
                         withAnimation {

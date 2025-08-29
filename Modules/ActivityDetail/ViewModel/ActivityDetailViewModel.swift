@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Data Structures
 
@@ -57,6 +58,9 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var performanceByGrade: [PerformanceByGrade] = []
     @Published var efficiencyIndex: Double?
 
+    // RPE
+    @Published var rpe: Double = 5.0
+
     // UI State
     @Published var errorMessage: String? = nil
     @Published var isGeneratingGPX = false
@@ -69,19 +73,37 @@ class ActivityDetailViewModel: ObservableObject {
     private let stravaService = StravaService()
     private let healthKitService = HealthKitService()
     private let cacheManager = CacheManager()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
     init(activity: Activity) {
         self.activity = activity
+        self.rpe = activity.rpe ?? 5.0
+
+        $rpe
+            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .sink { [weak self] newRPE in
+                guard let self = self else { return }
+                self.activity.rpe = newRPE
+                self.cacheManager.saveActivityDetail(activity: self.activity)
+                self.getAICoachObservation()
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Public Methods
     func loadActivityDetails() async {
-        if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id), cachedActivity.verticalOscillation != nil {
+        // Try to load the detailed activity from cache first.
+        if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id) {
             self.activity = cachedActivity
-        } else {
+            self.rpe = cachedActivity.rpe ?? 5.0 // Update RPE from cached activity
+        }
+
+        // If the loaded activity (either from cache or initial) is missing dynamics, fetch them.
+        if self.activity.verticalOscillation == nil {
             fetchAndEnrichWithHealthKit()
         }
+        
         loadCachedSummaries()
         await loadAndProcessStreams()
     }
@@ -208,7 +230,7 @@ class ActivityDetailViewModel: ObservableObject {
         
         // Ordenar KPIs para una presentación consistente
         let orderedKeys = [
-            "Fecha", "Distancia", "Tiempo en Movimiento", "Desnivel Positivo",
+            "Fecha", "Distancia", "Tiempo en Movimiento", "Desnivel Positivo", "Esfuerzo Percibido (RPE)",
             "Ritmo Ajustado por Pendiente (GAP)", "Frecuencia Cardíaca Promedio",
             "VAM (Velocidad de Ascenso Media)", "Velocidad de Descenso Media",
             "Desacoplamiento Cardíaco (Ritmo:FC)", "Potencia Normalizada (NP)",
@@ -329,6 +351,9 @@ class ActivityDetailViewModel: ObservableObject {
         }
         if let efficiency = efficiencyIndex {
             kpis["Índice de Eficiencia (Velocidad/FC)"] = Formatters.formatEfficiencyIndex(efficiency)
+        }
+        if let rpe = activity.rpe {
+            kpis["Esfuerzo Percibido (RPE)"] = String(format: "%.1f/10", rpe)
         }
 
         // Complex KPIs formatting

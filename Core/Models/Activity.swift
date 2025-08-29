@@ -26,6 +26,9 @@ struct Activity: Identifiable, Codable {
     var strideLength: Double?
     var verticalRatio: Double?
     
+    // User-provided
+    var rpe: Double?
+    
     // Location Data
     var startCoordinate: CLLocationCoordinate2D?
     var polyline: String? // Encoded polyline for map view
@@ -50,6 +53,7 @@ struct Activity: Identifiable, Codable {
         case groundContactTime
         case strideLength
         case verticalRatio
+        case rpe
     }
     
     enum MapKeys: String, CodingKey {
@@ -75,6 +79,7 @@ struct Activity: Identifiable, Codable {
         groundContactTime = try container.decodeIfPresent(Double.self, forKey: .groundContactTime)
         strideLength = try container.decodeIfPresent(Double.self, forKey: .strideLength)
         verticalRatio = try container.decodeIfPresent(Double.self, forKey: .verticalRatio)
+        rpe = try container.decodeIfPresent(Double.self, forKey: .rpe)
         
         if let latlng = try container.decodeIfPresent([Double].self, forKey: .startCoordinate), latlng.count == 2 {
             startCoordinate = CLLocationCoordinate2D(latitude: latlng[0], longitude: latlng[1])
@@ -108,6 +113,7 @@ struct Activity: Identifiable, Codable {
         try container.encodeIfPresent(groundContactTime, forKey: .groundContactTime)
         try container.encodeIfPresent(strideLength, forKey: .strideLength)
         try container.encodeIfPresent(verticalRatio, forKey: .verticalRatio)
+        try container.encodeIfPresent(rpe, forKey: .rpe)
         
         if let coordinate = startCoordinate {
             try container.encode([coordinate.latitude, coordinate.longitude], forKey: .startCoordinate)
