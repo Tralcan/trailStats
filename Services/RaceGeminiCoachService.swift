@@ -59,6 +59,7 @@ class RaceGeminiCoachService {
                 }
             }
             activitiesDataString += activityDetails.joined(separator: ", ") + "\n"
+
         }
 
         let systemPrompt = """

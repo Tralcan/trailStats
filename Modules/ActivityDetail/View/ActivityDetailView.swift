@@ -183,6 +183,11 @@ struct ActivityDetailView: View {
                     
                     headerView
                     trailKPIsSection
+                    RunningDynamicsView(activity: viewModel.activity) { kpiInfo in
+                        withAnimation {
+                            selectedKpiInfo = kpiInfo
+                        }
+                    }
 
                     if viewModel.isLoadingGraphData {
                         ProgressView("Calculando zonas de FC y rendimiento por pendiente...")
@@ -234,7 +239,7 @@ struct ActivityDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            
+            viewModel.loadActivityDetails()
         }
         .onChange(of: viewModel.gpxDataToShare) { gpxData in
             if gpxData != nil {
@@ -350,57 +355,6 @@ struct ActivityDetailView: View {
         .onAppear {
             viewModel.getAICoachObservation()
         }
-    }
-}
-
-private struct KpiInfoPopoverView: View {
-    let info: KpiInfo
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(info.title)
-                .font(.headline)
-                .foregroundColor(.white)
-            Text(info.description)
-                .font(.body)
-                .foregroundColor(.white.opacity(0.9))
-        }
-        .padding()
-        .background(Color.black.opacity(0.8))
-        .cornerRadius(12)
-        .shadow(radius: 20)
-        .padding()
-    }
-}
-
-private struct KPICardView: View {
-    let title: String
-    let value: String?
-    let unit: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label(title, systemImage: icon)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            HStack(alignment: .firstTextBaseline) {
-                Text(value ?? "--")
-                    .font(.title2).bold()
-                    .foregroundColor(color)
-                if value != nil {
-                    Text(unit)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
     }
 }
 

@@ -17,5 +17,7 @@
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>TrailStats necesita acceso a tus datos de HealthKit para analizar métricas avanzadas de carrera como la oscilación vertical y el tiempo de contacto con el suelo, y así ofrecerte un análisis de rendimiento más completo.</string>
 </dict>
 </plist>

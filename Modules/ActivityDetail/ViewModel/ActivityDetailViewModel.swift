@@ -71,18 +71,75 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var efficiencyIndex: Double?
 
     private let stravaService = StravaService()
+    private let healthKitService = HealthKitService()
+    private let cacheManager = CacheManager()
     
     init(activity: Activity) {
         self.activity = activity
-        let cacheManager = CacheManager()
+    }
+    
+    func loadActivityDetails() {
+        print("[DEBUG] 1. loadActivityDetails() called for activity \(activity.id).")
+
+        // First, try to load the fully enriched activity from the detail cache
+        if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id), cachedActivity.verticalOscillation != nil {
+            self.activity = cachedActivity
+            print("[DEBUG] 2. Found fully enriched activity in cache. No need to fetch from HealthKit.")
+        } else {
+            // If not found or incomplete, fetch HealthKit data to enrich the basic activity
+            print("[DEBUG] 2. Enriched activity not in cache or incomplete. Fetching HealthKit data.")
+            fetchAndEnrichWithHealthKit()
+        }
+
+        // Load other data like AI coach and processed metrics from their respective caches
+        loadCachedSummaries()
         
-        // Load AI Coach observation from cache
+        // Asynchronously load graph data (streams) from cache or network
+        loadAndProcessStreams()
+    }
+    
+    private func fetchAndEnrichWithHealthKit() {
+        print("[DEBUG] 3. fetchAndEnrichWithHealthKit() called.")
+        healthKitService.requestAuthorization { [weak self] (authorized, error) in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("[DEBUG] 4. HealthKit authorization error: \(error.localizedDescription)")
+                return
+            }
+            
+            if authorized {
+                print("[DEBUG] 4. HealthKit authorization successful.")
+                self.healthKitService.fetchRunningDynamics(for: self.activity) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let dynamics):
+                            print("[DEBUG] 5. Successfully fetched running dynamics from HealthKit.")
+                            self.activity.verticalOscillation = dynamics.verticalOscillation
+                            self.activity.groundContactTime = dynamics.groundContactTime
+                            self.activity.strideLength = dynamics.strideLength
+                            self.activity.verticalRatio = dynamics.verticalRatio
+                            
+                            print("[DEBUG] 6. Saving enriched activity to cache.")
+                            self.cacheManager.saveActivityDetail(activity: self.activity)
+                            
+                        case .failure(let error):
+                            print("[DEBUG] 5. Failed to fetch running dynamics: \(error.localizedDescription)")
+                        }
+                    }
+                }
+            } else {
+                print("[DEBUG] 4. HealthKit authorization was denied by the user.")
+            }
+        }
+    }
+    
+    private func loadCachedSummaries() {
         if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
             self.aiCoachObservation = cachedText
             self.aiCoachLoading = false
         }
 
-        // Load processed metrics from cache (estos son los datos "rápidos" que el usuario quiere ver inmediatamente)
         if let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
             self.verticalSpeedVAM = cachedMetrics.verticalSpeedVAM
             self.cardiacDecoupling = cachedMetrics.cardiacDecoupling
@@ -90,13 +147,10 @@ class ActivityDetailViewModel: ObservableObject {
             self.descentVerticalSpeed = cachedMetrics.descentVerticalSpeed
             self.normalizedPower = cachedMetrics.normalizedPower
             self.gradeAdjustedPace = cachedMetrics.gradeAdjustedPace
-            self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution // <-- Asignar directamente
-            self.performanceByGrade = cachedMetrics.performanceByGrade // <-- Asignar directamente
+            self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
+            self.performanceByGrade = cachedMetrics.performanceByGrade
             self.efficiencyIndex = cachedMetrics.efficiencyIndex
         }
-
-        // Iniciar la carga y procesamiento de streams de forma asíncrona
-        self.loadAndProcessStreams()
     }
 
     // MARK: - AI Coach Interaction
@@ -767,7 +821,10 @@ class ActivityDetailViewModel: ObservableObject {
             "VAM (Velocidad de Ascenso Media)", "Velocidad de Descenso Media",
             "Desacoplamiento Cardíaco (Ritmo:FC)", "Potencia Normalizada (NP)",
             "Potencia Promedio", "Cadencia Promedio", "Índice de Eficiencia (Velocidad/FC)",
-            "Distribución de Zonas de FC", "Rendimiento por Pendiente", "Segmentos de Subida Clave"
+            // Nuevas métricas de dinámica de carrera
+            "Oscilación Vertical", "Tiempo de Contacto con el Suelo", "Longitud de Zancada", "Ratio Vertical",
+            // KPIs complejos al final
+            "Distribución de Zonas de FC", "Rendimiento por Pendiente", "Segmentos Clave"
         ]
         
         for key in orderedKeys {
@@ -780,7 +837,7 @@ class ActivityDetailViewModel: ObservableObject {
     }
 
     private func gatherActivityKPIs() -> [String: String] {
-        var kpis: [String: String] = [:]
+        var kpis: [String: String] = [: ]
 
         // Basic Activity Data
         kpis["Nombre de la Actividad"] = activity.name
@@ -798,6 +855,20 @@ class ActivityDetailViewModel: ObservableObject {
         }
         if let avgPower = activity.averagePower {
             kpis["Potencia Promedio"] = Formatters.formatPower(avgPower)
+        }
+
+        // HealthKit Running Dynamics
+        if let vo = activity.verticalOscillation {
+            kpis["Oscilación Vertical"] = String(format: "%.1f cm", vo)
+        }
+        if let gct = activity.groundContactTime {
+            kpis["Tiempo de Contacto con el Suelo"] = String(format: "%.0f ms", gct)
+        }
+        if let sl = activity.strideLength {
+            kpis["Longitud de Zancada"] = String(format: "%.2f m", sl)
+        }
+        if let vr = activity.verticalRatio {
+            kpis["Ratio Vertical"] = String(format: "%.1f %%", vr)
         }
 
         // Calculated KPIs from ViewModel
@@ -840,10 +911,16 @@ class ActivityDetailViewModel: ObservableObject {
         }
         
         if !climbSegments.isEmpty {
-            let climbs = climbSegments.filter { $0.type == .climb }
-            let climbSummary = climbs.map { "Subida de \(Formatters.formatDistance($0.distance)) al \(Formatters.formatGrade($0.averageGrade))" }.joined(separator: ", ")
-            if !climbSummary.isEmpty {
-                kpis["Segmentos de Subida Clave"] = climbSummary
+            let segmentsSummary = climbSegments.map { segment -> String in
+                let type = segment.type == .climb ? "Subida" : "Bajada"
+                let distance = Formatters.formatDistance(segment.distance)
+                let grade = Formatters.formatGrade(segment.averageGrade)
+                let pace = segment.averagePace.toPaceFormat()
+                return "- \(type) de \(distance) al \(grade) (Ritmo: \(pace))"
+            }.joined(separator: "\n")
+
+            if !segmentsSummary.isEmpty {
+                kpis["Segmentos Clave"] = "\n" + segmentsSummary
             }
         }
 

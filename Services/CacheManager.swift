@@ -98,6 +98,38 @@ class CacheManager {
         return existingIds
     }
 
+    // MARK: - Activity Detail Cache
+
+    func saveActivityDetail(activity: Activity) {
+        guard let folder = summaryFolderURL(for: activity.id) else { return }
+        let fileURL = folder.appendingPathComponent("activity_detail.json")
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(activity)
+            try data.write(to: fileURL, options: .atomic)
+            print("Saved activity detail for activity \(activity.id)")
+        } catch {
+            print("Error saving activity detail for activity \(activity.id): \(error.localizedDescription)")
+        }
+    }
+
+    func loadActivityDetail(activityId: Int) -> Activity? {
+        guard let folder = summaryFolderURL(for: activityId) else { return nil }
+        let fileURL = folder.appendingPathComponent("activity_detail.json")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(Activity.self, from: data)
+        } catch {
+            print("Error loading activity detail for activity \(activityId): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+
     // MARK: - Summaries & Chart Images
 
     private var summariesDirectoryURL: URL? {

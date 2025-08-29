@@ -6,23 +6,29 @@ import CoreLocation
 /// Represents a single trail running activity.
 /// This struct will be used throughout the app to pass activity data.
 struct Activity: Identifiable, Codable {
-    let id: Int
-    let name: String
-    let sportType: String
-    let date: Date
-    let distance: Double // In meters
-    let duration: TimeInterval // In seconds
-    let elevationGain: Double // In meters
+    var id: Int
+    var name: String
+    var sportType: String
+    var date: Date
+    var distance: Double // In meters
+    var duration: TimeInterval // In seconds
+    var elevationGain: Double // In meters
     
-    // Advanced Metrics
-    let averageHeartRate: Double?
-    let averageCadence: Double?
-    let averagePower: Double?
-    let gradeAdjustedPace: Double?
+    // Advanced Metrics from Strava
+    var averageHeartRate: Double?
+    var averageCadence: Double?
+    var averagePower: Double?
+    var gradeAdjustedPace: Double?
+    
+    // HealthKit Running Dynamics
+    var verticalOscillation: Double?
+    var groundContactTime: Double?
+    var strideLength: Double?
+    var verticalRatio: Double?
     
     // Location Data
-    let startCoordinate: CLLocationCoordinate2D?
-    let polyline: String? // Encoded polyline for map view
+    var startCoordinate: CLLocationCoordinate2D?
+    var polyline: String? // Encoded polyline for map view
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -39,6 +45,11 @@ struct Activity: Identifiable, Codable {
         case startCoordinate = "start_latlng"
         case polyline = "map"
         case gradeAdjustedPace = "grade_adjusted_pace"
+        // HealthKit properties
+        case verticalOscillation
+        case groundContactTime
+        case strideLength
+        case verticalRatio
     }
     
     enum MapKeys: String, CodingKey {
@@ -58,6 +69,12 @@ struct Activity: Identifiable, Codable {
         averageCadence = try container.decodeIfPresent(Double.self, forKey: .averageCadence)
         averagePower = try container.decodeIfPresent(Double.self, forKey: .averagePower)
         gradeAdjustedPace = try container.decodeIfPresent(Double.self, forKey: .gradeAdjustedPace)
+        
+        // HealthKit properties (for cache decoding)
+        verticalOscillation = try container.decodeIfPresent(Double.self, forKey: .verticalOscillation)
+        groundContactTime = try container.decodeIfPresent(Double.self, forKey: .groundContactTime)
+        strideLength = try container.decodeIfPresent(Double.self, forKey: .strideLength)
+        verticalRatio = try container.decodeIfPresent(Double.self, forKey: .verticalRatio)
         
         if let latlng = try container.decodeIfPresent([Double].self, forKey: .startCoordinate), latlng.count == 2 {
             startCoordinate = CLLocationCoordinate2D(latitude: latlng[0], longitude: latlng[1])
@@ -85,6 +102,12 @@ struct Activity: Identifiable, Codable {
         try container.encodeIfPresent(averageCadence, forKey: .averageCadence)
         try container.encodeIfPresent(averagePower, forKey: .averagePower)
         try container.encodeIfPresent(gradeAdjustedPace, forKey: .gradeAdjustedPace)
+        
+        // HealthKit properties (for cache encoding)
+        try container.encodeIfPresent(verticalOscillation, forKey: .verticalOscillation)
+        try container.encodeIfPresent(groundContactTime, forKey: .groundContactTime)
+        try container.encodeIfPresent(strideLength, forKey: .strideLength)
+        try container.encodeIfPresent(verticalRatio, forKey: .verticalRatio)
         
         if let coordinate = startCoordinate {
             try container.encode([coordinate.latitude, coordinate.longitude], forKey: .startCoordinate)
