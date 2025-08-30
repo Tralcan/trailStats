@@ -9,6 +9,7 @@ struct ActivityDetailView: View {
     
     // Estado para controlar el KPI seleccionado y mostrar el popover.
     @State private var selectedKpiInfo: KpiInfo?
+    @FocusState private var notesFieldIsFocused: Bool
     
     // Diccionario con las descripciones para cada KPI.
     private let kpiInfoData: [String: String] = [
@@ -91,7 +92,7 @@ struct ActivityDetailView: View {
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Mis Notas")
+            Label("Mis Notas", systemImage: "note.text")
                 .font(.headline)
             
             TextEditor(text: $viewModel.notes)
@@ -103,6 +104,7 @@ struct ActivityDetailView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                 )
+                .focused($notesFieldIsFocused)
         }
         .padding()
         .background(Color(.secondarySystemBackground))
@@ -276,7 +278,6 @@ struct ActivityDetailView: View {
                     
                     headerView
                     rpeSection
-                    notesSection
                     trailKPIsSection
                     RunningDynamicsView(activity: viewModel.activity) { kpiInfo in
                         withAnimation {
@@ -287,6 +288,7 @@ struct ActivityDetailView: View {
                     advancedAnalysisSection
                     segmentsSection
                     interactiveChartSection
+                    notesSection
                     aiCoachSection
                     
                     // Botón para compartir análisis
@@ -306,6 +308,9 @@ struct ActivityDetailView: View {
 
                 }
                 .padding()
+            }
+            .onTapGesture {
+                notesFieldIsFocused = false
             }
         }
         .navigationTitle(viewModel.activity.name)

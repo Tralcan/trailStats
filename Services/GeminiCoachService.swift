@@ -52,7 +52,7 @@ struct GeminiCoachService {
                 ["parts": [["text": finalPrompt]]]
             ],
             "generationConfig": [
-                "maxOutputTokens": 250 // Sufficient for ~120 words + formatting
+                "maxOutputTokens": 1024
             ]
         ]
 
