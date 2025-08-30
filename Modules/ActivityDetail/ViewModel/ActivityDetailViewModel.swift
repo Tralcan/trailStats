@@ -177,6 +177,12 @@ class ActivityDetailViewModel: ObservableObject {
 
             await MainActor.run {
                 self.updateFinalData(pace: paceData, strideLength: strideLengthData, metrics: processedMetrics)
+                
+                // Si se procesaron nuevas métricas, ahora es el momento de llamar a IA Coach
+                // ya que tenemos la garantía de que los datos están completos.
+                if processedMetrics != nil {
+                    self.getAICoachObservation()
+                }
             }
         }
     }
@@ -257,7 +263,16 @@ class ActivityDetailViewModel: ObservableObject {
     }
 
     func getAICoachObservation() {
+        // Evitar llamadas múltiples si ya está cargando
         if aiCoachLoading { return }
+
+        // Salir si los datos clave aún no se han procesado.
+        // Se volverá a llamar cuando finalice el procesamiento de datos.
+        guard verticalSpeedVAM != nil else {
+            print("[AICoach] Datos de KPI aún no procesados. Omitiendo la solicitud.")
+            return
+        }
+
         if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
             self.aiCoachObservation = cachedText
             self.aiCoachLoading = false
