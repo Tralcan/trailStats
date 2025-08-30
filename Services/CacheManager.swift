@@ -41,9 +41,9 @@ class CacheManager {
         let fileURL = folder.appendingPathComponent("ai_coach.txt")
         do {
             try text.write(to: fileURL, atomically: true, encoding: .utf8)
-            print("Saved AI Coach text for activity \(activityId)")
+            print("[CacheManager] Saved AI Coach text for activity \(activityId) at \(fileURL.path)")
         } catch {
-            print("Error saving AI Coach text: \(error.localizedDescription)")
+            print("[CacheManager] Error saving AI Coach text for activity \(activityId): \(error.localizedDescription)")
         }
     }
 
@@ -51,8 +51,16 @@ class CacheManager {
     func loadAICoachText(activityId: Int) -> String? {
         guard let folder = summaryFolderURL(for: activityId) else { return nil }
         let fileURL = folder.appendingPathComponent("ai_coach.txt")
+        print("[CacheManager] Attempting to load AI Coach text for activity \(activityId) from \(fileURL.lastPathComponent). File exists: \(FileManager.default.fileExists(atPath: fileURL.path))")
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
-        return try? String(contentsOf: fileURL, encoding: .utf8)
+        do {
+            let text = try String(contentsOf: fileURL, encoding: .utf8)
+            print("[CacheManager] Successfully loaded AI Coach text for activity \(activityId).")
+            return text
+        } catch {
+            print("[CacheManager] Error loading AI Coach text for activity \(activityId): \(error.localizedDescription)")
+            return nil
+        }
     }
 
     // Guarda las métricas procesadas de una actividad
@@ -210,6 +218,20 @@ class CacheManager {
         } catch {
             print("Error loading summary: \(activityId): \(error.localizedDescription)")
             return nil
+        }
+    }
+    
+    // Elimina el texto de AI Coach para una actividad
+    func deleteAICoachText(activityId: Int) {
+        guard let folder = summaryFolderURL(for: activityId) else { return }
+        let fileURL = folder.appendingPathComponent("ai_coach.txt")
+        do {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+                print("Deleted AI Coach text for activity \(activityId)")
+            }
+        } catch {
+            print("Error deleting AI Coach text: \(error.localizedDescription)")
         }
     }
     

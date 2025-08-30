@@ -81,12 +81,18 @@ class ActivityDetailViewModel: ObservableObject {
         self.rpe = activity.rpe ?? 5.0
 
         $rpe
-            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .debounce(for: .seconds(2), scheduler: RunLoop.main)
             .sink { [weak self] newRPE in
                 guard let self = self else { return }
+                let previousRPE = self.activity.rpe // Capture RPE before updating
                 self.activity.rpe = newRPE
                 self.cacheManager.saveActivityDetail(activity: self.activity)
-                self.getAICoachObservation()
+                
+                // Si el RPE ha cambiado, invalidar el caché del AI Coach y regenerar la observación
+                if newRPE != previousRPE {
+                    self.cacheManager.deleteAICoachText(activityId: self.activity.id)
+                    self.getAICoachObservation()
+                }
             }
             .store(in: &cancellables)
     }
@@ -226,7 +232,7 @@ class ActivityDetailViewModel: ObservableObject {
     func generateAnalysisString() -> String {
         var analysis = "*Análisis de la Actividad: \(activity.name)*\n\n"
 
-        let kpis = gatherActivityKPIs()
+        let kpis = gatherActivityKPIs() 
         
         // Ordenar KPIs para una presentación consistente
         let orderedKeys = [
@@ -546,7 +552,7 @@ struct ActivityAnalyticsCalculator {
         let halfIndex = combinedData.count / 2
         let firstHalf = combinedData[0..<halfIndex]
         let secondHalf = combinedData[halfIndex..<combinedData.count]
-        guard let firstHalfAvgRatio = firstHalf.map({ $0.pace / $0.hr }).averageOrNil(), firstHalfAvgRatio > 0,
+        guard let firstHalfAvgRatio = firstHalf.map({ $0.pace / $0.hr }).averageOrNil(), firstHalfAvgRatio > 0, 
               let secondHalfAvgRatio = secondHalf.map({ $0.pace / $0.hr }).averageOrNil() else { return nil }
         return ((firstHalfAvgRatio - secondHalfAvgRatio) / firstHalfAvgRatio) * 100.0
     }

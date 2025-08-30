@@ -387,7 +387,10 @@ struct ActivityDetailView: View {
             .cornerRadius(12)
         }
         .onAppear {
-            viewModel.getAICoachObservation()
+            // Only fetch AI Coach observation if it's not already loaded or being loaded
+            if viewModel.aiCoachObservation == nil && !viewModel.aiCoachLoading && viewModel.aiCoachError == nil {
+                viewModel.getAICoachObservation()
+            }
         }
     }
 }
