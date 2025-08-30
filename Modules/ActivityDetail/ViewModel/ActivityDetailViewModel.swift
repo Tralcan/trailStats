@@ -58,8 +58,9 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var performanceByGrade: [PerformanceByGrade] = []
     @Published var efficiencyIndex: Double?
 
-    // RPE
+    // RPE & Notes
     @Published var rpe: Double = 5.0
+    @Published var notes: String = ""
 
     // UI State
     @Published var errorMessage: String? = nil
@@ -79,6 +80,7 @@ class ActivityDetailViewModel: ObservableObject {
     init(activity: Activity) {
         self.activity = activity
         self.rpe = activity.rpe ?? 5.0
+        self.notes = activity.notes ?? ""
 
         $rpe
             .debounce(for: .seconds(2), scheduler: RunLoop.main)
@@ -95,6 +97,15 @@ class ActivityDetailViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+
+        $notes
+            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .sink { [weak self] newNotes in
+                guard let self = self else { return }
+                self.activity.notes = newNotes
+                self.cacheManager.saveActivityDetail(activity: self.activity)
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Public Methods
@@ -103,6 +114,7 @@ class ActivityDetailViewModel: ObservableObject {
         if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id) {
             self.activity = cachedActivity
             self.rpe = cachedActivity.rpe ?? 5.0 // Update RPE from cached activity
+            self.notes = cachedActivity.notes ?? "" // Update notes from cached activity
         }
 
         // If the loaded activity (either from cache or initial) is missing dynamics, fetch them.
@@ -646,7 +658,7 @@ struct ActivityAnalyticsCalculator {
         var isClimbing: Bool? = nil
         for i in 1..<altitudeData.count {
             let prevPoint = (dist: distanceData[i-1].value, alt: altitudeData[i-1].value, time: altitudeData[i-1].time)
-            let currentPoint = (dist: distanceData[i].value, alt: altitudeData[i].value, time: altitudeData[i].time)
+            let currentPoint = (dist: distanceData[i].value, alt: altitudeData[i].value, time: distanceData[i].time)
             let currentlyClimbing = (currentPoint.alt - prevPoint.alt) > 0.1
             if isClimbing == nil { isClimbing = currentlyClimbing }
             if currentlyClimbing == isClimbing {

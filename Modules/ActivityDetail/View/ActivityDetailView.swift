@@ -89,6 +89,26 @@ struct ActivityDetailView: View {
         .cornerRadius(12)
     }
 
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Mis Notas")
+                .font(.headline)
+            
+            TextEditor(text: $viewModel.notes)
+                .frame(height: 100)
+                .padding(4)
+                .background(Color(.systemBackground))
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+
     private func colorForRPE(value: Double) -> Color {
         let normalizedValue = (value - 1) / 9 // Normalize RPE from 1-10 to 0-1
         
@@ -256,6 +276,7 @@ struct ActivityDetailView: View {
                     
                     headerView
                     rpeSection
+                    notesSection
                     trailKPIsSection
                     RunningDynamicsView(activity: viewModel.activity) { kpiInfo in
                         withAnimation {

@@ -1,4 +1,3 @@
-
 import Foundation
 import CoreLocation
 
@@ -28,6 +27,7 @@ struct Activity: Identifiable, Codable {
     
     // User-provided
     var rpe: Double?
+    var notes: String?
     
     // Location Data
     var startCoordinate: CLLocationCoordinate2D?
@@ -54,6 +54,7 @@ struct Activity: Identifiable, Codable {
         case strideLength
         case verticalRatio
         case rpe
+        case notes
     }
     
     enum MapKeys: String, CodingKey {
@@ -80,6 +81,7 @@ struct Activity: Identifiable, Codable {
         strideLength = try container.decodeIfPresent(Double.self, forKey: .strideLength)
         verticalRatio = try container.decodeIfPresent(Double.self, forKey: .verticalRatio)
         rpe = try container.decodeIfPresent(Double.self, forKey: .rpe)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
         
         if let latlng = try container.decodeIfPresent([Double].self, forKey: .startCoordinate), latlng.count == 2 {
             startCoordinate = CLLocationCoordinate2D(latitude: latlng[0], longitude: latlng[1])
@@ -114,6 +116,7 @@ struct Activity: Identifiable, Codable {
         try container.encodeIfPresent(strideLength, forKey: .strideLength)
         try container.encodeIfPresent(verticalRatio, forKey: .verticalRatio)
         try container.encodeIfPresent(rpe, forKey: .rpe)
+        try container.encodeIfPresent(notes, forKey: .notes)
         
         if let coordinate = startCoordinate {
             try container.encode([coordinate.latitude, coordinate.longitude], forKey: .startCoordinate)
