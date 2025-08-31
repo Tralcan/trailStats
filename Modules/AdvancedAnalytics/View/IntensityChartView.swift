@@ -9,7 +9,7 @@ struct IntensityChartView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Distribución de Intensidad Semanal")
+            Text("Intensidad Semanal")
                 .font(.title2).bold()
                 .padding(.bottom, 5)
 
