@@ -47,7 +47,10 @@ struct AdvancedAnalyticsView: View {
                     
                     // KPI Summary Grids
                     kpiSummaryGrid
-                    mountainPerformanceGrid
+                    trailPerformanceSection
+                    if viewModel.hasRunningDynamics {
+                        runningDynamicsSection
+                    }
                     
                     // Charts
                     if !viewModel.weeklyDistanceData.isEmpty {
@@ -66,8 +69,12 @@ struct AdvancedAnalyticsView: View {
                         IntensityChartView(weeklyData: viewModel.weeklyZoneDistribution)
                     }
                     
+                    if !viewModel.performanceByGradeData.isEmpty {
+                        PerformanceByGradeView(performanceData: viewModel.performanceByGradeData)
+                    }
+                    
                     // Show empty state only if all charts are empty
-                    if viewModel.efficiencyData.isEmpty && viewModel.weeklyZoneDistribution.isEmpty && viewModel.weeklyDistanceData.isEmpty && viewModel.weeklyDecouplingData.isEmpty {
+                    if viewModel.totalActivities == 0 {
                         emptyStateView
                     }
                 }
@@ -87,12 +94,38 @@ struct AdvancedAnalyticsView: View {
         .padding(.horizontal)
     }
     
-    private var mountainPerformanceGrid: some View {
-        LazyVGrid(columns: gridColumns, spacing: 16) {
-            KPISummaryCard(title: "VAM Promedio", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .cyan)
-            KPISummaryCard(title: "GAP Promedio", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .purple)
+    private var trailPerformanceSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Análitica de Trail (Promedios)")
+                .font(.title3).bold()
+                .padding(.horizontal)
+            
+            LazyVGrid(columns: gridColumns, spacing: 16) {
+                KPISummaryCard(title: "Vel. Ascenso Prom.", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .cyan)
+                KPISummaryCard(title: "GAP Promedio", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .purple)
+                KPISummaryCard(title: "Vel. Descenso Prom.", value: "\(String(format: "%.0f", viewModel.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
+                KPISummaryCard(title: "Potencia Norm. Prom.", value: "\(String(format: "%.0f", viewModel.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
+                KPISummaryCard(title: "Índice Eficiencia Prom.", value: String(format: "%.3f", viewModel.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
+                KPISummaryCard(title: "Desacople Prom.", value: "\(String(format: "%.1f", viewModel.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
+            }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
+    }
+    
+    private var runningDynamicsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Dinámica de Carrera (Promedios)")
+                .font(.title3).bold()
+                .padding(.horizontal)
+            
+            LazyVGrid(columns: gridColumns, spacing: 16) {
+                KPISummaryCard(title: "Oscilación Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .pink)
+                KPISummaryCard(title: "Tiempo de Contacto", value: "\(String(format: "%.0f", viewModel.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
+                KPISummaryCard(title: "Longitud de Zancada", value: "\(String(format: "%.2f", viewModel.averageStrideLength)) m", systemImage: "ruler.fill", color: .brown)
+                KPISummaryCard(title: "Ratio Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
+            }
+            .padding(.horizontal)
+        }
     }
     
     private var emptyStateView: some View {

@@ -32,6 +32,7 @@ class ProgressAnalyticsViewModel: ObservableObject {
     @Published var weeklyZoneDistribution: [WeeklyZoneData] = []
     @Published var weeklyDistanceData: [WeeklyDistanceData] = []
     @Published var weeklyDecouplingData: [WeeklyDecouplingData] = []
+    @Published var performanceByGradeData: [PerformanceByGrade] = []
 
     // Data for KPI Cards
     @Published var totalDistance: Double = 0
@@ -40,7 +41,18 @@ class ProgressAnalyticsViewModel: ObservableObject {
     @Published var totalActivities: Int = 0
     @Published var averageVAM: Double = 0
     @Published var averageGAP: Double = 0
-    
+    @Published var averageDescentVAM: Double = 0
+    @Published var averageNormalizedPower: Double = 0
+    @Published var averageEfficiencyIndex: Double = 0
+    @Published var averageDecoupling: Double = 0
+
+    // Running Dynamics
+    @Published var averageVerticalOscillation: Double = 0
+    @Published var averageGroundContactTime: Double = 0
+    @Published var averageStrideLength: Double = 0
+    @Published var averageVerticalRatio: Double = 0
+    @Published var hasRunningDynamics: Bool = false
+
     // MARK: - Private Properties
     private let cacheManager = CacheManager()
     private var allActivities: [Activity] = []
@@ -76,6 +88,8 @@ class ProgressAnalyticsViewModel: ObservableObject {
         calculateWeeklyDistance(for: recentActivities)
         calculateWeeklyDecoupling(for: recentActivities)
         calculateMountainPerformance(for: recentActivities)
+        calculatePerformanceByGrade(for: recentActivities)
+        calculateRunningDynamics(for: recentActivities)
         
         print("Processed data for time frame: \(timeFrame) days. Found \(totalActivities) activities.")
     }
@@ -165,18 +179,74 @@ class ProgressAnalyticsViewModel: ObservableObject {
         let metrics = activities.compactMap { cacheManager.loadProcessedMetrics(activityId: $0.id) }
         
         let vamValues = metrics.compactMap { $0.verticalSpeedVAM }
-        if !vamValues.isEmpty {
-            self.averageVAM = vamValues.reduce(0, +) / Double(vamValues.count)
-        } else {
-            self.averageVAM = 0
-        }
+        self.averageVAM = vamValues.isEmpty ? 0 : vamValues.reduce(0, +) / Double(vamValues.count)
         
         let gapValues = metrics.compactMap { $0.gradeAdjustedPace }
-        if !gapValues.isEmpty {
-            self.averageGAP = gapValues.reduce(0, +) / Double(gapValues.count)
-        } else {
-            self.averageGAP = 0
+        self.averageGAP = gapValues.isEmpty ? 0 : gapValues.reduce(0, +) / Double(gapValues.count)
+        
+        let descentVAMValues = metrics.compactMap { $0.descentVerticalSpeed }
+        self.averageDescentVAM = descentVAMValues.isEmpty ? 0 : descentVAMValues.reduce(0, +) / Double(descentVAMValues.count)
+
+        let npValues = metrics.compactMap { $0.normalizedPower }
+        self.averageNormalizedPower = npValues.isEmpty ? 0 : npValues.reduce(0, +) / Double(npValues.count)
+
+        let efficiencyValues = metrics.compactMap { $0.efficiencyIndex }
+        self.averageEfficiencyIndex = efficiencyValues.isEmpty ? 0 : efficiencyValues.reduce(0, +) / Double(efficiencyValues.count)
+        
+        let decouplingValues = metrics.compactMap { $0.cardiacDecoupling }
+        self.averageDecoupling = decouplingValues.isEmpty ? 0 : decouplingValues.reduce(0, +) / Double(decouplingValues.count)
+    }
+    
+    private func calculatePerformanceByGrade(for activities: [Activity]) {
+        var aggregatedData: [String: (totalDistance: Double, totalTime: TimeInterval, totalElevation: Double, weightedCadenceSum: Double, timeWithCadence: TimeInterval)] = [:] 
+
+        let allMetrics = activities.compactMap { cacheManager.loadProcessedMetrics(activityId: $0.id) }
+
+        for metrics in allMetrics {
+            for gradePerformance in metrics.performanceByGrade {
+                var bucket = aggregatedData[gradePerformance.gradeBucket] ?? (0, 0, 0, 0, 0)
+                bucket.totalDistance += gradePerformance.distance
+                bucket.totalTime += gradePerformance.time
+                bucket.totalElevation += gradePerformance.elevation
+                bucket.weightedCadenceSum += gradePerformance.weightedCadenceSum
+                bucket.timeWithCadence += gradePerformance.timeWithCadence
+                aggregatedData[gradePerformance.gradeBucket] = bucket
+            }
         }
+
+        let finalData = aggregatedData.map { bucketName, totals -> PerformanceByGrade in
+            return PerformanceByGrade(
+                id: UUID(),
+                gradeBucket: bucketName,
+                distance: totals.totalDistance,
+                time: totals.totalTime,
+                elevation: totals.totalElevation,
+                weightedCadenceSum: totals.weightedCadenceSum,
+                timeWithCadence: totals.timeWithCadence
+            )
+        }
+        
+        let sortOrder = ["<-15%", "-15% to -10%", "-10% to -5%", "-5% to 0%", "0% to 5%", "5% to 10%", "10% to 15%", ">15%"]
+        self.performanceByGradeData = finalData.sorted { first, second in
+            guard let firstIndex = sortOrder.firstIndex(of: first.gradeBucket), let secondIndex = sortOrder.firstIndex(of: second.gradeBucket) else {
+                return false
+            }
+            return firstIndex < secondIndex
+        }
+    }
+    
+    private func calculateRunningDynamics(for activities: [Activity]) {
+        let voValues = activities.compactMap { $0.verticalOscillation }
+        let gctValues = activities.compactMap { $0.groundContactTime }
+        let slValues = activities.compactMap { $0.strideLength }
+        let vrValues = activities.compactMap { $0.verticalRatio }
+        
+        self.hasRunningDynamics = !voValues.isEmpty
+        
+        self.averageVerticalOscillation = voValues.isEmpty ? 0 : voValues.reduce(0, +) / Double(voValues.count)
+        self.averageGroundContactTime = gctValues.isEmpty ? 0 : gctValues.reduce(0, +) / Double(gctValues.count)
+        self.averageStrideLength = slValues.isEmpty ? 0 : slValues.reduce(0, +) / Double(slValues.count)
+        self.averageVerticalRatio = vrValues.isEmpty ? 0 : vrValues.reduce(0, +) / Double(vrValues.count)
     }
 }
 
