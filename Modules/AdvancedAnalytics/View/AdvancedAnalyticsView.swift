@@ -7,6 +7,7 @@ struct AdvancedAnalyticsView: View {
     
     enum TimePeriod: String, CaseIterable, Identifiable {
         case last7 = "7 Días"
+        case last15 = "15 Días"
         case last30 = "30 Días"
         case last60 = "60 Días"
         case last90 = "90 Días"
@@ -16,6 +17,7 @@ struct AdvancedAnalyticsView: View {
         var dayCount: Int {
             switch self {
             case .last7: return 7
+            case .last15: return 15
             case .last30: return 30
             case .last60: return 60
             case .last90: return 90
