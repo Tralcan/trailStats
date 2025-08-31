@@ -38,6 +38,8 @@ class ProgressAnalyticsViewModel: ObservableObject {
     @Published var totalElevation: Double = 0
     @Published var totalDuration: TimeInterval = 0
     @Published var totalActivities: Int = 0
+    @Published var averageVAM: Double = 0
+    @Published var averageGAP: Double = 0
     
     // MARK: - Private Properties
     private let cacheManager = CacheManager()
@@ -73,6 +75,7 @@ class ProgressAnalyticsViewModel: ObservableObject {
         calculateIntensityDistribution(for: recentActivities)
         calculateWeeklyDistance(for: recentActivities)
         calculateWeeklyDecoupling(for: recentActivities)
+        calculateMountainPerformance(for: recentActivities)
         
         print("Processed data for time frame: \(timeFrame) days. Found \(totalActivities) activities.")
     }
@@ -156,6 +159,24 @@ class ProgressAnalyticsViewModel: ObservableObject {
             }
         }
         self.weeklyDecouplingData = weeklyData.sorted(by: { $0.weekDate < $1.weekDate })
+    }
+    
+    private func calculateMountainPerformance(for activities: [Activity]) {
+        let metrics = activities.compactMap { cacheManager.loadProcessedMetrics(activityId: $0.id) }
+        
+        let vamValues = metrics.compactMap { $0.verticalSpeedVAM }
+        if !vamValues.isEmpty {
+            self.averageVAM = vamValues.reduce(0, +) / Double(vamValues.count)
+        } else {
+            self.averageVAM = 0
+        }
+        
+        let gapValues = metrics.compactMap { $0.gradeAdjustedPace }
+        if !gapValues.isEmpty {
+            self.averageGAP = gapValues.reduce(0, +) / Double(gapValues.count)
+        } else {
+            self.averageGAP = 0
+        }
     }
 }
 

@@ -45,25 +45,23 @@ struct AdvancedAnalyticsView: View {
                         viewModel.timeFrameChanged(newTimeFrame: newPeriod.dayCount)
                     }
                     
-                    // KPI Summary Grid
+                    // KPI Summary Grids
                     kpiSummaryGrid
+                    mountainPerformanceGrid
                     
-                    // Weekly Distance Chart
+                    // Charts
                     if !viewModel.weeklyDistanceData.isEmpty {
                         WeeklyDistanceChartView(weeklyData: viewModel.weeklyDistanceData)
                     }
 
-                    // Efficiency Chart
                     if !viewModel.efficiencyData.isEmpty {
                         EfficiencyChartView(data: viewModel.efficiencyData)
                     }
                     
-                    // Decoupling Chart
                     if !viewModel.weeklyDecouplingData.isEmpty {
                         WeeklyDecouplingChartView(weeklyData: viewModel.weeklyDecouplingData)
                     }
 
-                    // Intensity Chart
                     if !viewModel.weeklyZoneDistribution.isEmpty {
                         IntensityChartView(weeklyData: viewModel.weeklyZoneDistribution)
                     }
@@ -85,6 +83,14 @@ struct AdvancedAnalyticsView: View {
             KPISummaryCard(title: "Tiempo Total", value: Formatters.formatTime(Int(viewModel.totalDuration)), systemImage: "hourglass", color: .blue)
             KPISummaryCard(title: "Distancia Total", value: Formatters.formatDistance(viewModel.totalDistance), systemImage: "location.fill", color: .red)
             KPISummaryCard(title: "Desnivel Total", value: Formatters.formatElevation(viewModel.totalElevation), systemImage: "mountain.2.fill", color: .green)
+        }
+        .padding(.horizontal)
+    }
+    
+    private var mountainPerformanceGrid: some View {
+        LazyVGrid(columns: gridColumns, spacing: 16) {
+            KPISummaryCard(title: "VAM Promedio", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .cyan)
+            KPISummaryCard(title: "GAP Promedio", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .purple)
         }
         .padding(.horizontal)
     }
