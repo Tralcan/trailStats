@@ -6,7 +6,7 @@ struct WeeklyDecouplingChartView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Desacople Cardíaco Semanal (Promedio)")
+            Text("Desacople Cardíaco Semanal")
                 .font(.title2).bold()
                 .padding(.bottom, 5)
 

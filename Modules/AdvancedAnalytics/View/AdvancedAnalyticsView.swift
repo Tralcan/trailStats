@@ -102,17 +102,17 @@ struct AdvancedAnalyticsView: View {
     
     private var trailPerformanceSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análitica de Trail (Promedios)")
+            Text("Análitica de Trail")
                 .font(.title3).bold()
                 .padding(.horizontal)
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Vel. Ascenso Prom.", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .cyan)
-                KPISummaryCard(title: "GAP Promedio", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .purple)
-                KPISummaryCard(title: "Vel. Descenso Prom.", value: "\(String(format: "%.0f", viewModel.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
-                KPISummaryCard(title: "Potencia Norm. Prom.", value: "\(String(format: "%.0f", viewModel.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
-                KPISummaryCard(title: "Índice Eficiencia Prom.", value: String(format: "%.3f", viewModel.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
-                KPISummaryCard(title: "Desacople Prom.", value: "\(String(format: "%.1f", viewModel.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
+                KPISummaryCard(title: "Vel. Ascenso", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .orange)
+                KPISummaryCard(title: "GAP", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .cyan)
+                KPISummaryCard(title: "Vel. Descenso", value: "\(String(format: "%.0f", viewModel.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
+                KPISummaryCard(title: "Potencia Norm.", value: "\(String(format: "%.0f", viewModel.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
+                KPISummaryCard(title: "Índice Eficiencia", value: String(format: "%.3f", viewModel.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
+                KPISummaryCard(title: "Desacople", value: "\(String(format: "%.1f", viewModel.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
             }
             .padding(.horizontal)
         }
@@ -120,14 +120,14 @@ struct AdvancedAnalyticsView: View {
     
     private var runningDynamicsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Dinámica de Carrera (Promedios)")
+            Text("Dinámica de Carrera")
                 .font(.title3).bold()
                 .padding(.horizontal)
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Oscilación Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .pink)
+                KPISummaryCard(title: "Oscilación Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .purple)
                 KPISummaryCard(title: "Tiempo de Contacto", value: "\(String(format: "%.0f", viewModel.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
-                KPISummaryCard(title: "Longitud de Zancada", value: "\(String(format: "%.2f", viewModel.averageStrideLength)) m", systemImage: "ruler.fill", color: .brown)
+                KPISummaryCard(title: "Longitud de Zancada", value: "\(String(format: "%.2f", viewModel.averageStrideLength)) m", systemImage: "ruler.fill", color: .orange)
                 KPISummaryCard(title: "Ratio Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
             }
             .padding(.horizontal)
