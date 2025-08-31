@@ -28,7 +28,7 @@ struct ActivityRowView: View {
                 HStack(spacing: 15) {
                     // Distance
                     HStack(spacing: 4) {
-                        Image(systemName: "figure.walk")
+                        Image(systemName: "location.fill")
                             .foregroundColor(.red)
                         Text(String(format: "%.2f km", activity.distance / 1000))
                             .font(.caption)

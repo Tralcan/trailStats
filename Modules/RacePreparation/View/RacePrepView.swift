@@ -66,7 +66,8 @@ struct RacePrepView: View {
                     }
                 }
             }
-            .padding()
+            .padding(.vertical)
+            .padding(.horizontal, 8)
             .navigationTitle("Races")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
