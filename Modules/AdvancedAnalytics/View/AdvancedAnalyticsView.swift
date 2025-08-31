@@ -46,7 +46,7 @@ struct AdvancedAnalyticsView: View {
                     }
                     
                     // KPI Summary Grids
-                    kpiSummaryGrid
+                    kpiSummarySection
                     trailPerformanceSection
                     if viewModel.hasRunningDynamics {
                         runningDynamicsSection
@@ -84,14 +84,20 @@ struct AdvancedAnalyticsView: View {
         }
     }
     
-    private var kpiSummaryGrid: some View {
-        LazyVGrid(columns: gridColumns, spacing: 16) {
-            KPISummaryCard(title: "Actividades", value: "\(viewModel.totalActivities)", systemImage: "figure.run", color: .orange)
-            KPISummaryCard(title: "Tiempo Total", value: Formatters.formatTime(Int(viewModel.totalDuration)), systemImage: "hourglass", color: .blue)
-            KPISummaryCard(title: "Distancia Total", value: Formatters.formatDistance(viewModel.totalDistance), systemImage: "location.fill", color: .red)
-            KPISummaryCard(title: "Desnivel Total", value: Formatters.formatElevation(viewModel.totalElevation), systemImage: "mountain.2.fill", color: .green)
+    private var kpiSummarySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Totales del Período")
+                .font(.title3).bold()
+                .padding(.horizontal)
+            
+            LazyVGrid(columns: gridColumns, spacing: 16) {
+                KPISummaryCard(title: "Actividades", value: "\(viewModel.totalActivities)", systemImage: "figure.run", color: .orange)
+                KPISummaryCard(title: "Tiempo Total", value: Formatters.formatTime(Int(viewModel.totalDuration)), systemImage: "hourglass", color: .blue)
+                KPISummaryCard(title: "Distancia Total", value: Formatters.formatDistance(viewModel.totalDistance), systemImage: "location.fill", color: .red)
+                KPISummaryCard(title: "Desnivel Total", value: Formatters.formatElevation(viewModel.totalElevation), systemImage: "mountain.2.fill", color: .green)
+            }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
     
     private var trailPerformanceSection: some View {
