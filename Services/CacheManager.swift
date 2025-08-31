@@ -137,6 +137,41 @@ class CacheManager {
         }
     }
 
+    func loadAllActivityDetails() -> [Activity] {
+        guard let summariesURL = summariesDirectoryURL else {
+            print("Summaries directory not found.")
+            return []
+        }
+
+        var activities: [Activity] = []
+        let fileManager = FileManager.default
+        
+        do {
+            let activityIDFolders = try fileManager.contentsOfDirectory(at: summariesURL, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+            
+            for folderURL in activityIDFolders {
+                let detailFileURL = folderURL.appendingPathComponent("activity_detail.json")
+                
+                if fileManager.fileExists(atPath: detailFileURL.path) {
+                    do {
+                        let data = try Data(contentsOf: detailFileURL)
+                        let decoder = JSONDecoder()
+                        decoder.dateDecodingStrategy = .iso8601
+                        let activity = try decoder.decode(Activity.self, from: data)
+                        activities.append(activity)
+                    } catch {
+                        // Silently ignore decoding errors for individual files
+                    }
+                }
+            }
+        } catch {
+            print("Error reading contents of summaries directory: \(error.localizedDescription)")
+        }
+        
+        print("Loaded \(activities.count) total activity details from cache.")
+        return activities
+    }
+
 
     // MARK: - Summaries & Chart Images
 
