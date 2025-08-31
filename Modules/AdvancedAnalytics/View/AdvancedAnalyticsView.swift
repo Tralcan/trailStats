@@ -58,13 +58,18 @@ struct AdvancedAnalyticsView: View {
                         EfficiencyChartView(data: viewModel.efficiencyData)
                     }
                     
+                    // Decoupling Chart
+                    if !viewModel.weeklyDecouplingData.isEmpty {
+                        WeeklyDecouplingChartView(weeklyData: viewModel.weeklyDecouplingData)
+                    }
+
                     // Intensity Chart
                     if !viewModel.weeklyZoneDistribution.isEmpty {
                         IntensityChartView(weeklyData: viewModel.weeklyZoneDistribution)
                     }
                     
                     // Show empty state only if all charts are empty
-                    if viewModel.efficiencyData.isEmpty && viewModel.weeklyZoneDistribution.isEmpty && viewModel.weeklyDistanceData.isEmpty {
+                    if viewModel.efficiencyData.isEmpty && viewModel.weeklyZoneDistribution.isEmpty && viewModel.weeklyDistanceData.isEmpty && viewModel.weeklyDecouplingData.isEmpty {
                         emptyStateView
                     }
                 }

@@ -15,6 +15,12 @@ struct WeeklyDistanceData: Identifiable {
     var weekDate: Date
 }
 
+struct WeeklyDecouplingData: Identifiable {
+    let id: String
+    var averageDecoupling: Double
+    var weekDate: Date
+}
+
 @MainActor
 class ProgressAnalyticsViewModel: ObservableObject {
     
@@ -25,6 +31,7 @@ class ProgressAnalyticsViewModel: ObservableObject {
     @Published var efficiencyData: [ChartDataPoint] = []
     @Published var weeklyZoneDistribution: [WeeklyZoneData] = []
     @Published var weeklyDistanceData: [WeeklyDistanceData] = []
+    @Published var weeklyDecouplingData: [WeeklyDecouplingData] = []
 
     // Data for KPI Cards
     @Published var totalDistance: Double = 0
@@ -65,6 +72,7 @@ class ProgressAnalyticsViewModel: ObservableObject {
         calculateEfficiencyData(for: recentActivities)
         calculateIntensityDistribution(for: recentActivities)
         calculateWeeklyDistance(for: recentActivities)
+        calculateWeeklyDecoupling(for: recentActivities)
         
         print("Processed data for time frame: \(timeFrame) days. Found \(totalActivities) activities.")
     }
@@ -127,6 +135,27 @@ class ProgressAnalyticsViewModel: ObservableObject {
             weeklyData.append(WeeklyDistanceData(id: weekID, distance: totalDistance, weekDate: weekStartDate))
         }
         self.weeklyDistanceData = weeklyData.sorted(by: { $0.weekDate < $1.weekDate })
+    }
+    
+    private func calculateWeeklyDecoupling(for activities: [Activity]) {
+        let calendar = Calendar.current
+        let groupedByWeek = Dictionary(grouping: activities) { calendar.startOfWeek(for: $0.date) }
+        
+        var weeklyData: [WeeklyDecouplingData] = []
+        for (weekStartDate, activitiesInWeek) in groupedByWeek {
+            let weekOfYear = calendar.component(.weekOfYear, from: weekStartDate)
+            let weekID = "W\(weekOfYear)"
+            
+            let decouplingValues = activitiesInWeek.compactMap {
+                cacheManager.loadProcessedMetrics(activityId: $0.id)?.cardiacDecoupling
+            }
+            
+            if !decouplingValues.isEmpty {
+                let averageDecoupling = decouplingValues.reduce(0, +) / Double(decouplingValues.count)
+                weeklyData.append(WeeklyDecouplingData(id: weekID, averageDecoupling: averageDecoupling, weekDate: weekStartDate))
+            }
+        }
+        self.weeklyDecouplingData = weeklyData.sorted(by: { $0.weekDate < $1.weekDate })
     }
 }
 
