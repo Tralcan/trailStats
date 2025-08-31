@@ -1,13 +1,6 @@
 
 import SwiftUI
 
-/// Data model for the KPI popover info view
-struct KpiInfo: Identifiable, Equatable {
-    let id = UUID()
-    let title: String
-    let description: String
-}
-
 struct KpiInfoPopoverView: View {
     let info: KpiInfo
     

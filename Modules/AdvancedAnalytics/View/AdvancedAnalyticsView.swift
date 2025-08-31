@@ -3,6 +3,7 @@ import Charts
 
 struct AdvancedAnalyticsView: View {
     @StateObject private var viewModel = ProgressAnalyticsViewModel()
+    @State private var selectedKpiInfo: KpiInfo? = nil
     
     enum TimePeriod: String, CaseIterable, Identifiable {
         case last7 = "7 Días"
@@ -30,58 +31,75 @@ struct AdvancedAnalyticsView: View {
     ]
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    
-                    Picker("Período", selection: $selectedPeriod) {
-                        ForEach(TimePeriod.allCases) { period in
-                            Text(period.rawValue).tag(period)
+        ZStack {
+            NavigationView {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        
+                        Picker("Período", selection: $selectedPeriod) {
+                            ForEach(TimePeriod.allCases) { period in
+                                Text(period.rawValue).tag(period)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
+                        .onChange(of: selectedPeriod) { newPeriod in
+                            viewModel.timeFrameChanged(newTimeFrame: newPeriod.dayCount)
+                        }
+                        
+                        // KPI Summary Grids
+                        kpiSummarySection
+                        trailPerformanceSection
+                        if viewModel.hasRunningDynamics {
+                            runningDynamicsSection
+                        }
+                        
+                        // Charts
+                        if !viewModel.weeklyDistanceData.isEmpty {
+                            WeeklyDistanceChartView(weeklyData: viewModel.weeklyDistanceData)
+                        }
+
+                        if !viewModel.efficiencyData.isEmpty {
+                            EfficiencyChartView(data: viewModel.efficiencyData)
+                        }
+                        
+                        if !viewModel.weeklyDecouplingData.isEmpty {
+                            WeeklyDecouplingChartView(weeklyData: viewModel.weeklyDecouplingData)
+                        }
+
+                        if !viewModel.weeklyZoneDistribution.isEmpty {
+                            IntensityChartView(weeklyData: viewModel.weeklyZoneDistribution)
+                        }
+                        
+                        if !viewModel.performanceByGradeData.isEmpty {
+                            PerformanceByGradeView(performanceData: viewModel.performanceByGradeData)
+                        }
+                        
+                        // Show empty state only if all charts are empty
+                        if viewModel.totalActivities == 0 {
+                            emptyStateView
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .onChange(of: selectedPeriod) { newPeriod in
-                        viewModel.timeFrameChanged(newTimeFrame: newPeriod.dayCount)
-                    }
-                    
-                    // KPI Summary Grids
-                    kpiSummarySection
-                    trailPerformanceSection
-                    if viewModel.hasRunningDynamics {
-                        runningDynamicsSection
-                    }
-                    
-                    // Charts
-                    if !viewModel.weeklyDistanceData.isEmpty {
-                        WeeklyDistanceChartView(weeklyData: viewModel.weeklyDistanceData)
-                    }
-
-                    if !viewModel.efficiencyData.isEmpty {
-                        EfficiencyChartView(data: viewModel.efficiencyData)
-                    }
-                    
-                    if !viewModel.weeklyDecouplingData.isEmpty {
-                        WeeklyDecouplingChartView(weeklyData: viewModel.weeklyDecouplingData)
-                    }
-
-                    if !viewModel.weeklyZoneDistribution.isEmpty {
-                        IntensityChartView(weeklyData: viewModel.weeklyZoneDistribution)
-                    }
-                    
-                    if !viewModel.performanceByGradeData.isEmpty {
-                        PerformanceByGradeView(performanceData: viewModel.performanceByGradeData)
-                    }
-                    
-                    // Show empty state only if all charts are empty
-                    if viewModel.totalActivities == 0 {
-                        emptyStateView
-                    }
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
+                .navigationTitle("Análisis de Progreso")
             }
-            .navigationTitle("Análisis de Progreso")
+            
+            if selectedKpiInfo != nil {
+                Color.black.opacity(0.4)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture { selectedKpiInfo = nil }
+                    .zIndex(1)
+            }
+            
+            if let info = selectedKpiInfo {
+                KpiInfoPopoverView(info: info)
+                    .zIndex(2)
+                    .transition(.scale.combined(with: .opacity))
+                    .onTapGesture { selectedKpiInfo = nil }
+            }
         }
+        .animation(.easeInOut, value: selectedKpiInfo)
     }
     
     private var kpiSummarySection: some View {
@@ -108,11 +126,17 @@ struct AdvancedAnalyticsView: View {
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
                 KPISummaryCard(title: "Vel. Ascenso", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .orange)
+                    .onTapGesture { selectedKpiInfo = .vam }
                 KPISummaryCard(title: "GAP", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .cyan)
+                    .onTapGesture { selectedKpiInfo = .gap }
                 KPISummaryCard(title: "Vel. Descenso", value: "\(String(format: "%.0f", viewModel.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
+                    .onTapGesture { selectedKpiInfo = .descentVam }
                 KPISummaryCard(title: "Potencia Norm.", value: "\(String(format: "%.0f", viewModel.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
+                    .onTapGesture { selectedKpiInfo = .normalizedPower }
                 KPISummaryCard(title: "Índice Eficiencia", value: String(format: "%.3f", viewModel.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
+                    .onTapGesture { selectedKpiInfo = .efficiencyIndex }
                 KPISummaryCard(title: "Desacople", value: "\(String(format: "%.1f", viewModel.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
+                    .onTapGesture { selectedKpiInfo = .decoupling }
             }
             .padding(.horizontal)
         }
@@ -126,9 +150,13 @@ struct AdvancedAnalyticsView: View {
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
                 KPISummaryCard(title: "Oscilación Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .purple)
+                    .onTapGesture { selectedKpiInfo = .verticalOscillation }
                 KPISummaryCard(title: "Tiempo de Contacto", value: "\(String(format: "%.0f", viewModel.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
+                    .onTapGesture { selectedKpiInfo = .groundContactTime }
                 KPISummaryCard(title: "Longitud de Zancada", value: "\(String(format: "%.2f", viewModel.averageStrideLength)) m", systemImage: "ruler.fill", color: .orange)
+                    .onTapGesture { selectedKpiInfo = .strideLength }
                 KPISummaryCard(title: "Ratio Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
+                    .onTapGesture { selectedKpiInfo = .verticalRatio }
             }
             .padding(.horizontal)
         }
