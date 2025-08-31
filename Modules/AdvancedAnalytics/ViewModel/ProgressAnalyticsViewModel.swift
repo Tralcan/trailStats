@@ -1,15 +1,31 @@
 import Foundation
 import Combine
 
+// MARK: - Data Structures for Charts
+
+struct WeeklyZoneData: Identifiable {
+    let id: String
+    var timeInZones: [TimeInterval] = Array(repeating: 0, count: 5)
+    var weekDate: Date
+}
+
+struct WeeklyDistanceData: Identifiable {
+    let id: String
+    var distance: Double
+    var weekDate: Date
+}
+
 @MainActor
 class ProgressAnalyticsViewModel: ObservableObject {
     
     // MARK: - Published Properties
-    @Published var timeFrame: Int = 30 // Default to 30 days
+    @Published var timeFrame: Int = 30
     
     // Data for Charts
     @Published var efficiencyData: [ChartDataPoint] = []
-    
+    @Published var weeklyZoneDistribution: [WeeklyZoneData] = []
+    @Published var weeklyDistanceData: [WeeklyDistanceData] = []
+
     // Data for KPI Cards
     @Published var totalDistance: Double = 0
     @Published var totalElevation: Double = 0
@@ -37,7 +53,6 @@ class ProgressAnalyticsViewModel: ObservableObject {
     }
     
     private func processDataForTimeFrame() {
-        // 1. Filter activities based on the selected timeFrame
         let calendar = Calendar.current
         guard let cutoffDate = calendar.date(byAdding: .day, value: -timeFrame, to: Date()) else {
             return
@@ -45,40 +60,80 @@ class ProgressAnalyticsViewModel: ObservableObject {
         
         let recentActivities = allActivities.filter { $0.date >= cutoffDate }
         
-        // 2. Calculate totals for KPI cards
-        totalDistance = recentActivities.reduce(0) { $0 + $1.distance }
-        totalElevation = recentActivities.reduce(0) { $0 + $1.elevationGain }
-        totalDuration = recentActivities.reduce(0) { $0 + $1.duration }
-        totalActivities = recentActivities.count
+        // --- Calculations ---
+        calculateTotals(for: recentActivities)
+        calculateEfficiencyData(for: recentActivities)
+        calculateIntensityDistribution(for: recentActivities)
+        calculateWeeklyDistance(for: recentActivities)
         
-        // 3. Process these activities to get the real efficiency index for the chart
-        let dataPoints = recentActivities.compactMap { activity -> ChartDataPoint? in
-            guard let avgHR = activity.averageHeartRate, avgHR > 0, activity.duration > 0 else {
-                return nil
-            }
-            
+        print("Processed data for time frame: \(timeFrame) days. Found \(totalActivities) activities.")
+    }
+    
+    private func calculateTotals(for activities: [Activity]) {
+        totalDistance = activities.reduce(0) { $0 + $1.distance }
+        totalElevation = activities.reduce(0) { $0 + $1.elevationGain }
+        totalDuration = activities.reduce(0) { $0 + $1.duration }
+        totalActivities = activities.count
+    }
+    
+    private func calculateEfficiencyData(for activities: [Activity]) {
+        let dataPoints = activities.compactMap { activity -> ChartDataPoint? in
+            guard let avgHR = activity.averageHeartRate, avgHR > 0, activity.duration > 0 else { return nil }
             let distanceInKm = activity.distance / 1000
             let durationInHours = activity.duration / 3600
-            
-            // Avoid division by zero if duration is very short
             guard durationInHours > 0 else { return nil }
-            
-            // Speed in km/h
             let speed = distanceInKm / durationInHours
-            
-            // Efficiency Index: Speed per Heart Rate beat
             let efficiencyIndex = speed / avgHR
-            
-            // We only want to show valid data
-            guard !efficiencyIndex.isNaN && !efficiencyIndex.isInfinite else {
-                return nil
-            }
-            
+            guard !efficiencyIndex.isNaN && !efficiencyIndex.isInfinite else { return nil }
             return ChartDataPoint(time: Int(activity.date.timeIntervalSince1970), value: efficiencyIndex)
         }
-        
         self.efficiencyData = dataPoints.sorted(by: { $0.time < $1.time })
+    }
+    
+    private func calculateIntensityDistribution(for activities: [Activity]) {
+        let calendar = Calendar.current
+        let groupedByWeek = Dictionary(grouping: activities) { calendar.startOfWeek(for: $0.date) }
         
-        print("Processed data for time frame: \(timeFrame) days. Found \(efficiencyData.count) real data points and \(totalActivities) activities.")
+        var weeklyData: [WeeklyZoneData] = []
+        for (weekStartDate, activitiesInWeek) in groupedByWeek {
+            let weekOfYear = calendar.component(.weekOfYear, from: weekStartDate)
+            let weekID = "W\(weekOfYear)"
+            var weeklyZone = WeeklyZoneData(id: weekID, weekDate: weekStartDate)
+            
+            for activity in activitiesInWeek {
+                if let metrics = cacheManager.loadProcessedMetrics(activityId: activity.id), let distribution = metrics.heartRateZoneDistribution {
+                    weeklyZone.timeInZones[0] += distribution.timeInZone1
+                    weeklyZone.timeInZones[1] += distribution.timeInZone2
+                    weeklyZone.timeInZones[2] += distribution.timeInZone3
+                    weeklyZone.timeInZones[3] += distribution.timeInZone4
+                    weeklyZone.timeInZones[4] += distribution.timeInZone5
+                }
+            }
+            weeklyData.append(weeklyZone)
+        }
+        self.weeklyZoneDistribution = weeklyData.sorted(by: { $0.weekDate < $1.weekDate })
+    }
+    
+    private func calculateWeeklyDistance(for activities: [Activity]) {
+        let calendar = Calendar.current
+        let groupedByWeek = Dictionary(grouping: activities) { calendar.startOfWeek(for: $0.date) }
+        
+        var weeklyData: [WeeklyDistanceData] = []
+        for (weekStartDate, activitiesInWeek) in groupedByWeek {
+            let weekOfYear = calendar.component(.weekOfYear, from: weekStartDate)
+            let weekID = "W\(weekOfYear)"
+            
+            let totalDistance = activitiesInWeek.reduce(0) { $0 + $1.distance }
+            weeklyData.append(WeeklyDistanceData(id: weekID, distance: totalDistance, weekDate: weekStartDate))
+        }
+        self.weeklyDistanceData = weeklyData.sorted(by: { $0.weekDate < $1.weekDate })
+    }
+}
+
+// Helper to get the start of the week for grouping
+extension Calendar {
+    func startOfWeek(for date: Date) -> Date {
+        let components = self.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        return self.date(from: components)!
     }
 }

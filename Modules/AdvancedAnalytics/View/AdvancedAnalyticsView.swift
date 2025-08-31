@@ -48,11 +48,24 @@ struct AdvancedAnalyticsView: View {
                     // KPI Summary Grid
                     kpiSummaryGrid
                     
+                    // Weekly Distance Chart
+                    if !viewModel.weeklyDistanceData.isEmpty {
+                        WeeklyDistanceChartView(weeklyData: viewModel.weeklyDistanceData)
+                    }
+
                     // Efficiency Chart
-                    if viewModel.efficiencyData.isEmpty {
-                        emptyStateView
-                    } else {
+                    if !viewModel.efficiencyData.isEmpty {
                         EfficiencyChartView(data: viewModel.efficiencyData)
+                    }
+                    
+                    // Intensity Chart
+                    if !viewModel.weeklyZoneDistribution.isEmpty {
+                        IntensityChartView(weeklyData: viewModel.weeklyZoneDistribution)
+                    }
+                    
+                    // Show empty state only if all charts are empty
+                    if viewModel.efficiencyData.isEmpty && viewModel.weeklyZoneDistribution.isEmpty && viewModel.weeklyDistanceData.isEmpty {
+                        emptyStateView
                     }
                 }
                 .padding(.vertical)
