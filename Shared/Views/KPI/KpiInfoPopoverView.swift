@@ -2,7 +2,7 @@
 import SwiftUI
 
 struct KpiInfoPopoverView: View {
-    let info: KpiInfo
+    let info: KPIInfo
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

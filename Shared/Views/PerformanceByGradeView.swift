@@ -3,7 +3,7 @@ import SwiftUI
 /// A view that displays performance metrics broken down by grade buckets.
 struct PerformanceByGradeView: View {
     let performanceData: [PerformanceByGrade]
-    var onKpiTapped: ((KpiInfo) -> Void)? = nil
+    var onKpiTapped: ((KPIInfo) -> Void)? = nil
 
     private let vamDescription = "Mide los metros que asciendes por hora (m/h) específicamente en este rango de pendiente. Es un indicador clave de tu eficiencia como escalador en diferentes inclinaciones."
 
@@ -22,7 +22,7 @@ struct PerformanceByGradeView: View {
                 Text("VAM")
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .onTapGesture {
-                        onKpiTapped?(KpiInfo(title: "VAM (Velocidad de Ascenso Media)", description: vamDescription))
+                        onKpiTapped?(KPIInfo(title: "VAM (Velocidad de Ascenso Media)", description: vamDescription, higherIsBetter: true))
                     }
                 Text("Cadencia")
                     .frame(maxWidth: .infinity, alignment: .trailing)

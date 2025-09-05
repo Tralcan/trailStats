@@ -48,15 +48,24 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var strideLengthData: [ChartDataPoint] = []
 
     // KPIs
-    @Published var verticalSpeedVAM: Double?
-    @Published var cardiacDecoupling: Double?
+    @Published var vamKPI: KPIInfo?
+    @Published var decouplingKPI: KPIInfo?
+    @Published var descentVamKPI: KPIInfo?
+    @Published var normalizedPowerKPI: KPIInfo?
+    @Published var gapKPI: KPIInfo?
+    @Published var efficiencyIndexKPI: KPIInfo?
+    @Published var verticalOscillationKPI: KPIInfo?
+    @Published var groundContactTimeKPI: KPIInfo?
+    @Published var strideLengthKPI: KPIInfo?
+    @Published var verticalRatioKPI: KPIInfo?
+
+    // Complex data
     @Published var climbSegments: [ActivitySegment] = []
-    @Published var descentVerticalSpeed: Double?
-    @Published var normalizedPower: Double?
-    @Published var gradeAdjustedPace: Double?
     @Published var heartRateZoneDistribution: HeartRateZoneDistribution?
     @Published var performanceByGrade: [PerformanceByGrade] = []
-    @Published var efficiencyIndex: Double?
+
+    // Historical data for trend calculation
+    private var recentActivities: [Activity] = []
 
     // RPE & Notes
     @Published var rpe: Double = 5.0
@@ -205,16 +214,48 @@ class ActivityDetailViewModel: ObservableObject {
             self.aiCoachLoading = false
         }
         if let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
-            self.verticalSpeedVAM = cachedMetrics.verticalSpeedVAM
-            self.cardiacDecoupling = cachedMetrics.cardiacDecoupling
+            self.vamKPI = KPIInfo(
+                title: KPIInfo.vam.title,
+                description: KPIInfo.vam.description,
+                value: cachedMetrics.verticalSpeedVAM,
+                higherIsBetter: KPIInfo.vam.higherIsBetter
+            )
+            self.decouplingKPI = KPIInfo(
+                title: KPIInfo.decoupling.title,
+                description: KPIInfo.decoupling.description,
+                value: cachedMetrics.cardiacDecoupling,
+                higherIsBetter: KPIInfo.decoupling.higherIsBetter
+            )
+            self.descentVamKPI = KPIInfo(
+                title: KPIInfo.descentVam.title,
+                description: KPIInfo.descentVam.description,
+                value: cachedMetrics.descentVerticalSpeed,
+                higherIsBetter: KPIInfo.descentVam.higherIsBetter
+            )
+            self.normalizedPowerKPI = KPIInfo(
+                title: KPIInfo.normalizedPower.title,
+                description: KPIInfo.normalizedPower.description,
+                value: cachedMetrics.normalizedPower,
+                higherIsBetter: KPIInfo.normalizedPower.higherIsBetter
+            )
+            self.gapKPI = KPIInfo(
+                title: KPIInfo.gap.title,
+                description: KPIInfo.gap.description,
+                value: cachedMetrics.gradeAdjustedPace,
+                higherIsBetter: KPIInfo.gap.higherIsBetter
+            )
+            self.efficiencyIndexKPI = KPIInfo(
+                title: KPIInfo.efficiencyIndex.title,
+                description: KPIInfo.efficiencyIndex.description,
+                value: cachedMetrics.efficiencyIndex,
+                higherIsBetter: KPIInfo.efficiencyIndex.higherIsBetter
+            )
+            
             self.climbSegments = cachedMetrics.climbSegments
-            self.descentVerticalSpeed = cachedMetrics.descentVerticalSpeed
-            self.normalizedPower = cachedMetrics.normalizedPower
-            self.gradeAdjustedPace = cachedMetrics.gradeAdjustedPace
             self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
             self.performanceByGrade = cachedMetrics.performanceByGrade
-            self.efficiencyIndex = cachedMetrics.efficiencyIndex
         }
+        calculateKPITrends()
     }
     
     // MARK: - UI Update Helpers
@@ -230,16 +271,48 @@ class ActivityDetailViewModel: ObservableObject {
         self.paceData = pace
         self.strideLengthData = strideLength
         if let metrics = metrics {
-            self.verticalSpeedVAM = metrics.verticalSpeedVAM
-            self.cardiacDecoupling = metrics.cardiacDecoupling
+            self.vamKPI = KPIInfo(
+                title: KPIInfo.vam.title,
+                description: KPIInfo.vam.description,
+                value: metrics.verticalSpeedVAM,
+                higherIsBetter: KPIInfo.vam.higherIsBetter
+            )
+            self.decouplingKPI = KPIInfo(
+                title: KPIInfo.decoupling.title,
+                description: KPIInfo.decoupling.description,
+                value: metrics.cardiacDecoupling,
+                higherIsBetter: KPIInfo.decoupling.higherIsBetter
+            )
+            self.descentVamKPI = KPIInfo(
+                title: KPIInfo.descentVam.title,
+                description: KPIInfo.descentVam.description,
+                value: metrics.descentVerticalSpeed,
+                higherIsBetter: KPIInfo.descentVam.higherIsBetter
+            )
+            self.normalizedPowerKPI = KPIInfo(
+                title: KPIInfo.normalizedPower.title,
+                description: KPIInfo.normalizedPower.description,
+                value: metrics.normalizedPower,
+                higherIsBetter: KPIInfo.normalizedPower.higherIsBetter
+            )
+            self.gapKPI = KPIInfo(
+                title: KPIInfo.gap.title,
+                description: KPIInfo.gap.description,
+                value: metrics.gradeAdjustedPace,
+                higherIsBetter: KPIInfo.gap.higherIsBetter
+            )
+            self.efficiencyIndexKPI = KPIInfo(
+                title: KPIInfo.efficiencyIndex.title,
+                description: KPIInfo.efficiencyIndex.description,
+                value: metrics.efficiencyIndex,
+                higherIsBetter: KPIInfo.efficiencyIndex.higherIsBetter
+            )
+            
             self.climbSegments = metrics.climbSegments
-            self.descentVerticalSpeed = metrics.descentVerticalSpeed
-            self.normalizedPower = metrics.normalizedPower
-            self.gradeAdjustedPace = metrics.gradeAdjustedPace
             self.heartRateZoneDistribution = metrics.heartRateZoneDistribution
             self.performanceByGrade = metrics.performanceByGrade
-            self.efficiencyIndex = metrics.efficiencyIndex
         }
+        calculateKPITrends()
     }
     
     private func updateError(message: String) {
@@ -280,7 +353,7 @@ class ActivityDetailViewModel: ObservableObject {
 
         // Salir si los datos clave aún no se han procesado.
         // Se volverá a llamar cuando finalice el procesamiento de datos.
-        guard verticalSpeedVAM != nil else {
+        guard vamKPI != nil else {
             print("[AICoach] Datos de KPI aún no procesados. Omitiendo la solicitud.")
             return
         }
@@ -367,22 +440,22 @@ class ActivityDetailViewModel: ObservableObject {
         }
 
         // Calculated KPIs from ViewModel
-        if let vam = verticalSpeedVAM {
+        if let vam = vamKPI?.value {
             kpis["VAM (Velocidad de Ascenso Media)"] = Formatters.formatVerticalSpeed(vam)
         }
-        if let decoupling = cardiacDecoupling {
+        if let decoupling = decouplingKPI?.value {
             kpis["Desacoplamiento Cardíaco (Ritmo:FC)"] = Formatters.formatDecoupling(decoupling)
         }
-        if let descentV = descentVerticalSpeed {
+        if let descentV = descentVamKPI?.value {
             kpis["Velocidad de Descenso Media"] = Formatters.formatVerticalSpeed(descentV)
         }
-        if let np = normalizedPower {
+        if let np = normalizedPowerKPI?.value {
             kpis["Potencia Normalizada (NP)"] = Formatters.formatPower(np)
         }
-        if let gap = gradeAdjustedPace {
+        if let gap = gapKPI?.value {
             kpis["Ritmo Ajustado por Pendiente (GAP)"] = gap.toPaceFormat()
         }
-        if let efficiency = efficiencyIndex {
+        if let efficiency = efficiencyIndexKPI?.value {
             kpis["Índice de Eficiencia (Velocidad/FC)"] = Formatters.formatEfficiencyIndex(efficiency)
         }
         if let rpe = activity.rpe {
@@ -454,6 +527,67 @@ class ActivityDetailViewModel: ObservableObject {
             } else {
                 print("[DEBUG] HealthKit authorization was denied by the user.")
             }
+        }
+    }
+
+    // MARK: - KPI Trend Calculation
+    private func calculateKPITrends() {
+        let allActivities = cacheManager.loadAllActivityDetails()
+        let thirtyDaysAgo = Date().addingTimeInterval(-30 * 24 * 60 * 60)
+        
+        let recentActivities = allActivities.filter { $0.date > thirtyDaysAgo && $0.id != self.activity.id }
+        
+        let recentMetrics = recentActivities.compactMap { cacheManager.loadProcessedMetrics(activityId: $0.id) }
+        
+        // Update KPIs from Processed Metrics
+        vamKPI = vamKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.verticalSpeedVAM }) }
+        decouplingKPI = decouplingKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.cardiacDecoupling }) }
+        descentVamKPI = descentVamKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.descentVerticalSpeed }) }
+        normalizedPowerKPI = normalizedPowerKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.normalizedPower }) }
+        gapKPI = gapKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.gradeAdjustedPace }) }
+        efficiencyIndexKPI = efficiencyIndexKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.efficiencyIndex }) }
+        
+        // Update KPIs from Activity object (Running Dynamics)
+        verticalOscillationKPI = activity.verticalOscillation.map { KPIInfo(title: KPIInfo.verticalOscillation.title, description: KPIInfo.verticalOscillation.description, value: $0, higherIsBetter: KPIInfo.verticalOscillation.higherIsBetter) }
+        verticalOscillationKPI = verticalOscillationKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.verticalOscillation }) }
+
+        groundContactTimeKPI = activity.groundContactTime.map { KPIInfo(title: KPIInfo.groundContactTime.title, description: KPIInfo.groundContactTime.description, value: $0, higherIsBetter: KPIInfo.groundContactTime.higherIsBetter) }
+        groundContactTimeKPI = groundContactTimeKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.groundContactTime }) }
+
+        strideLengthKPI = activity.strideLength.map { KPIInfo(title: KPIInfo.strideLength.title, description: KPIInfo.strideLength.description, value: $0, higherIsBetter: KPIInfo.strideLength.higherIsBetter) }
+        strideLengthKPI = strideLengthKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.strideLength }) }
+
+        verticalRatioKPI = activity.verticalRatio.map { KPIInfo(title: KPIInfo.verticalRatio.title, description: KPIInfo.verticalRatio.description, value: $0, higherIsBetter: KPIInfo.verticalRatio.higherIsBetter) }
+        verticalRatioKPI = verticalRatioKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.verticalRatio }) }
+    }
+
+    private func updateTrend(for kpi: KPIInfo, with recentValues: [Double]) -> KPIInfo {
+        guard let currentValue = kpi.value, !recentValues.isEmpty else {
+            return kpi
+        }
+
+        let average = recentValues.reduce(0, +) / Double(recentValues.count)
+        let trend = determineTrend(currentValue: currentValue, average: average, higherIsBetter: kpi.higherIsBetter)
+
+        return KPIInfo(
+            title: kpi.title,
+            description: kpi.description,
+            value: kpi.value,
+            trend: trend,
+            higherIsBetter: kpi.higherIsBetter
+        )
+    }
+
+    private func determineTrend(currentValue: Double, average: Double, higherIsBetter: Bool) -> KPITrend {
+        // Use a 1% tolerance relative to the average to avoid flagging tiny, insignificant changes.
+        let tolerance = 0.01 * abs(average)
+
+        if abs(currentValue - average) <= tolerance {
+            return .equal
+        } else if higherIsBetter {
+            return currentValue > average ? .up : .down
+        } else {
+            return currentValue < average ? .up : .down
         }
     }
 }

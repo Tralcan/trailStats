@@ -3,7 +3,7 @@ import Charts
 
 struct AdvancedAnalyticsView: View {
     @StateObject private var viewModel = ProgressAnalyticsViewModel()
-    @State private var selectedKpiInfo: KpiInfo? = nil
+    @State private var selectedKpiInfo: KPIInfo? = nil
     
     enum TimePeriod: String, CaseIterable, Identifiable {
         case last7 = "7 Días"

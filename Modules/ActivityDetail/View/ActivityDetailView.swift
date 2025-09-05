@@ -8,7 +8,7 @@ struct ActivityDetailView: View {
     @State private var showGpxShareSheet = false
     
     // Estado para controlar el KPI seleccionado y mostrar el popover.
-    @State private var selectedKpiInfo: KpiInfo?
+    @State private var selectedKpiInfo: KPIInfo?
     @FocusState private var notesFieldIsFocused: Bool
     
     // Diccionario con las descripciones para cada KPI.
@@ -80,7 +80,7 @@ struct ActivityDetailView: View {
                     .foregroundColor(colorForRPE(value: viewModel.rpe))
             }
             .onTapGesture {
-                selectedKpiInfo = KpiInfo(title: "Esfuerzo Percibido (RPE)", description: kpiInfoData["Esfuerzo Percibido (RPE)"]!)
+                selectedKpiInfo = KPIInfo(title: "Esfuerzo Percibido (RPE)", description: kpiInfoData["Esfuerzo Percibido (RPE)"]!, higherIsBetter: false)
             }
             Slider(value: $viewModel.rpe, in: 1...10, step: 0.5)
                 .tint(colorForRPE(value: viewModel.rpe))
@@ -129,40 +129,46 @@ struct ActivityDetailView: View {
                 .foregroundColor(.primary)
 
             VStack(spacing: 16) {
-                HStack(spacing: 16) {
-                    KPICardView(title: "Ritmo Ajustado (GAP)", value: viewModel.gradeAdjustedPace?.toPaceFormat(), unit: "", icon: "speedometer", color: .cyan)
-                        .onTapGesture {
-                            selectedKpiInfo = KpiInfo(title: "Ritmo Ajustado (GAP)", description: kpiInfoData["Ritmo Ajustado (GAP)"]!)
-                        }
-                    
-                    KPICardView(title: "Desacoplamiento Cardíaco", value: viewModel.cardiacDecoupling.map { String(format: "%.1f", $0) }, unit: "%", icon: "heart.slash.circle.fill", color: (viewModel.cardiacDecoupling ?? 0) > 10 ? .red : ((viewModel.cardiacDecoupling ?? 0) > 5 ? .yellow : .green))
-                        .onTapGesture {
-                            selectedKpiInfo = KpiInfo(title: "Desacoplamiento Cardíaco", description: kpiInfoData["Desacoplamiento Cardíaco"]!)
-                        }
+                if let gapKPI = viewModel.gapKPI, let decouplingKPI = viewModel.decouplingKPI {
+                    HStack(spacing: 16) {
+                        KPICardView(kpi: gapKPI, unit: "/km", icon: "speedometer", color: .cyan)
+                            .onTapGesture {
+                                selectedKpiInfo = gapKPI
+                            }
+                        
+                        KPICardView(kpi: decouplingKPI, unit: "%", icon: "heart.slash.circle.fill", color: (decouplingKPI.value ?? 0) > 10 ? .red : ((decouplingKPI.value ?? 0) > 5 ? .yellow : .green))
+                            .onTapGesture {
+                                selectedKpiInfo = decouplingKPI
+                            }
+                    }
                 }
                 
-                HStack(spacing: 16) {
-                    KPICardView(title: "Vel. Vertical (Ascenso)", value: viewModel.verticalSpeedVAM.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
-                        .onTapGesture {
-                            selectedKpiInfo = KpiInfo(title: "Vel. Vertical (Ascenso)", description: kpiInfoData["Vel. Vertical (Ascenso)"]!)
-                        }
+                if let vamKPI = viewModel.vamKPI, let descentVamKPI = viewModel.descentVamKPI {
+                    HStack(spacing: 16) {
+                        KPICardView(kpi: vamKPI, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
+                            .onTapGesture {
+                                selectedKpiInfo = vamKPI
+                            }
 
-                    KPICardView(title: "Vel. Vertical (Descenso)", value: viewModel.descentVerticalSpeed.map { String(format: "%.0f", $0) }, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
-                        .onTapGesture {
-                            selectedKpiInfo = KpiInfo(title: "Vel. Vertical (Descenso)", description: kpiInfoData["Vel. Vertical (Descenso)"]!)
-                        }
+                        KPICardView(kpi: descentVamKPI, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
+                            .onTapGesture {
+                                selectedKpiInfo = descentVamKPI
+                            }
+                    }
                 }
                 
-                HStack(spacing: 16) {
-                    KPICardView(title: "Potencia Normalizada", value: viewModel.normalizedPower.map { String(format: "%.0f", $0) }, unit: "W", icon: "bolt.circle.fill", color: .green)
-                        .onTapGesture {
-                            selectedKpiInfo = KpiInfo(title: "Potencia Normalizada", description: kpiInfoData["Potencia Normalizada"]!)
-                        }
+                if let normalizedPowerKPI = viewModel.normalizedPowerKPI, let efficiencyIndexKPI = viewModel.efficiencyIndexKPI {
+                    HStack(spacing: 16) {
+                        KPICardView(kpi: normalizedPowerKPI, unit: "W", icon: "bolt.circle.fill", color: .green)
+                            .onTapGesture {
+                                selectedKpiInfo = normalizedPowerKPI
+                            }
 
-                    KPICardView(title: "Índice Eficiencia", value: viewModel.efficiencyIndex.map { String(format: "%.3f", $0) }, unit: "", icon: "leaf.arrow.triangle.circlepath", color: .mint)
-                        .onTapGesture {
-                            selectedKpiInfo = KpiInfo(title: "Índice Eficiencia", description: kpiInfoData["Índice Eficiencia"]!)
-                        }
+                        KPICardView(kpi: efficiencyIndexKPI, unit: "", icon: "leaf.arrow.triangle.circlepath", color: .mint)
+                            .onTapGesture {
+                                selectedKpiInfo = efficiencyIndexKPI
+                            }
+                    }
                 }
             }
         }
@@ -279,7 +285,12 @@ struct ActivityDetailView: View {
                     headerView
                     rpeSection
                     trailKPIsSection
-                    RunningDynamicsView(activity: viewModel.activity) { kpiInfo in
+                    RunningDynamicsView(
+                        verticalOscillationKPI: viewModel.verticalOscillationKPI,
+                        groundContactTimeKPI: viewModel.groundContactTimeKPI,
+                        strideLengthKPI: viewModel.strideLengthKPI,
+                        verticalRatioKPI: viewModel.verticalRatioKPI
+                    ) { kpiInfo in
                         withAnimation {
                             selectedKpiInfo = kpiInfo
                         }
