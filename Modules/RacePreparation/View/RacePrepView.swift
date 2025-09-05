@@ -71,8 +71,11 @@ struct RacePrepView: View {
             .navigationTitle("Races")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Agregar Carrera") {
+                    Button(action: {
                         showingAddRaceSheet = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
                     }
                 }
             }

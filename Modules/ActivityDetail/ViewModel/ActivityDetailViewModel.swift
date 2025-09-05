@@ -25,11 +25,7 @@ struct ActivitySegment: Identifiable, Hashable, Codable {
     static func == (lhs: ActivitySegment, rhs: ActivitySegment) -> Bool { lhs.id == rhs.id }
 }
 
-struct ChartDataPoint: Identifiable {
-    let id = UUID()
-    let time: Int
-    let value: Double
-}
+
 
 // MARK: - Activity Detail ViewModel
 

@@ -480,4 +480,47 @@ class CacheManager {
             print("Error deleting RaceGeminiCoachResponse for race \(raceId.uuidString) from cache: \(error.localizedDescription)")
         }
     }
+
+    // MARK: - Training Process Cache
+
+    private var trainingProcessesURL: URL? {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("Error: Could not find documents directory.")
+            return nil
+        }
+        return documentsDirectory.appendingPathComponent("training_processes.json")
+    }
+
+    func saveTrainingProcesses(_ processes: [TrainingProcess]) {
+        guard let url = trainingProcessesURL else { return }
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(processes)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("Error saving training processes: \(error)")
+        }
+    }
+
+    func loadTrainingProcesses() -> [TrainingProcess] {
+        guard let url = trainingProcessesURL, FileManager.default.fileExists(atPath: url.path) else {
+            return []
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode([TrainingProcess].self, from: data)
+        } catch {
+            print("Error loading training processes: \(error)")
+            return []
+        }
+    }
+
+    func deleteTrainingProcess(_ process: TrainingProcess) {
+        var currentProcesses = loadTrainingProcesses()
+        currentProcesses.removeAll { $0.id == process.id }
+        saveTrainingProcesses(currentProcesses)
+    }
 }

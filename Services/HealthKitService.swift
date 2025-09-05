@@ -2,12 +2,18 @@
 import Foundation
 import HealthKit
 
-// MARK: - Running Dynamics Model
+// MARK: - Data Models
 struct RunningDynamics {
     let verticalOscillation: Double?
     let groundContactTime: Double?
     let strideLength: Double?
     let verticalRatio: Double?
+}
+
+struct BodyMetrics {
+    let weight: Double?
+    let bodyFatPercentage: Double?
+    let leanBodyMass: Double?
 }
 
 class HealthKitService {
@@ -23,12 +29,20 @@ class HealthKitService {
         }
 
         // 1. Define the types to read from HealthKit
-        let workoutType = HKObjectType.workoutType() // Corrected: This is not optional
+        let workoutType = HKObjectType.workoutType()
 
+        // Running Dynamics Types
         guard let verticalOscillation = HKObjectType.quantityType(forIdentifier: .runningVerticalOscillation),
               let groundContactTime = HKObjectType.quantityType(forIdentifier: .runningGroundContactTime),
               let strideLength = HKObjectType.quantityType(forIdentifier: .runningStrideLength) else {
-            
+            completion(false, HealthKitError.dataTypeNotAvailable)
+            return
+        }
+        
+        // Body Metrics Types
+        guard let bodyMass = HKObjectType.quantityType(forIdentifier: .bodyMass),
+              let bodyFatPercentage = HKObjectType.quantityType(forIdentifier: .bodyFatPercentage),
+              let leanBodyMass = HKObjectType.quantityType(forIdentifier: .leanBodyMass) else {
             completion(false, HealthKitError.dataTypeNotAvailable)
             return
         }
@@ -37,7 +51,10 @@ class HealthKitService {
             workoutType,
             verticalOscillation,
             groundContactTime,
-            strideLength
+            strideLength,
+            bodyMass,
+            bodyFatPercentage,
+            leanBodyMass
         ]
         
         healthStore.requestAuthorization(toShare: nil, read: typesToRead) { (success, error) in
@@ -46,6 +63,46 @@ class HealthKitService {
             }
         }
     }
+    
+    func fetchLatestBodyMetrics(completion: @escaping (Result<BodyMetrics, Error>) -> Void) {
+        let group = DispatchGroup()
+        
+        var weight: Double?
+        var bodyFat: Double?
+        var leanMass: Double?
+        
+        // Fetch Weight
+        group.enter()
+        fetchMostRecentSample(for: .bodyMass, unit: .gramUnit(with: .kilo)) { result in
+            if case .success(let value) = result { weight = value }
+            group.leave()
+        }
+        
+        // Fetch Body Fat Percentage
+        group.enter()
+        fetchMostRecentSample(for: .bodyFatPercentage, unit: .percent()) { result in
+            if case .success(let value) = result { bodyFat = value * 100 } // Convert to percentage
+            group.leave()
+        }
+        
+        // Fetch Lean Body Mass
+        group.enter()
+        fetchMostRecentSample(for: .leanBodyMass, unit: .gramUnit(with: .kilo)) { result in
+            if case .success(let value) = result { leanMass = value }
+            group.leave()
+        }
+        
+        group.notify(queue: .main) {
+            let bodyMetrics = BodyMetrics(
+                weight: weight,
+                bodyFatPercentage: bodyFat,
+                leanBodyMass: leanMass
+            )
+            completion(.success(bodyMetrics))
+        }
+    }
+
+
     
     func fetchRunningDynamics(for activity: Activity, completion: @escaping (Result<RunningDynamics, Error>) -> Void) {
         // First, find the corresponding workout
@@ -175,6 +232,33 @@ class HealthKitService {
                 }
                 
                 completion(.success(average.doubleValue(for: unit)))
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+
+    private func fetchMostRecentSample(for typeIdentifier: HKQuantityTypeIdentifier, unit: HKUnit, completion: @escaping (Result<Double, Error>) -> Void) {
+        guard let quantityType = HKQuantityType.quantityType(forIdentifier: typeIdentifier) else {
+            completion(.failure(HealthKitError.dataTypeNotAvailable))
+            return
+        }
+        
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        
+        let query = HKSampleQuery(sampleType: quantityType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { (_, samples, error) in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let sample = samples?.first as? HKQuantitySample else {
+                    completion(.failure(HealthKitError.metricNotAvailable))
+                    return
+                }
+                
+                completion(.success(sample.quantity.doubleValue(for: unit)))
             }
         }
         
