@@ -85,6 +85,9 @@ struct AdvancedAnalyticsView: View {
                     .padding(.vertical)
                 }
                 .navigationTitle("Análisis de Progreso")
+                .onAppear {
+                    viewModel.recalculateAnalyticsIfNeeded()
+                }
             }
             
             if selectedKpiInfo != nil {

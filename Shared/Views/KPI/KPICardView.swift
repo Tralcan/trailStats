@@ -39,16 +39,20 @@ struct KPICardView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(formattedValue())
-                    .font(.title2).bold()
-                    .foregroundColor(color)
-                
-                if kpi.value != nil {
-                    Text(unit)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+            HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(formattedValue())
+                        .font(.title2).bold()
+                        .foregroundColor(color)
+                    
+                    if kpi.value != nil {
+                        Text(unit)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
+
+                Spacer()
 
                 if let trend = kpi.trend {
                     trendIcon(for: trend)
@@ -56,7 +60,7 @@ struct KPICardView: View {
             }
         }
         .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
     }
@@ -65,17 +69,17 @@ struct KPICardView: View {
     private func trendIcon(for trend: KPITrend) -> some View {
         switch trend {
         case .up:
-            Image(systemName: "arrow.up")
+            Image(systemName: "arrow.up.circle.fill")
                 .foregroundColor(.green)
-                .font(.caption.bold())
+                .font(.title3)
         case .down:
-            Image(systemName: "arrow.down")
+            Image(systemName: "arrow.down.circle.fill")
                 .foregroundColor(.red)
-                .font(.caption.bold())
+                .font(.title3)
         case .equal:
-            Image(systemName: "equal")
+            Image(systemName: "minus.circle.fill")
                 .foregroundColor(.gray)
-                .font(.caption.bold())
+                .font(.title3)
         }
     }
 }

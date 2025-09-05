@@ -128,47 +128,35 @@ struct ActivityDetailView: View {
                 .font(.title2).bold()
                 .foregroundColor(.primary)
 
-            VStack(spacing: 16) {
-                if let gapKPI = viewModel.gapKPI, let decouplingKPI = viewModel.decouplingKPI {
-                    HStack(spacing: 16) {
-                        KPICardView(kpi: gapKPI, unit: "/km", icon: "speedometer", color: .cyan)
-                            .onTapGesture {
-                                selectedKpiInfo = gapKPI
-                            }
-                        
-                        KPICardView(kpi: decouplingKPI, unit: "%", icon: "heart.slash.circle.fill", color: (decouplingKPI.value ?? 0) > 10 ? .red : ((decouplingKPI.value ?? 0) > 5 ? .yellow : .green))
-                            .onTapGesture {
-                                selectedKpiInfo = decouplingKPI
-                            }
-                    }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
+                if let gapKPI = viewModel.gapKPI {
+                    KPICardView(kpi: gapKPI, unit: "/km", icon: "speedometer", color: .cyan)
+                        .onTapGesture { selectedKpiInfo = gapKPI }
                 }
                 
-                if let vamKPI = viewModel.vamKPI, let descentVamKPI = viewModel.descentVamKPI {
-                    HStack(spacing: 16) {
-                        KPICardView(kpi: vamKPI, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
-                            .onTapGesture {
-                                selectedKpiInfo = vamKPI
-                            }
-
-                        KPICardView(kpi: descentVamKPI, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
-                            .onTapGesture {
-                                selectedKpiInfo = descentVamKPI
-                            }
-                    }
+                if let decouplingKPI = viewModel.decouplingKPI {
+                    KPICardView(kpi: decouplingKPI, unit: "%", icon: "heart.slash.circle.fill", color: (decouplingKPI.value ?? 0) > 10 ? .red : ((decouplingKPI.value ?? 0) > 5 ? .yellow : .green))
+                        .onTapGesture { selectedKpiInfo = decouplingKPI }
                 }
                 
-                if let normalizedPowerKPI = viewModel.normalizedPowerKPI, let efficiencyIndexKPI = viewModel.efficiencyIndexKPI {
-                    HStack(spacing: 16) {
-                        KPICardView(kpi: normalizedPowerKPI, unit: "W", icon: "bolt.circle.fill", color: .green)
-                            .onTapGesture {
-                                selectedKpiInfo = normalizedPowerKPI
-                            }
-
-                        KPICardView(kpi: efficiencyIndexKPI, unit: "", icon: "leaf.arrow.triangle.circlepath", color: .mint)
-                            .onTapGesture {
-                                selectedKpiInfo = efficiencyIndexKPI
-                            }
-                    }
+                if let vamKPI = viewModel.vamKPI {
+                    KPICardView(kpi: vamKPI, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
+                        .onTapGesture { selectedKpiInfo = vamKPI }
+                }
+                
+                if let descentVamKPI = viewModel.descentVamKPI {
+                    KPICardView(kpi: descentVamKPI, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
+                        .onTapGesture { selectedKpiInfo = descentVamKPI }
+                }
+                
+                if let normalizedPowerKPI = viewModel.normalizedPowerKPI {
+                    KPICardView(kpi: normalizedPowerKPI, unit: "W", icon: "bolt.circle.fill", color: .green)
+                        .onTapGesture { selectedKpiInfo = normalizedPowerKPI }
+                }
+                
+                if let efficiencyIndexKPI = viewModel.efficiencyIndexKPI {
+                    KPICardView(kpi: efficiencyIndexKPI, unit: "", icon: "leaf.arrow.triangle.circlepath", color: .mint)
+                        .onTapGesture { selectedKpiInfo = efficiencyIndexKPI }
                 }
             }
         }

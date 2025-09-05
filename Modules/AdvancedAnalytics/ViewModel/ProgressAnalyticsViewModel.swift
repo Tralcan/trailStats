@@ -56,16 +56,30 @@ class ProgressAnalyticsViewModel: ObservableObject {
     // MARK: - Private Properties
     private let cacheManager = CacheManager()
     private var allActivities: [Activity] = []
+    private var lastProcessedActivitiesCount: Int = -1
+    private var lastProcessedActivityDate: Date = .distantPast
     
     init() {
-        loadActivitiesFromCache()
-        processDataForTimeFrame()
+        recalculateAnalyticsIfNeeded()
     }
     
     // MARK: - Public Methods
     func timeFrameChanged(newTimeFrame: Int) {
         self.timeFrame = newTimeFrame
         processDataForTimeFrame()
+    }
+
+    func recalculateAnalyticsIfNeeded() {
+        self.allActivities = cacheManager.loadAllActivityDetails()
+        guard !allActivities.isEmpty else { return }
+
+        let currentActivityCount = allActivities.count
+        let latestActivityDate = allActivities.map { $0.date }.max() ?? .distantPast
+
+        if currentActivityCount != lastProcessedActivitiesCount || latestActivityDate > lastProcessedActivityDate {
+            print("Analytics data has changed. Recalculating...")
+            processDataForTimeFrame()
+        }
     }
     
     // MARK: - Private Methods
@@ -91,6 +105,10 @@ class ProgressAnalyticsViewModel: ObservableObject {
         calculatePerformanceByGrade(for: recentActivities)
         calculateRunningDynamics(for: recentActivities)
         
+        // Update the state to prevent unnecessary recalculations
+        self.lastProcessedActivitiesCount = allActivities.count
+        self.lastProcessedActivityDate = allActivities.map { $0.date }.max() ?? .distantPast
+
         print("Processed data for time frame: \(timeFrame) days. Found \(totalActivities) activities.")
     }
     
