@@ -1,6 +1,6 @@
 import SwiftUI
 import Charts
-import trailStats
+//import trailStats
 
 struct ProcessDetailView: View {
     @StateObject private var viewModel: ProcessDetailViewModel
