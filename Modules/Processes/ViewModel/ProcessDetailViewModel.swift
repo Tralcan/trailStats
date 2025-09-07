@@ -6,10 +6,14 @@ class ProcessDetailViewModel: ObservableObject {
     @Published var process: TrainingProcess
     @Published var result: AnalyticsResult?
     @Published var isLoading: Bool = true
+    @Published var isEstimatingTime: Bool = false
+    @Published var geminiResponse: ProcessGeminiCoachResponse?
+    @Published var estimationError: String?
 
     // MARK: - Private Properties
     private let cacheManager = CacheManager()
     private let analyticsEngine = AnalyticsEngine()
+    private let geminiCoachService = ProcessGeminiCoachService()
 
     init(process: TrainingProcess) {
         self.process = process
@@ -30,6 +34,9 @@ class ProcessDetailViewModel: ObservableObject {
             await MainActor.run {
                 self.result = calculatedResult
                 self.isLoading = false
+                if self.process.raceDistance != nil {
+                    self.getGeminiEstimation(with: processActivities)
+                }
             }
         }
     }
@@ -38,6 +45,22 @@ class ProcessDetailViewModel: ObservableObject {
         let allProcesses = cacheManager.loadTrainingProcesses()
         if let updatedProcess = allProcesses.first(where: { $0.id == process.id }) {
             self.process = updatedProcess
+        }
+    }
+    
+    func getGeminiEstimation(with activities: [Activity]) {
+        isEstimatingTime = true
+        estimationError = nil
+        geminiCoachService.getProcessRaceEstimation(for: process, with: activities) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isEstimatingTime = false
+                switch result {
+                case .success(let response):
+                    self?.geminiResponse = response
+                case .failure(let error):
+                    self?.estimationError = "Error al obtener la estimación: \(error.localizedDescription)"
+                }
+            }
         }
     }
 

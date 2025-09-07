@@ -12,6 +12,29 @@ struct CreateProcessView: View {
                     DatePicker("Fecha de Inicio", selection: $viewModel.startDate, displayedComponents: .date)
                     DatePicker("Fecha de la Carrera", selection: $viewModel.endDate, displayedComponents: .date)
                 }
+
+                Section(header: Text("Objetivo")) {
+                    TextField("Describe tu objetivo para este proceso", text: $viewModel.goal)
+                }
+                
+                Section(header: Text("Carrera Objetivo")) {
+                    HStack {
+                        Text("Distancia")
+                        Spacer()
+                        TextField("km", text: $viewModel.raceDistance)
+                            .keyboardType(.decimalPad)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    HStack {
+                        Text("Desnivel")
+                        Spacer()
+                        TextField("m", text: $viewModel.raceElevation)
+                            .keyboardType(.numberPad)
+                            .frame(width: 80)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
                 
                 Section(header: Text("Métricas Iniciales")) {
                     HStack {
@@ -38,11 +61,6 @@ struct CreateProcessView: View {
                             .frame(width: 80)
                             .multilineTextAlignment(.trailing)
                     }
-                }
-                
-                Section(header: Text("Notas")) {
-                    TextEditor(text: $viewModel.notes)
-                        .frame(height: 150)
                 }
             }
             .navigationTitle("Nuevo Proceso")

@@ -169,6 +169,7 @@ struct RaceDetailView: View {
     let race: Race
     @State private var geminiResponse: RaceGeminiCoachResponse? = nil
     @State private var showingDeleteConfirmation = false
+    @State private var showingInfoSheet = false // New state for the sheet
     private let geminiCoachService = RaceGeminiCoachService()
     private let cacheManager = CacheManager()
 
@@ -207,38 +208,28 @@ struct RaceDetailView: View {
                         }
 
                         if let response = geminiResponse {
-                            VStack(alignment: .center) {
-                                HStack {
-                                    Spacer()
+                            VStack(alignment: .center, spacing: 12) {
+                                Text("Tiempo Estimado")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+
+                                HStack(alignment: .center, spacing: 8) {
                                     Image(systemName: "clock.fill")
+                                        .font(.largeTitle)
                                         .foregroundColor(.blue)
                                     Text(response.tiempo)
-                                        .font(.largeTitle)
-                                        .fontWeight(.bold)
-                                    Spacer()
-                                }
-                                Text(response.razon)
-                                    .font(.caption)
-                                    .italic()
-                                    .multilineTextAlignment(.center)
-                            }
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Importante")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                Text(response.importante)
-                                    .font(.body)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                                        .font(.system(size: 48, weight: .bold))
 
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Nutrición")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                Text(response.nutricion)
-                                    .font(.body)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                    Button(action: {
+                                        showingInfoSheet = true
+                                    }) {
+                                        Image(systemName: "questionmark.circle.fill")
+                                            .font(.title)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
                             }
+                            .frame(maxWidth: .infinity)
 
                             Spacer()
 
@@ -298,6 +289,11 @@ struct RaceDetailView: View {
                         print("Error getting Gemini response: \(error.localizedDescription)")
                         // Handle error, maybe show an alert
                     }
+                }
+            }
+            .sheet(isPresented: $showingInfoSheet) { // Added sheet modifier
+                if let response = geminiResponse {
+                    RacePrepInfoView(response: response)
                 }
             }
             .alert("Eliminar Carrera", isPresented: $showingDeleteConfirmation) {

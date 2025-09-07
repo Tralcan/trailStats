@@ -25,6 +25,9 @@ struct ProcessDetailView: View {
                 } else if let result = viewModel.result {
                     VStack(alignment: .leading, spacing: 24) {
                         processSummarySection
+                        if viewModel.process.raceDistance != nil {
+                            raceGoalSection
+                        }
                         ProcessProgressView(process: viewModel.process).padding(.horizontal)
                         kpiSummarySection(result: result)
                         trailPerformanceSection(result: result)
@@ -92,6 +95,85 @@ struct ProcessDetailView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .cornerRadius(12)
+            .padding(.horizontal)
+        }
+    }
+    
+    @ViewBuilder
+    private var raceGoalSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Carrera Objetivo")
+                .font(.title3).bold()
+                .padding(.horizontal)
+
+            VStack(alignment: .center, spacing: 10) {
+                if viewModel.isEstimatingTime {
+                    ProgressView("Consultando al coach Gemini...")
+                } else if let response = viewModel.geminiResponse {
+                    HStack(spacing: 12) {
+                        Image(systemName: "medal.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.yellow)
+                        
+                        VStack(alignment: .leading) {
+                            Text(response.tiempo)
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(.blue)
+                            Text("Tiempo Estimado")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.bottom, 8)
+                    .onTapGesture {
+                        self.selectedKpiInfo = KPIInfo(
+                            title: "Razón de la Estimación",
+                            description: response.razon,
+                            higherIsBetter: false
+                        )
+                    }
+                    
+                    if let distance = viewModel.process.raceDistance, let elevation = viewModel.process.raceElevation {
+                        HStack(spacing: 24) {
+                            Label(Formatters.formatDistance(distance), systemImage: "location.fill")
+                                .foregroundColor(.red)
+                            
+                            Label(Formatters.formatElevation(elevation), systemImage: "mountain.2.fill")
+                                .foregroundColor(.green)
+                            
+                            Button(action: {
+                                let combinedDescription = "Importante:\n" + response.importante + "\n\nNutrición:\n" + response.nutricion
+                                self.selectedKpiInfo = KPIInfo(
+                                    title: "Recomendaciones IA",
+                                    description: combinedDescription,
+                                    higherIsBetter: false
+                                )
+                            }) {
+                                Image(systemName: "sparkles")
+                                    .foregroundColor(.cyan)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(8)
+                        .padding(.top, 8)
+                    }
+                    
+                } else if let error = viewModel.estimationError {
+                    Text(error)
+                        .foregroundColor(.red)
+                } else {
+                    Text(viewModel.process.goal)
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 4)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
             .background(.thinMaterial)
             .cornerRadius(12)
             .padding(.horizontal)

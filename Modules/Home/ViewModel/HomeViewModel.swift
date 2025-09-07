@@ -33,21 +33,21 @@ class HomeViewModel: ObservableObject {
     @Published var advancedSearchElevation: Double? = nil
     @Published var advancedSearchDuration: TimeInterval? = nil
     @Published private(set) var cachedActivityIds = Set<Int>()
-
+    
     private let stravaService = StravaService()
     private let cacheManager = CacheManager()
     private var currentPage = 1
     @Published var canLoadMoreActivities = true
-
+    
     func refreshCacheStatus() {
         let allActivityIds = activities.map { $0.id }
         cachedActivityIds = cacheManager.getExistingMetricIds(for: allActivityIds)
     }
-
+    
     func isActivityCached(activityId: Int) -> Bool {
         return cachedActivityIds.contains(activityId)
     }
-
+    
     func markActivityAsCached(activityId: Int) {
         cachedActivityIds.insert(activityId)
     }
@@ -123,10 +123,10 @@ class HomeViewModel: ObservableObject {
     }
     
     func logout() {
-    stravaService.logout()
-    cacheManager.clearAllCaches()
-    isAuthenticated = false
-    activities = [] // Clear activities on logout
+        stravaService.logout()
+        cacheManager.clearAllCaches()
+        isAuthenticated = false
+        activities = [] // Clear activities on logout
     }
     
     func shouldLoadMoreActivities(activity: Activity) -> Bool {
@@ -134,13 +134,13 @@ class HomeViewModel: ObservableObject {
         let isSearchActive = !searchText.isEmpty || !advancedSearchName.isEmpty || advancedSearchDate != nil || advancedSearchDistance != nil || advancedSearchElevation != nil || advancedSearchDuration != nil
         return isLastActivity && !isSearchActive && canLoadMoreActivities
     }
-
+    
     func refreshActivities() {
         currentPage = 1
         canLoadMoreActivities = true
         fetchActivities() // Solo busca la primera página para nuevas actividades
     }
-
+    
     func fetchActivities() {
         guard !isLoading, canLoadMoreActivities else { return }
         isLoading = true
@@ -154,7 +154,7 @@ class HomeViewModel: ObservableObject {
                         self.canLoadMoreActivities = false
                         return
                     }
-
+                    
                     let trailRuns = newActivities.filter { $0.sportType == "TrailRun" }
                     
                     // Si es la primera página, reemplazamos las actividades locales con las de Strava
@@ -175,19 +175,34 @@ class HomeViewModel: ObservableObject {
                         let uniqueNew = trailRuns.filter { !existingIds.contains($0.id) }
                         self.activities.append(contentsOf: uniqueNew)
                     }
-
+                    
                     self.activities.sort { $0.date > $1.date }
                     self.cacheManager.saveActivities(self.activities)
+                    self.checkAndInvalidateAffectedProcesses(for: trailRuns)
                     self.refreshCacheStatus() // Actualizar estado de caché después de cada carga
-
+                    
                     self.currentPage += 1
-
+                    
                 case .failure(let error):
                     print("Failed to fetch activities: \(error.localizedDescription)")
                     if let stravaError = error as? StravaAuthError, stravaError == .invalidRefreshToken {
                         print("Invalid refresh token detected. Logging out.")
                         self.logout()
                     }
+                }
+            }
+        }
+    }
+    
+    private func checkAndInvalidateAffectedProcesses(for newActivities: [Activity]) {
+        let processes = cacheManager.loadTrainingProcesses()
+        guard !processes.isEmpty, !newActivities.isEmpty else { return }
+        
+        for activity in newActivities {
+            for process in processes {
+                if !process.isCompleted && activity.date >= process.startDate && activity.date <= process.endDate {
+                    print("Activity \(activity.id) affects process '\(process.name)'. Invalidating Gemini cache.")
+                    cacheManager.deleteProcessGeminiCoachResponse(processId: process.id)
                 }
             }
         }

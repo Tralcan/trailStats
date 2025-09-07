@@ -3,8 +3,8 @@ import Foundation
 struct RaceGeminiCoachResponse: Decodable, Encodable {
     let tiempo: String
     let razon: String
-    let importante: String
-    let nutricion: String
+    let importante: [String]
+    let nutricion: [String]
 }
 
 class RaceGeminiCoachService {
@@ -35,11 +35,11 @@ class RaceGeminiCoachService {
             activityDetails.append("Elevación: \(Formatters.formatElevation(activity.elevationGain))")
 
             if let summary = cacheManager.loadSummary(activityId: activity.id) {
-                activityDetails.append("Ritmo Promedio: \(summary.averagePace?.toPaceFormat() ?? "N/A")")
+            //    activityDetails.append("Ritmo Promedio: \(summary.averagePace?.toPaceFormat() ?? \"N/A\")")
             }
 
             if let processedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
-                activityDetails.append("GAP: \(processedMetrics.gradeAdjustedPace?.toPaceFormat() ?? "N/A")")
+              //  activityDetails.append("GAP: \(processedMetrics.gradeAdjustedPace?.toPaceFormat() ?? \"N/A\")")
                 activityDetails.append("Desacoplamiento Cardíaco: \(Formatters.formatDecoupling(processedMetrics.cardiacDecoupling ?? 0))%")
                 activityDetails.append("Velocidad Vertical Ascenso (VAM): \(Formatters.formatVerticalSpeed(processedMetrics.verticalSpeedVAM ?? 0))")
                 activityDetails.append("Velocidad Vertical Descenso: \(Formatters.formatVerticalSpeed(processedMetrics.descentVerticalSpeed ?? 0))")
@@ -73,7 +73,7 @@ class RaceGeminiCoachService {
         Además de la estimación de tiempo, debes recomendar temas importantes a considerar durante la carrera y una recomendación de nutrición.
 
         Responde únicamente con un JSON en el siguiente formato, asegurándote de que la estimación de tiempo sea solo un número (ej. "4:30:00"). La explicación en 'razon' no debe exceder los 500 caracteres, el resto puede ser más largo y debe referirse a las carreras por su nombre, no por su ID.
-        { \"tiempo\":\"tiempo calculado\", \"razon\":\"razon del tiempo calculado\", \"importante\":\"temas importantes a considerar durante la carrera\", \"nutricion\":\"recomendación de nutricion durante la carrera\" }
+        { "tiempo":"tiempo calculado", "razon":"razon del tiempo calculado", "importante":"temas importantes a considerar durante la carrera", "nutricion":"recomendación de nutricion durante la carrera" }
         """
 
         let userPrompt = """
@@ -113,7 +113,7 @@ class RaceGeminiCoachService {
 
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                print("Raw Data (if available): \(String(data: data ?? Data(), encoding: .utf8) ?? "N/A")")
+            //    print("Raw Data (if available): \(String(data: data ?? Data(), encoding: .utf8) ?? \"N/A\")")
                 print("JSON Parsing Error: Could not parse data into [String: Any]")
                 completion(.failure(RaceGeminiCoachServiceError.invalidResponse))
                 return

@@ -481,6 +481,74 @@ class CacheManager {
         }
     }
 
+    // MARK: - Process Gemini Coach Cache
+
+    private var processCoachingDirectoryURL: URL? {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("Error: Could not find documents directory.")
+            return nil
+        }
+        let processCoachingDir = documentsDirectory.appendingPathComponent("processCoaching")
+        if !FileManager.default.fileExists(atPath: processCoachingDir.path) {
+            do {
+                try FileManager.default.createDirectory(at: processCoachingDir, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                print("Error creating processCoaching directory: \(error.localizedDescription)")
+                return nil
+            }
+        }
+        return processCoachingDir
+    }
+
+    private func processCoachingFileURL(for processId: UUID) -> URL? {
+        return processCoachingDirectoryURL?.appendingPathComponent("\(processId.uuidString).json")
+    }
+
+    func saveProcessGeminiCoachResponse(processId: UUID, response: ProcessGeminiCoachResponse) {
+        guard let url = processCoachingFileURL(for: processId) else { return }
+        
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(response)
+            try data.write(to: url, options: .atomic)
+            print("Successfully saved ProcessGeminiCoachResponse for process \(processId.uuidString) to cache.")
+        } catch {
+            print("Error saving ProcessGeminiCoachResponse for process \(processId.uuidString) to cache: \(error.localizedDescription)")
+        }
+    }
+
+    func loadProcessGeminiCoachResponse(processId: UUID) -> ProcessGeminiCoachResponse? {
+        guard let url = processCoachingFileURL(for: processId), FileManager.default.fileExists(atPath: url.path) else {
+            print("Cache file for process \(processId.uuidString) does not exist.")
+            return nil
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            let response = try decoder.decode(ProcessGeminiCoachResponse.self, from: data)
+            print("Successfully loaded ProcessGeminiCoachResponse for process \(processId.uuidString) from cache.")
+            return response
+        } catch {
+            print("Error loading ProcessGeminiCoachResponse for process \(processId.uuidString) from cache: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    func deleteProcessGeminiCoachResponse(processId: UUID) {
+        guard let url = processCoachingFileURL(for: processId), FileManager.default.fileExists(atPath: url.path) else {
+            print("Cache file for process \(processId.uuidString) does not exist.")
+            return
+        }
+        
+        do {
+            try FileManager.default.removeItem(at: url)
+            print("Successfully deleted ProcessGeminiCoachResponse for process \(processId.uuidString) from cache.")
+        } catch {
+            print("Error deleting ProcessGeminiCoachResponse for process \(processId.uuidString) from cache: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Training Process Cache
 
     private var trainingProcessesURL: URL? {

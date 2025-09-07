@@ -5,16 +5,18 @@ class CreateProcessViewModel: ObservableObject {
     @Published var name: String = ""
     @Published var startDate: Date = Date()
     @Published var endDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+    @Published var goal: String = ""
+    @Published var raceDistance: String = ""
+    @Published var raceElevation: String = ""
     @Published var startWeight: String = ""
     @Published var bodyFatPercentage: String = ""
     @Published var leanBodyMass: String = ""
-    @Published var notes: String = ""
 
     private let cacheManager = CacheManager()
     private let healthKitService = HealthKitService()
 
     var isFormValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate > startDate
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && !goal.trimmingCharacters(in: .whitespaces).isEmpty && endDate > startDate
     }
 
     func fetchInitialMetrics() {
@@ -45,20 +47,22 @@ class CreateProcessViewModel: ObservableObject {
 
         var allProcesses = cacheManager.loadTrainingProcesses()
 
-        // Crear el primer ProcessMetricEntry
         let initialMetricEntry = ProcessMetricEntry(
             date: Date(),
             weight: Double(startWeight),
             bodyFatPercentage: Double(bodyFatPercentage),
             leanBodyMass: Double(leanBodyMass),
-            notes: notes
+            notes: nil
         )
 
         let newProcess = TrainingProcess(
             name: name,
             startDate: startDate,
             endDate: endDate,
-            metricEntries: [initialMetricEntry] // Pasar el array de métricas
+            goal: goal,
+            raceDistance: Double(raceDistance) != nil ? (Double(raceDistance) ?? 0) * 1000 : nil, // km to meters
+            raceElevation: Double(raceElevation),
+            metricEntries: [initialMetricEntry]
         )
 
         allProcesses.append(newProcess)
