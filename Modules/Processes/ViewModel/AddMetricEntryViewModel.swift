@@ -1,23 +1,27 @@
 import Foundation
 
 @MainActor
-class CreateProcessViewModel: ObservableObject {
-    @Published var name: String = ""
-    @Published var startDate: Date = Date()
-    @Published var endDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
-    @Published var startWeight: String = ""
+class AddMetricEntryViewModel: ObservableObject {
+    @Published var date: Date = Date()
+    @Published var weight: String = ""
     @Published var bodyFatPercentage: String = ""
     @Published var leanBodyMass: String = ""
     @Published var notes: String = ""
 
+    private var process: TrainingProcess
     private let cacheManager = CacheManager()
     private let healthKitService = HealthKitService()
 
-    var isFormValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && endDate > startDate
+    init(process: TrainingProcess) {
+        self.process = process
     }
 
-    func fetchInitialMetrics() {
+    var isFormValid: Bool {
+        // Al menos un campo de métrica o notas debe estar lleno
+        !weight.isEmpty || !bodyFatPercentage.isEmpty || !leanBodyMass.isEmpty || !notes.isEmpty
+    }
+
+    func fetchLatestMetrics() {
         healthKitService.requestAuthorization { [weak self] (success, error) in
             guard success, error == nil else {
                 // Handle error or denial of authorization
@@ -27,7 +31,7 @@ class CreateProcessViewModel: ObservableObject {
             self?.healthKitService.fetchLatestBodyMetrics { result in
                 if case .success(let metrics) = result {
                     if let weight = metrics.weight {
-                        self?.startWeight = String(format: "%.1f", weight)
+                        self?.weight = String(format: "%.1f", weight)
                     }
                     if let bodyFat = metrics.bodyFatPercentage {
                         self?.bodyFatPercentage = String(format: "%.1f", bodyFat)
@@ -40,28 +44,25 @@ class CreateProcessViewModel: ObservableObject {
         }
     }
 
-    func save() {
+    func saveMetricEntry() {
         guard isFormValid else { return }
 
-        var allProcesses = cacheManager.loadTrainingProcesses()
-
-        // Crear el primer ProcessMetricEntry
-        let initialMetricEntry = ProcessMetricEntry(
-            date: Date(),
-            weight: Double(startWeight),
+        let newEntry = ProcessMetricEntry(
+            date: date,
+            weight: Double(weight),
             bodyFatPercentage: Double(bodyFatPercentage),
             leanBodyMass: Double(leanBodyMass),
             notes: notes
         )
 
-        let newProcess = TrainingProcess(
-            name: name,
-            startDate: startDate,
-            endDate: endDate,
-            metricEntries: [initialMetricEntry] // Pasar el array de métricas
-        )
-
-        allProcesses.append(newProcess)
-        cacheManager.saveTrainingProcesses(allProcesses)
+        // Cargar todos los procesos, encontrar el actual y actualizarlo
+        var allProcesses = cacheManager.loadTrainingProcesses()
+        if let index = allProcesses.firstIndex(where: { $0.id == process.id }) {
+            allProcesses[index].metricEntries.append(newEntry)
+            // Ordenar las entradas por fecha descendente
+            allProcesses[index].metricEntries.sort { $0.date > $1.date }
+            cacheManager.saveTrainingProcesses(allProcesses)
+            self.process = allProcesses[index] // Actualizar la referencia local del proceso
+        }
     }
 }

@@ -1,10 +1,11 @@
 import SwiftUI
 import Charts
-//import trailStats
+import trailStats // Descomentado
 
 struct ProcessDetailView: View {
     @StateObject private var viewModel: ProcessDetailViewModel
     @State private var selectedKpiInfo: KPIInfo? = nil
+    @State private var isShowingAddMetricSheet = false // Nuevo estado para el sheet
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: 16),
@@ -59,11 +60,21 @@ struct ProcessDetailView: View {
                         if result.totalActivities == 0 {
                             emptyStateView
                         }
+
+                        // Mover MetricHistoryView aquí, al final de todas las secciones
+                        MetricHistoryView(metricEntries: viewModel.process.metricEntries)
+                            .padding(.horizontal)
                     }
                     .padding(.vertical)
                 }
             }
             .navigationTitle(viewModel.process.name)
+            .navigationBarItems(trailing: Button(action: {
+                isShowingAddMetricSheet = true // Mostrar el sheet para añadir métricas
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+            })
 
             if selectedKpiInfo != nil {
                 Color.black.opacity(0.4)
@@ -83,6 +94,12 @@ struct ProcessDetailView: View {
         .onAppear {
             viewModel.loadAnalytics()
         }
+        .sheet(isPresented: $isShowingAddMetricSheet, onDismiss: {
+            // Recargar los datos del proceso cuando se cierra el sheet
+            viewModel.loadProcess() // Necesitaré añadir este método al ViewModel
+        }) {
+            AddMetricEntryView(process: viewModel.process) // Nueva vista para añadir métricas
+        }
     }
 
     private var processSummarySection: some View {
@@ -96,19 +113,13 @@ struct ProcessDetailView: View {
                     Image(systemName: "calendar")
                     Text("\(viewModel.process.startDate, style: .date) - \(viewModel.process.endDate, style: .date)")
                 }
-                // Eliminado: if let startWeight = viewModel.process.startWeight { ... }
-                if let notes = viewModel.process.notes, !notes.isEmpty {
-                    HStack(alignment: .top) {
-                        Image(systemName: "note.text")
-                        Text(notes)
-                    }
-                }
+                // Las notas ahora se mostrarán en MetricHistoryView
             }
-            .padding()
+            .padding() // Padding para el contenido general de la tarjeta
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.thinMaterial)
             .cornerRadius(12)
-            .padding(.horizontal)
+            .padding(.horizontal) // Padding para la tarjeta completa
         }
     }
 
