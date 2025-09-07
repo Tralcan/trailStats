@@ -38,13 +38,8 @@ struct AddMetricEntryView: View {
                             .multilineTextAlignment(.trailing)
                     }
                 }
-
-                Section("Notas") {
-                    TextEditor(text: $viewModel.notes)
-                        .frame(minHeight: 100)
-                }
             }
-            .navigationTitle("Añadir Registro")
+            .navigationTitle("Añadir Métrica")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

@@ -16,6 +16,13 @@ struct TrainingProcess: Codable, Identifiable, Hashable {
         return today >= start && today <= end
     }
 
+    var isCompleted: Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let end = calendar.startOfDay(for: endDate)
+        return today > end
+    }
+
     init(id: UUID = UUID(),
          name: String,
          startDate: Date,

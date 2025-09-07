@@ -1,11 +1,12 @@
 import SwiftUI
 import Charts
-import trailStats // Descomentado
 
 struct ProcessDetailView: View {
     @StateObject private var viewModel: ProcessDetailViewModel
     @State private var selectedKpiInfo: KPIInfo? = nil
-    @State private var isShowingAddMetricSheet = false // Nuevo estado para el sheet
+    @State private var isShowingAddMetricSheet = false
+    @State private var isShowingAddCommentSheet = false
+    @State private var showingAddOptions = false
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: 16),
@@ -20,85 +21,60 @@ struct ProcessDetailView: View {
         ZStack {
             ScrollView {
                 if viewModel.isLoading {
-                    ProgressView("Calculando analíticas del proceso...")
-                        .padding()
+                    ProgressView("Calculando analíticas del proceso...").padding()
                 } else if let result = viewModel.result {
                     VStack(alignment: .leading, spacing: 24) {
                         processSummarySection
-
-                        // Nueva sección de progreso
-                        ProcessProgressView(process: viewModel.process)
-                            .padding(.horizontal)
-
+                        ProcessProgressView(process: viewModel.process).padding(.horizontal)
                         kpiSummarySection(result: result)
                         trailPerformanceSection(result: result)
-                        if result.hasRunningDynamics {
-                            runningDynamicsSection(result: result)
-                        }
+                        if result.hasRunningDynamics { runningDynamicsSection(result: result) }
+                        
+                        if !result.weeklyDistanceData.isEmpty { WeeklyDistanceChartView(weeklyData: result.weeklyDistanceData) }
+                        if !result.efficiencyData.isEmpty { EfficiencyChartView(data: result.efficiencyData) }
+                        if !result.weeklyDecouplingData.isEmpty { WeeklyDecouplingChartView(weeklyData: result.weeklyDecouplingData) }
+                        if !result.weeklyZoneDistribution.isEmpty { IntensityChartView(weeklyData: result.weeklyZoneDistribution) }
+                        if !result.performanceByGradeData.isEmpty { PerformanceByGradeView(performanceData: result.performanceByGradeData) }
+                        if result.totalActivities == 0 { emptyStateView }
 
-                        // Charts
-                        if !result.weeklyDistanceData.isEmpty {
-                            WeeklyDistanceChartView(weeklyData: result.weeklyDistanceData)
-                        }
-
-                        if !result.efficiencyData.isEmpty {
-                            EfficiencyChartView(data: result.efficiencyData)
-                        }
-
-                        if !result.weeklyDecouplingData.isEmpty {
-                            WeeklyDecouplingChartView(weeklyData: result.weeklyDecouplingData)
-                        }
-
-                        if !result.weeklyZoneDistribution.isEmpty {
-                            IntensityChartView(weeklyData: result.weeklyZoneDistribution)
-                        }
-
-                        if !result.performanceByGradeData.isEmpty {
-                            PerformanceByGradeView(performanceData: result.performanceByGradeData)
-                        }
-
-                        if result.totalActivities == 0 {
-                            emptyStateView
-                        }
-
-                        // Mover MetricHistoryView aquí, al final de todas las secciones
-                        MetricHistoryView(metricEntries: viewModel.process.metricEntries)
-                            .padding(.horizontal)
+                        MetricHistoryView(
+                            metricEntries: viewModel.process.metricEntries,
+                            onDelete: viewModel.process.isCompleted ? nil : { indexSet in viewModel.deleteMetricEntry(at: indexSet) }
+                        )
+                        .padding(.top)
                     }
                     .padding(.vertical)
                 }
             }
             .navigationTitle(viewModel.process.name)
-            .navigationBarItems(trailing: Button(action: {
-                isShowingAddMetricSheet = true // Mostrar el sheet para añadir métricas
-            }) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title2)
-            })
-
-            if selectedKpiInfo != nil {
-                Color.black.opacity(0.4)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture { selectedKpiInfo = nil }
-                    .zIndex(1)
+            .navigationBarItems(trailing: Button(action: { showingAddOptions = true }) {
+                Image(systemName: "plus.circle.fill").font(.title2)
+            }.disabled(viewModel.process.isCompleted))
+            .confirmationDialog("Añadir Registro", isPresented: $showingAddOptions, titleVisibility: .visible) {
+                Button("Métrica Corporal") { isShowingAddMetricSheet = true }
+                Button("Visita al Kinesiologo") { viewModel.addSimpleEntry(type: .kinesiologo) }
+                Button("Visita al Medico") { viewModel.addSimpleEntry(type: .medico) }
+                Button("Sesión de Masajes") { viewModel.addSimpleEntry(type: .masajes) }
+                Button("Comentario") { isShowingAddCommentSheet = true } // Reordenado
+                Button("Cancelar", role: .cancel) { }
             }
 
+            if selectedKpiInfo != nil {
+                Color.black.opacity(0.4).edgesIgnoringSafeArea(.all).onTapGesture { selectedKpiInfo = nil }.zIndex(1)
+            }
             if let info = selectedKpiInfo {
-                KpiInfoPopoverView(info: info)
-                    .zIndex(2)
-                    .transition(.scale.combined(with: .opacity))
-                    .onTapGesture { selectedKpiInfo = nil }
+                KpiInfoPopoverView(info: info).zIndex(2).transition(.scale.combined(with: .opacity)).onTapGesture { selectedKpiInfo = nil }
             }
         }
         .animation(.easeInOut, value: selectedKpiInfo)
-        .onAppear {
-            viewModel.loadAnalytics()
+        .onAppear { viewModel.loadAnalytics() }
+        .sheet(isPresented: $isShowingAddMetricSheet, onDismiss: { viewModel.loadProcess() }) {
+            AddMetricEntryView(process: viewModel.process)
         }
-        .sheet(isPresented: $isShowingAddMetricSheet, onDismiss: {
-            // Recargar los datos del proceso cuando se cierra el sheet
-            viewModel.loadProcess() // Necesitaré añadir este método al ViewModel
-        }) {
-            AddMetricEntryView(process: viewModel.process) // Nueva vista para añadir métricas
+        .sheet(isPresented: $isShowingAddCommentSheet) {
+            AddCommentView { comment in
+                viewModel.addCommentEntry(notes: comment)
+            }
         }
     }
 
@@ -113,13 +89,12 @@ struct ProcessDetailView: View {
                     Image(systemName: "calendar")
                     Text("\(viewModel.process.startDate, style: .date) - \(viewModel.process.endDate, style: .date)")
                 }
-                // Las notas ahora se mostrarán en MetricHistoryView
             }
-            .padding() // Padding para el contenido general de la tarjeta
+            .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.thinMaterial)
             .cornerRadius(12)
-            .padding(.horizontal) // Padding para la tarjeta completa
+            .padding(.horizontal)
         }
     }
 
