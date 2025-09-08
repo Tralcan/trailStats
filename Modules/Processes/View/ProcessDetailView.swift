@@ -28,6 +28,9 @@ struct ProcessDetailView: View {
                         if viewModel.process.raceDistance != nil {
                             raceGoalSection
                         }
+                        if !viewModel.process.goal.isEmpty {
+                            goalSection
+                        }
                         ProcessProgressView(process: viewModel.process).padding(.horizontal)
                         kpiSummarySection(result: result)
                         trailPerformanceSection(result: result)
@@ -210,6 +213,39 @@ struct ProcessDetailView: View {
             .cornerRadius(12)
             .padding(.horizontal)
         }
+    }
+
+    private var goalSection: some View {
+        HStack {
+            (Text("Objetivo: ") + Text(viewModel.process.goal))
+                .font(.body)
+                .italic()
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
+            
+            Spacer()
+            
+            if viewModel.goalActivity != nil {
+                HStack(spacing: 16) {
+                    Button(action: {
+                        viewModel.updateGoalStatus(to: .met)
+                    }) {
+                        Image(systemName: "hand.thumbsup.fill")
+                            .foregroundColor(viewModel.process.goalStatus == .met ? .green : .gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    Button(action: {
+                        viewModel.updateGoalStatus(to: .notMet)
+                    }) {
+                        Image(systemName: "hand.thumbsdown.fill")
+                            .foregroundColor(viewModel.process.goalStatus == .notMet ? .red : .gray)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+        .padding(.horizontal)
     }
 
     private func kpiSummarySection(result: AnalyticsResult) -> some View {
