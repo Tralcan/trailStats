@@ -1,8 +1,17 @@
-
 import SwiftUI
 
 struct KpiInfoPopoverView: View {
     let info: KPIInfo
+    
+    private var attributedDescription: AttributedString {
+        do {
+            // Attempt to initialize AttributedString from Markdown
+            return try AttributedString(markdown: info.description, options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace))
+        } catch {
+            // If it fails, just return a plain AttributedString
+            return AttributedString(info.description)
+        }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -11,7 +20,7 @@ struct KpiInfoPopoverView: View {
                 .foregroundColor(.white)
             
             ScrollView {
-                Text(info.description)
+                Text(attributedDescription)
                     .font(.body)
                     .foregroundColor(.white.opacity(0.9))
                     .frame(maxWidth: .infinity, alignment: .leading)
