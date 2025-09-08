@@ -88,12 +88,14 @@ struct MetricHistoryView: View {
                 }
             }
             Spacer()
-            
-            Button(action: { self.entryToDelete = entry }) {
-                Image(systemName: "trash")
-                    .foregroundColor(.red)
+
+            if onDelete != nil {
+                Button(action: { self.entryToDelete = entry }) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
         .background(.thinMaterial)
