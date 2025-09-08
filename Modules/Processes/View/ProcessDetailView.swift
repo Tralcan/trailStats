@@ -111,18 +111,20 @@ struct ProcessDetailView: View {
             VStack(alignment: .center, spacing: 10) {
                 // Si ya hay una actividad de carrera real, mostrar sus resultados
                 if let race = viewModel.goalActivity {
-                    HStack(spacing: 12) {
-                        Image(systemName: "flag.checkered.2.crossed")
-                            .font(.system(size: 40))
-                            .foregroundColor(.green)
-                        
-                        VStack(alignment: .leading) {
-                            Text(Int(race.duration).toHoursMinutesSeconds())
-                                .font(.system(size: 36, weight: .bold, design: .rounded))
-                                .foregroundColor(.primary)
-                            Text("Tiempo Oficial")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                    NavigationLink(destination: ActivityDetailView(activity: race)) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "flag.checkered.2.crossed")
+                                .font(.system(size: 40))
+                                .foregroundColor(.yellow)
+                            
+                            VStack(alignment: .leading) {
+                                Text(Int(race.duration).toHoursMinutesSeconds())
+                                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                                    .foregroundColor(.blue)
+                                Text("Tiempo Oficial")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                     .padding(.bottom, 8)
