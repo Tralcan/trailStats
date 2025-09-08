@@ -299,7 +299,7 @@ struct ActivityDetailView: View {
                             .foregroundColor(.white)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.green)
+                            .background(viewModel.isAlreadyRaceOfProcess ? Color.gray : Color.green)
                             .cornerRadius(12)
                     }
                     .disabled(viewModel.isAlreadyRaceOfProcess)
