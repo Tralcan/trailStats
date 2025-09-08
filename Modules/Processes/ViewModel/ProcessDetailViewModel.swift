@@ -7,8 +7,9 @@ class ProcessDetailViewModel: ObservableObject {
     @Published var result: AnalyticsResult?
     @Published var isLoading: Bool = true
     @Published var isEstimatingTime: Bool = false
-    @Published var geminiResponse: ProcessGeminiCoachResponse?
+    @Published var raceProjection: RaceProjection?
     @Published var estimationError: String?
+    @Published var goalActivity: Activity? = nil
 
     // MARK: - Private Properties
     private let cacheManager = CacheManager()
@@ -25,6 +26,12 @@ class ProcessDetailViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self = self else { return }
 
+            // Load goal activity if it exists
+            if let goalId = await self.process.goalActivityID {
+                let loadedGoalActivity = self.cacheManager.loadActivityDetail(activityId: goalId)
+                await MainActor.run { self.goalActivity = loadedGoalActivity }
+            }
+
             let startDate = await self.process.startDate
             let endDate = await self.process.endDate
             let allActivities = self.cacheManager.loadAllActivityDetails()
@@ -34,7 +41,8 @@ class ProcessDetailViewModel: ObservableObject {
             await MainActor.run {
                 self.result = calculatedResult
                 self.isLoading = false
-                if self.process.raceDistance != nil {
+                // Only get estimation if there is no real race associated
+                if self.goalActivity == nil && self.process.raceDistance != nil {
                     self.getGeminiEstimation(with: processActivities)
                 }
             }
@@ -56,12 +64,17 @@ class ProcessDetailViewModel: ObservableObject {
                 self?.isEstimatingTime = false
                 switch result {
                 case .success(let response):
-                    self?.geminiResponse = response
+                    self?.raceProjection = response
                 case .failure(let error):
                     self?.estimationError = "Error al obtener la estimación: \(error.localizedDescription)"
                 }
             }
         }
+    }
+
+    func updateGoalStatus(to newStatus: GoalStatus) {
+        process.goalStatus = newStatus
+        saveProcess()
     }
 
     // MARK: - Entry Management

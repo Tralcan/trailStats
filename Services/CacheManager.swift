@@ -504,20 +504,20 @@ class CacheManager {
         return processCoachingDirectoryURL?.appendingPathComponent("\(processId.uuidString).json")
     }
 
-    func saveProcessGeminiCoachResponse(processId: UUID, response: ProcessGeminiCoachResponse) {
+    func saveProcessGeminiCoachResponse(processId: UUID, response: RaceProjection) {
         guard let url = processCoachingFileURL(for: processId) else { return }
         
         do {
             let encoder = JSONEncoder()
             let data = try encoder.encode(response)
             try data.write(to: url, options: .atomic)
-            print("Successfully saved ProcessGeminiCoachResponse for process \(processId.uuidString) to cache.")
+            print("Successfully saved RaceProjection for process \(processId.uuidString) to cache.")
         } catch {
-            print("Error saving ProcessGeminiCoachResponse for process \(processId.uuidString) to cache: \(error.localizedDescription)")
+            print("Error saving RaceProjection for process \(processId.uuidString) to cache: \(error.localizedDescription)")
         }
     }
 
-    func loadProcessGeminiCoachResponse(processId: UUID) -> ProcessGeminiCoachResponse? {
+    func loadProcessGeminiCoachResponse(processId: UUID) -> RaceProjection? {
         guard let url = processCoachingFileURL(for: processId), FileManager.default.fileExists(atPath: url.path) else {
             print("Cache file for process \(processId.uuidString) does not exist.")
             return nil
@@ -526,11 +526,11 @@ class CacheManager {
         do {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
-            let response = try decoder.decode(ProcessGeminiCoachResponse.self, from: data)
-            print("Successfully loaded ProcessGeminiCoachResponse for process \(processId.uuidString) from cache.")
+            let response = try decoder.decode(RaceProjection.self, from: data)
+            print("Successfully loaded RaceProjection for process \(processId.uuidString) from cache.")
             return response
         } catch {
-            print("Error loading ProcessGeminiCoachResponse for process \(processId.uuidString) from cache: \(error.localizedDescription)")
+            print("Error loading RaceProjection for process \(processId.uuidString) from cache: \(error.localizedDescription)")
             return nil
         }
     }

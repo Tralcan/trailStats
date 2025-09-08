@@ -3,9 +3,9 @@ import Foundation
 class ProcessGeminiCoachService {
     private let cacheManager = CacheManager()
 
-    func getProcessRaceEstimation(for process: TrainingProcess, with activities: [Activity], completion: @escaping (Result<ProcessGeminiCoachResponse, Error>) -> Void) {
+    func getProcessRaceEstimation(for process: TrainingProcess, with activities: [Activity], completion: @escaping (Result<RaceProjection, Error>) -> Void) {
         if let cachedResponse = cacheManager.loadProcessGeminiCoachResponse(processId: process.id) {
-            print("Loading ProcessGeminiCoachResponse from cache for process \(process.id.uuidString)")
+            print("Loading RaceProjection from cache for process \(process.id.uuidString)")
             completion(.success(cachedResponse))
             return
         }
@@ -93,7 +93,7 @@ class ProcessGeminiCoachService {
                         return
                     }
                     do {
-                        let decodedResponse = try JSONDecoder().decode(ProcessGeminiCoachResponse.self, from: jsonData)
+                        let decodedResponse = try JSONDecoder().decode(RaceProjection.self, from: jsonData)
                         self.cacheManager.saveProcessGeminiCoachResponse(processId: process.id, response: decodedResponse)
                         completion(.success(decodedResponse))
                     } catch {

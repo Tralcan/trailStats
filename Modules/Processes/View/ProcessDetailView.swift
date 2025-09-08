@@ -59,7 +59,7 @@ struct ProcessDetailView: View {
                 Button("Visita al Medico") { viewModel.addSimpleEntry(type: .medico) }
                 Button("Sesión de Masajes") { viewModel.addSimpleEntry(type: .masajes) }
                 Button("Comentario") { isShowingAddCommentSheet = true } // Reordenado
-                Button("Cancelar", role: .cancel) { }
+                Button("Cancelar", role: .cancel) { } 
             }
 
             if selectedKpiInfo != nil {
@@ -109,16 +109,47 @@ struct ProcessDetailView: View {
                 .padding(.horizontal)
 
             VStack(alignment: .center, spacing: 10) {
-                if viewModel.isEstimatingTime {
+                // Si ya hay una actividad de carrera real, mostrar sus resultados
+                if let race = viewModel.goalActivity {
+                    HStack(spacing: 12) {
+                        Image(systemName: "flag.checkered.2.crossed")
+                            .font(.system(size: 40))
+                            .foregroundColor(.green)
+                        
+                        VStack(alignment: .leading) {
+                            Text(Int(race.duration).toHoursMinutesSeconds())
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                            Text("Tiempo Oficial")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.bottom, 8)
+                    
+                    HStack(spacing: 24) {
+                        Label(Formatters.formatDistance(race.distance), systemImage: "location.fill")
+                            .foregroundColor(.red)
+                        
+                        Label(Formatters.formatElevation(race.elevationGain), systemImage: "mountain.2.fill")
+                            .foregroundColor(.green)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(8)
+                    .padding(.top, 8)
+
+                } else if viewModel.isEstimatingTime {
                     ProgressView("Consultando al coach Gemini...")
-                } else if let response = viewModel.geminiResponse {
+                } else if let projection = viewModel.raceProjection {
                     HStack(spacing: 12) {
                         Image(systemName: "medal.fill")
                             .font(.system(size: 40))
                             .foregroundColor(.yellow)
                         
                         VStack(alignment: .leading) {
-                            Text(response.tiempo)
+                            Text(projection.tiempo)
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(.blue)
                             Text("Tiempo Estimado")
@@ -130,7 +161,7 @@ struct ProcessDetailView: View {
                     .onTapGesture {
                         self.selectedKpiInfo = KPIInfo(
                             title: "Razón de la Estimación",
-                            description: response.razon,
+                            description: projection.razon,
                             higherIsBetter: false
                         )
                     }
@@ -144,10 +175,9 @@ struct ProcessDetailView: View {
                                 .foregroundColor(.green)
                             
                             Button(action: {
-                                let combinedDescription = "Importante:\n" + response.importante + "\n\nNutrición:\n" + response.nutricion
                                 self.selectedKpiInfo = KPIInfo(
                                     title: "Recomendaciones IA",
-                                    description: combinedDescription,
+                                    description: "**Importante:**\n" + projection.importante + "\n\n**Nutrición:**\n" + projection.nutricion,
                                     higherIsBetter: false
                                 )
                             }) {

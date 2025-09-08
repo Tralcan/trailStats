@@ -74,6 +74,9 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var aiCoachObservation: String? = nil
     @Published var aiCoachLoading: Bool = false
     @Published var aiCoachError: String? = nil
+    @Published var showProcessSelection = false
+    @Published var activeProcesses: [TrainingProcess] = []
+    @Published var isAlreadyRaceOfProcess = false
 
     // MARK: Private Properties
     private let stravaService = StravaService()
@@ -115,6 +118,7 @@ class ActivityDetailViewModel: ObservableObject {
     
     // MARK: - Public Methods
     func loadActivityDetails() async {
+        checkIfActivityIsRace()
         // Try to load the detailed activity from cache first.
         if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id) {
             self.activity = cachedActivity
@@ -129,6 +133,36 @@ class ActivityDetailViewModel: ObservableObject {
         
         loadCachedSummaries()
         await loadAndProcessStreams()
+    }
+
+    func prepareToAssociateRace() {
+        loadActiveProcesses()
+        showProcessSelection = true
+    }
+
+    func associateActivityTo(process: TrainingProcess) {
+        var updatedProcess = process
+        updatedProcess.goalActivityID = self.activity.id
+        updatedProcess.endDate = self.activity.date
+
+        var allProcesses = cacheManager.loadTrainingProcesses()
+        if let index = allProcesses.firstIndex(where: { $0.id == updatedProcess.id }) {
+            allProcesses[index] = updatedProcess
+            cacheManager.saveTrainingProcesses(allProcesses)
+            cacheManager.deleteProcessGeminiCoachResponse(processId: updatedProcess.id)
+            print("Process '\(updatedProcess.name)' updated and associated with activity \(self.activity.id).")
+            self.isAlreadyRaceOfProcess = true // Update state after association
+        }
+    }
+
+    private func loadActiveProcesses() {
+        self.activeProcesses = cacheManager.loadTrainingProcesses().filter { !$0.isCompleted }
+    }
+
+    private func checkIfActivityIsRace() {
+        let allProcesses = cacheManager.loadTrainingProcesses()
+        let isRace = allProcesses.contains { $0.goalActivityID == self.activity.id }
+        self.isAlreadyRaceOfProcess = isRace
     }
     
     // MARK: - Data Loading and Processing

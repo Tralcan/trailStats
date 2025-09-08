@@ -1,5 +1,11 @@
 import Foundation
 
+enum GoalStatus: String, Codable {
+    case pending
+    case met
+    case notMet
+}
+
 struct TrainingProcess: Codable, Identifiable, Hashable {
     var id: UUID
     var name: String
@@ -9,7 +15,8 @@ struct TrainingProcess: Codable, Identifiable, Hashable {
     var raceDistance: Double?
     var raceElevation: Double?
     var goalActivityID: Int?
-    var metricEntries: [ProcessMetricEntry] // Nuevo array para los registros
+    var metricEntries: [ProcessMetricEntry]
+    var goalStatus: GoalStatus = .pending
 
     var isActive: Bool {
         let calendar = Calendar.current
@@ -34,7 +41,8 @@ struct TrainingProcess: Codable, Identifiable, Hashable {
          raceDistance: Double? = nil,
          raceElevation: Double? = nil,
          goalActivityID: Int? = nil,
-         metricEntries: [ProcessMetricEntry] = []) { // Inicializador actualizado
+         metricEntries: [ProcessMetricEntry] = [],
+         goalStatus: GoalStatus = .pending) {
         self.id = id
         self.name = name
         self.startDate = startDate
@@ -44,5 +52,6 @@ struct TrainingProcess: Codable, Identifiable, Hashable {
         self.raceElevation = raceElevation
         self.goalActivityID = goalActivityID
         self.metricEntries = metricEntries
+        self.goalStatus = goalStatus
     }
 }

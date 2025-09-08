@@ -290,6 +290,21 @@ struct ActivityDetailView: View {
                     notesSection
                     aiCoachSection
                     
+                    // Botón para convertir en carrera
+                    Button(action: {
+                        viewModel.prepareToAssociateRace()
+                    }) {
+                        Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.green)
+                            .cornerRadius(12)
+                    }
+                    .disabled(viewModel.isAlreadyRaceOfProcess)
+                    .padding(.top)
+
                     // Botón para compartir análisis
                     Button(action: {
                         let analysisText = viewModel.generateAnalysisString()
@@ -321,6 +336,14 @@ struct ActivityDetailView: View {
         .onChange(of: viewModel.gpxDataToShare) { gpxData in
             if gpxData != nil {
                 showGpxShareSheet = true
+            }
+        }
+        .sheet(isPresented: $viewModel.showProcessSelection) {
+            ProcessSelectionView(
+                isPresented: $viewModel.showProcessSelection,
+                processes: viewModel.activeProcesses
+            ) { selectedProcess in
+                viewModel.associateActivityTo(process: selectedProcess)
             }
         }
         .sheet(isPresented: $showGpxShareSheet) {
