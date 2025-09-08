@@ -9,9 +9,14 @@ struct KpiInfoPopoverView: View {
             Text(info.title)
                 .font(.headline)
                 .foregroundColor(.white)
-            Text(info.description)
-                .font(.body)
-                .foregroundColor(.white.opacity(0.9))
+            
+            ScrollView {
+                Text(info.description)
+                    .font(.body)
+                    .foregroundColor(.white.opacity(0.9))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 300)
         }
         .padding()
         .background(Color.black.opacity(0.8))

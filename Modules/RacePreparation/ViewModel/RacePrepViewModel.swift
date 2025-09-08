@@ -1,39 +1,26 @@
-
 import Foundation
 
+@MainActor
 class RacePrepViewModel: ObservableObject {
-    @Published var races: [Race] = [] {
-        didSet {
-            saveRaces()
-        }
-    }
+    @Published var raceActivities: [Activity] = []
+    @Published var isLoading = false
 
-    private let userDefaultsKey = "savedRaces"
+    private let cacheManager = CacheManager()
 
-    init() {
-        loadRaces()
-    }
-
-    func addRace(name: String, distance: Double, elevationGain: Double, date: Date) {
-        let newRace = Race(name: name, distance: distance, elevationGain: elevationGain, date: date)
-        races.append(newRace)
-    }
-
-    func deleteRace(race: Race) {
-        races.removeAll { $0.id == race.id }
-    }
-
-    private func saveRaces() {
-        if let encoded = try? JSONEncoder().encode(races) {
-            UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
-        }
-    }
-
-    private func loadRaces() {
-        if let savedRacesData = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            if let decodedRaces = try? JSONDecoder().decode([Race].self, from: savedRacesData) {
-                self.races = decodedRaces
-            }
+    func loadRaceActivities() {
+        self.isLoading = true
+        
+        Task {
+            let allProcesses = cacheManager.loadTrainingProcesses()
+            let raceActivityIDs = allProcesses.compactMap { $0.goalActivityID }
+            
+            // Load all activities from cache and filter them
+            let allActivities = cacheManager.loadAllActivityDetails()
+            let races = allActivities.filter { raceActivityIDs.contains($0.id) }
+            
+            // Sort races by date, most recent first
+            self.raceActivities = races.sorted(by: { $0.date > $1.date })
+            self.isLoading = false
         }
     }
 }

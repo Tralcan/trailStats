@@ -291,19 +291,20 @@ struct ActivityDetailView: View {
                     aiCoachSection
                     
                     // Botón para convertir en carrera
-                    Button(action: {
-                        viewModel.prepareToAssociateRace()
-                    }) {
-                        Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(viewModel.isAlreadyRaceOfProcess ? Color.gray : Color.green)
-                            .cornerRadius(12)
+                    if !viewModel.isAlreadyRaceOfProcess {
+                        Button(action: {
+                            viewModel.prepareToAssociateRace()
+                        }) {
+                            Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.green)
+                                .cornerRadius(12)
+                        }
+                        .padding(.top)
                     }
-                    .disabled(viewModel.isAlreadyRaceOfProcess)
-                    .padding(.top)
 
                     // Botón para compartir análisis
                     Button(action: {
