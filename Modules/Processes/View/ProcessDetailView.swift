@@ -17,6 +17,15 @@ struct ProcessDetailView: View {
         _viewModel = StateObject(wrappedValue: ProcessDetailViewModel(process: process))
     }
 
+    private var attributedTrainingRecommendation: AttributedString? {
+        guard let recommendation = viewModel.trainingRecommendation else { return nil }
+        do {
+            return try AttributedString(markdown: recommendation, options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace))
+        } catch {
+            return AttributedString(recommendation)
+        }
+    }
+
     var body: some View {
         ZStack {
             ScrollView {
@@ -48,6 +57,8 @@ struct ProcessDetailView: View {
                             onDelete: viewModel.process.isCompleted ? nil : { indexSet in viewModel.deleteMetricEntry(at: indexSet) }
                         )
                         .padding(.top)
+
+                        if !viewModel.process.isCompleted { trainingRecommendationSection }
                     }
                     .padding(.vertical)
                 }
@@ -304,6 +315,36 @@ struct ProcessDetailView: View {
                 KPISummaryCard(title: "Ratio Vertical", value: "\(String(format: "%.1f", result.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
                     .onTapGesture { selectedKpiInfo = .verticalRatio }
             }
+            .padding(.horizontal)
+        }
+    }
+
+    private var trainingRecommendationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Recomendación de entrenamientos IA")
+                .font(.title3).bold()
+                .padding(.horizontal)
+
+            VStack(alignment: .leading, spacing: 10) {
+                if viewModel.isFetchingRecommendation {
+                    HStack {
+                        ProgressView()
+                        Text("Consultando al coach Gemini...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else if let recommendation = attributedTrainingRecommendation {
+                    Text(recommendation)
+                        .font(.body)
+                } else if let error = viewModel.recommendationError {
+                    Text(error)
+                        .foregroundColor(.red)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .cornerRadius(12)
             .padding(.horizontal)
         }
     }

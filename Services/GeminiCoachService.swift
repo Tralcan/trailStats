@@ -37,6 +37,7 @@ struct GeminiCoachService {
         * Amigable y accesible.
         * Experto y confiable.
         * Motivado y empático.
+        * No terminar con una pregunta.
         """
 
         // 2. Format the KPIs into a string

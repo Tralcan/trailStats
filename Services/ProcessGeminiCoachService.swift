@@ -26,11 +26,11 @@ class ProcessGeminiCoachService {
             activityDetails.append("Elevación: \(Formatters.formatElevation(activity.elevationGain))")
 
             if let summary = cacheManager.loadSummary(activityId: activity.id) {
-                activityDetails.append("Ritmo Promedio: \(summary.averagePace?.toPaceFormat() ?? "N/A")")
+                activityDetails.append("Ritmo Promedio: \(summary.averagePace?.toPaceFormat()) " )
             }
 
             if let processedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
-                activityDetails.append("GAP: \(processedMetrics.gradeAdjustedPace?.toPaceFormat() ?? "N/A")")
+                activityDetails.append("GAP: \(processedMetrics.gradeAdjustedPace?.toPaceFormat()) " )
                 
                 activityDetails.append("Desacoplamiento Cardíaco: \(Formatters.formatDecoupling(processedMetrics.cardiacDecoupling ?? 0))%")
                 activityDetails.append("Velocidad Vertical Ascenso (VAM): \(Formatters.formatVerticalSpeed(processedMetrics.verticalSpeedVAM ?? 0))")
@@ -105,8 +105,55 @@ class ProcessGeminiCoachService {
             }
         }
     }
-}
 
+    func getTrainingRecommendations(for process: TrainingProcess, completion: @escaping (Result<String, Error>) -> Void) {
+        // If the process is completed, do not fetch new recommendations and return an empty string.
+        // The UI should hide the section based on this.
+        if process.isCompleted {
+            print("Process \(process.id.uuidString) is completed. Not fetching new training recommendations.")
+            completion(.success("")) // Return empty string or a specific message for UI to handle
+            return
+        }
+
+        // 1. Check for cached recommendation
+        if let cachedRecommendation = cacheManager.loadTrainingRecommendation(processId: process.id) {
+            print("Loading training recommendation from cache for process \(process.id.uuidString)")
+            completion(.success(cachedRecommendation))
+            return
+        }
+
+        let raceInfo: String
+        if let distance = process.raceDistance, let elevation = process.raceElevation {
+            raceInfo = "una carrera de \(Formatters.formatDistance(distance)) con \(Formatters.formatElevation(elevation)) de desnivel positivo, que se realizará el \(process.endDate.formatted(date: .long, time: .omitted))"
+        } else {
+            raceInfo = "una carrera futura con fecha objetivo el \(process.endDate.formatted(date: .long, time: .omitted))"
+        }
+
+        let systemPrompt = """
+        Eres un experto entrenador de trail. Tu misión dar consejos (mas bien generales) para preparar \(raceInfo).
+        Debes entregar información, por ejemplo, de cantidad de kilómetros que se debe correr y desnivel acumulado, etc. en el proceso para estar bien preparado y cumplir con el objetivo que se fijó: \"\(process.goal)\".
+        La respuesta debe ser un texto plano, sin formato JSON, y no debe terminar con una pregunta y un máximo de 300 palabras.
+        """
+
+        let kpis = [
+            "system_prompt": systemPrompt,
+            "user_prompt": "Dame tus recomendaciones."
+        ]
+
+        GeminiCoachService.fetchObservation(kpis: kpis) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let text):
+                    // 2. Save the recommendation to cache on success
+                    self.cacheManager.saveTrainingRecommendation(processId: process.id, text: text)
+                    completion(.success(text))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+        }
+    }
+}
 
 enum ProcessGeminiCoachServiceError: Error {
     case noActivityData

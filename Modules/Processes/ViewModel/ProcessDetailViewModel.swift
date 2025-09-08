@@ -10,6 +10,9 @@ class ProcessDetailViewModel: ObservableObject {
     @Published var raceProjection: RaceProjection?
     @Published var estimationError: String?
     @Published var goalActivity: Activity? = nil
+    @Published var trainingRecommendation: String?
+    @Published var isFetchingRecommendation = false
+    @Published var recommendationError: String?
 
     // MARK: - Private Properties
     private let cacheManager = CacheManager()
@@ -45,6 +48,7 @@ class ProcessDetailViewModel: ObservableObject {
                 if self.goalActivity == nil && self.process.raceDistance != nil {
                     self.getGeminiEstimation(with: processActivities)
                 }
+                self.fetchTrainingRecommendation()
             }
         }
     }
@@ -67,6 +71,23 @@ class ProcessDetailViewModel: ObservableObject {
                     self?.raceProjection = response
                 case .failure(let error):
                     self?.estimationError = "Error al obtener la estimación: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
+    func fetchTrainingRecommendation() {
+        isFetchingRecommendation = true
+        recommendationError = nil
+
+        geminiCoachService.getTrainingRecommendations(for: process) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isFetchingRecommendation = false
+                switch result {
+                case .success(let recommendation):
+                    self?.trainingRecommendation = recommendation
+                case .failure(let error):
+                    self?.recommendationError = "Error al obtener la recomendación: \(error.localizedDescription)"
                 }
             }
         }

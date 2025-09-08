@@ -549,6 +549,34 @@ class CacheManager {
         }
     }
 
+    // MARK: - Training Recommendation Cache
+
+    func saveTrainingRecommendation(processId: UUID, text: String) {
+        guard let folder = processCoachingDirectoryURL else { return }
+        let fileURL = folder.appendingPathComponent("\(processId.uuidString)_training_recommendation.txt")
+        do {
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+            print("[CacheManager] Saved training recommendation for process \(processId.uuidString) at \(fileURL.path)")
+        } catch {
+            print("[CacheManager] Error saving training recommendation for process \(processId.uuidString): \(error.localizedDescription)")
+        }
+    }
+
+    func loadTrainingRecommendation(processId: UUID) -> String? {
+        guard let folder = processCoachingDirectoryURL else { return nil }
+        let fileURL = folder.appendingPathComponent("\(processId.uuidString)_training_recommendation.txt")
+        print("[CacheManager] Attempting to load training recommendation for process \(processId.uuidString) from \(fileURL.lastPathComponent). File exists: \(FileManager.default.fileExists(atPath: fileURL.path))")
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        do {
+            let text = try String(contentsOf: fileURL, encoding: .utf8)
+            print("[CacheManager] Successfully loaded training recommendation for process \(processId.uuidString).")
+            return text
+        } catch {
+            print("[CacheManager] Error loading training recommendation for process \(processId.uuidString): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     // MARK: - Training Process Cache
 
     private var trainingProcessesURL: URL? {
