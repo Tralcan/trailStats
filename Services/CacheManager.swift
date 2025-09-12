@@ -500,8 +500,8 @@ class CacheManager {
         return processCoachingDir
     }
 
-    private func processCoachingFileURL(for processId: UUID) -> URL? {
-        return processCoachingDirectoryURL?.appendingPathComponent("\(processId.uuidString).json")
+    private func processCoachingFileURL(for processId: UUID, withSuffix suffix: String = ".json") -> URL? {
+        return processCoachingDirectoryURL?.appendingPathComponent("\(processId.uuidString)\(suffix)")
     }
 
     func saveProcessGeminiCoachResponse(processId: UUID, response: RaceProjection) {
@@ -549,31 +549,40 @@ class CacheManager {
         }
     }
 
-    // MARK: - Training Recommendation Cache
-
-    func saveTrainingRecommendation(processId: UUID, text: String) {
-        guard let folder = processCoachingDirectoryURL else { return }
-        let fileURL = folder.appendingPathComponent("\(processId.uuidString)_training_recommendation.txt")
+    func saveProcessTrainingRecommendation(processId: UUID, recommendation: String) {
+        guard let url = processCoachingFileURL(for: processId, withSuffix: "_recommendation.txt") else { return }
         do {
-            try text.write(to: fileURL, atomically: true, encoding: .utf8)
-            print("[CacheManager] Saved training recommendation for process \(processId.uuidString) at \(fileURL.path)")
+            try recommendation.write(to: url, atomically: true, encoding: .utf8)
+            print("Successfully saved training recommendation for process \(processId.uuidString) to cache.")
         } catch {
-            print("[CacheManager] Error saving training recommendation for process \(processId.uuidString): \(error.localizedDescription)")
+            print("Error saving training recommendation for process \(processId.uuidString) to cache: \(error.localizedDescription)")
         }
     }
 
-    func loadTrainingRecommendation(processId: UUID) -> String? {
-        guard let folder = processCoachingDirectoryURL else { return nil }
-        let fileURL = folder.appendingPathComponent("\(processId.uuidString)_training_recommendation.txt")
-        print("[CacheManager] Attempting to load training recommendation for process \(processId.uuidString) from \(fileURL.lastPathComponent). File exists: \(FileManager.default.fileExists(atPath: fileURL.path))")
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
-        do {
-            let text = try String(contentsOf: fileURL, encoding: .utf8)
-            print("[CacheManager] Successfully loaded training recommendation for process \(processId.uuidString).")
-            return text
-        } catch {
-            print("[CacheManager] Error loading training recommendation for process \(processId.uuidString): \(error.localizedDescription)")
+    func loadProcessTrainingRecommendation(processId: UUID) -> String? {
+        guard let url = processCoachingFileURL(for: processId, withSuffix: "_recommendation.txt"), FileManager.default.fileExists(atPath: url.path) else {
             return nil
+        }
+        
+        do {
+            let recommendation = try String(contentsOf: url, encoding: .utf8)
+            print("Successfully loaded training recommendation for process \(processId.uuidString) from cache.")
+            return recommendation
+        } catch {
+            print("Error loading training recommendation for process \(processId.uuidString) from cache: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    func deleteProcessTrainingRecommendation(processId: UUID) {
+        guard let url = processCoachingFileURL(for: processId, withSuffix: "_recommendation.txt"), FileManager.default.fileExists(atPath: url.path) else {
+            return
+        }
+        do {
+            try FileManager.default.removeItem(at: url)
+            print("Successfully deleted training recommendation for process \(processId.uuidString) from cache.")
+        } catch {
+            print("Error deleting training recommendation for process \(processId.uuidString) from cache: \(error.localizedDescription)")
         }
     }
 

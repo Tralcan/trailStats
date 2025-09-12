@@ -54,6 +54,7 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var groundContactTimeKPI: KPIInfo?
     @Published var strideLengthKPI: KPIInfo?
     @Published var verticalRatioKPI: KPIInfo?
+    @Published var radarChartDataPoints: [RadarChartDataPoint] = []
 
     // Complex data
     @Published var climbSegments: [ActivitySegment] = []
@@ -383,7 +384,7 @@ class ActivityDetailViewModel: ObservableObject {
 
         // Salir si los datos clave aún no se han procesado.
         // Se volverá a llamar cuando finalice el procesamiento de datos.
-        guard vamKPI != nil else {
+        guard vamKPI != nil else { 
             print("[AICoach] Datos de KPI aún no procesados. Omitiendo la solicitud.")
             return
         }
@@ -589,10 +590,12 @@ class ActivityDetailViewModel: ObservableObject {
 
         verticalRatioKPI = activity.verticalRatio.map { KPIInfo(title: KPIInfo.verticalRatio.title, description: KPIInfo.verticalRatio.description, value: $0, higherIsBetter: KPIInfo.verticalRatio.higherIsBetter) }
         verticalRatioKPI = verticalRatioKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.verticalRatio }) }
+        
+        prepareRadarChartData(recentMetrics: recentMetrics, recentActivities: recentActivities)
     }
 
     private func updateTrend(for kpi: KPIInfo, with recentValues: [Double]) -> KPIInfo {
-        guard let currentValue = kpi.value, !recentValues.isEmpty else {
+        guard let currentValue = kpi.value, !recentValues.isEmpty else { 
             return kpi
         }
 
@@ -619,6 +622,56 @@ class ActivityDetailViewModel: ObservableObject {
         } else {
             return currentValue < average ? .up : .down
         }
+    }
+    
+    private func prepareRadarChartData(recentMetrics: [ActivityProcessedMetrics], recentActivities: [Activity]) {
+        var points: [RadarChartDataPoint] = []
+
+        let kpis: [(kpi: KPIInfo?, recentValues: [Double], label: String)] = [
+            (vamKPI, recentMetrics.compactMap { $0.verticalSpeedVAM }, "VAM"),
+            (decouplingKPI, recentMetrics.compactMap { $0.cardiacDecoupling }, "Desacop."),
+            (normalizedPowerKPI, recentMetrics.compactMap { $0.normalizedPower }, "NP"),
+            (gapKPI, recentMetrics.compactMap { $0.gradeAdjustedPace }, "GAP"),
+            (efficiencyIndexKPI, recentMetrics.compactMap { $0.efficiencyIndex }, "Eficiencia"),
+            (verticalRatioKPI, recentActivities.compactMap { $0.verticalRatio }, "Ratio Vert.")
+        ]
+
+        for (kpi, recentValues, label) in kpis {
+            guard let currentValue = kpi?.value, let average = recentValues.averageOrNil() else { continue }
+
+            // Normalization: Use the greater of current or average * 1.5 as the max scale to handle outliers
+            // and prevent the polygon from always touching the edge.
+            let maxVal = max(currentValue, average) * 1.5
+            
+            let isLowerBetter = !(kpi?.higherIsBetter ?? true)
+
+            var currentScaled: Double
+            var averageScaled: Double
+
+            if maxVal > 0 {
+                if isLowerBetter {
+                    // For 'lower is better', a lower value is 'better' (higher on the chart)
+                    currentScaled = 100 - (currentValue / maxVal * 100)
+                    averageScaled = 100 - (average / maxVal * 100)
+                } else {
+                    currentScaled = (currentValue / maxVal) * 100
+                    averageScaled = (average / maxVal) * 100
+                }
+            } else {
+                currentScaled = 50
+                averageScaled = 50
+            }
+
+            points.append(
+                .init(
+                    label: label,
+                    currentValue: min(max(currentScaled, 0), 100), // Clamp between 0 and 100
+                    averageValue: min(max(averageScaled, 0), 100)
+                )
+            )
+        }
+
+        self.radarChartDataPoints = points
     }
 }
 

@@ -116,7 +116,7 @@ class ProcessGeminiCoachService {
         }
 
         // 1. Check for cached recommendation
-        if let cachedRecommendation = cacheManager.loadTrainingRecommendation(processId: process.id) {
+        if let cachedRecommendation = cacheManager.loadProcessTrainingRecommendation(processId: process.id) {
             print("Loading training recommendation from cache for process \(process.id.uuidString)")
             completion(.success(cachedRecommendation))
             return
@@ -145,7 +145,7 @@ class ProcessGeminiCoachService {
                 switch result {
                 case .success(let text):
                     // 2. Save the recommendation to cache on success
-                    self.cacheManager.saveTrainingRecommendation(processId: process.id, text: text)
+                    self.cacheManager.saveProcessTrainingRecommendation(processId: process.id, recommendation: text)
                     completion(.success(text))
                 case .failure(let error):
                     completion(.failure(error))

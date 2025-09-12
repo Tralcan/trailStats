@@ -163,6 +163,24 @@ struct ActivityDetailView: View {
     }
 
     @ViewBuilder
+    private var radarChartSection: some View {
+        if !viewModel.radarChartDataPoints.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Análisis Comparativo Radar")
+                    .font(.title2).bold()
+                    .foregroundColor(.primary)
+                    .padding(.horizontal)
+
+                RadarChartView(data: viewModel.radarChartDataPoints, maxValue: 100)
+                    .frame(height: 300)
+            }
+            .padding(.vertical)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
+        }
+    }
+
+    @ViewBuilder
     private var segmentsSection: some View {
         if !viewModel.climbSegments.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
@@ -269,10 +287,14 @@ struct ActivityDetailView: View {
                         }
                         .disabled(viewModel.isGeneratingGPX)
                     }
+                    .padding(.horizontal)
                     
                     headerView
+                        .padding(.horizontal)
                     rpeSection
+                        .padding(.horizontal)
                     trailKPIsSection
+                        .padding(.horizontal)
                     RunningDynamicsView(
                         verticalOscillationKPI: viewModel.verticalOscillationKPI,
                         groundContactTimeKPI: viewModel.groundContactTimeKPI,
@@ -283,12 +305,20 @@ struct ActivityDetailView: View {
                             selectedKpiInfo = kpiInfo
                         }
                     }
-
+                    .padding(.horizontal)
+                    
+                    radarChartSection
+                    
                     advancedAnalysisSection
+                        .padding(.horizontal)
                     segmentsSection
+                        .padding(.horizontal)
                     interactiveChartSection
+                        .padding(.horizontal)
                     notesSection
+                        .padding(.horizontal)
                     aiCoachSection
+                        .padding(.horizontal)
                     
                     // Botón para convertir en carrera
                     if !viewModel.isAlreadyRaceOfProcess {
@@ -304,6 +334,7 @@ struct ActivityDetailView: View {
                                 .cornerRadius(12)
                         }
                         .padding(.top)
+                        .padding(.horizontal)
                     }
 
                     // Botón para compartir análisis
@@ -320,9 +351,10 @@ struct ActivityDetailView: View {
                             .cornerRadius(12)
                     }
                     .padding(.top)
+                    .padding(.horizontal)
 
                 }
-                .padding()
+                .padding(.vertical)
             }
             .onTapGesture {
                 notesFieldIsFocused = false
@@ -445,95 +477,100 @@ struct ActivityDetailView: View {
 }
 
 private struct SegmentRowView: View {
-    let segment: ActivitySegment
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: segment.type == .climb ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill")
-                    .foregroundColor(segment.type == .climb ? .green : .blue)
-                Text(segment.type.rawValue)
-                    .font(.headline).bold()
-                Spacer()
-                Text(String(format: "%.2f km @ %.1f%%", segment.distance / 1000, segment.averageGrade))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading) {
-                    Text("Ritmo").font(.caption).foregroundColor(.secondary)
-                    Text(segment.averagePace.toPaceFormat())
+        let segment: ActivitySegment
+     
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: segment.type == .climb ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill")
+                        .foregroundColor(segment.type == .climb ? .green : .blue)
+                    Text(segment.type.rawValue)
+                        .font(.headline).bold()
+                    Spacer()
+                    Text(String(format: "%.2f km @ %.1f%%", segment.distance / 1000, segment.averageGrade))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
-                VStack(alignment: .leading) {
-                    Text("Desnivel").font(.caption).foregroundColor(.secondary)
-                    Text(String(format: "%@%.0f m", segment.elevationChange > 0 ? "+" : "", segment.elevationChange))
-                }
-                if let vam = segment.verticalSpeed {
+                HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading) {
-                        Text("VAM").font(.caption).foregroundColor(.secondary)
-                        Text(String(format: "%.0f m/h", vam))
+                        Text("Ritmo").font(.caption).foregroundColor(.secondary)
+                        Text(segment.averagePace.toPaceFormat())
+                    }
+                    VStack(alignment: .leading) {
+                        Text("Desnivel").font(.caption).foregroundColor(.secondary)
+                        Text(String(format: "%@%.0f m", segment.elevationChange > 0 ? "+" : "", segment.elevationChange))
+                    }
+                    if let vam = segment.verticalSpeed {
+                        VStack(alignment: .leading) {
+                            Text("VAM").font(.caption).foregroundColor(.secondary)
+                            Text(String(format: "%.0f m/h", vam))
+                        }
+                    }
+                    if let hr = segment.averageHeartRate {
+                        VStack(alignment: .leading) {
+                            Text("FC Media").font(.caption).foregroundColor(.secondary)
+                            Text(String(format: "%.0f", hr))
+                        }
                     }
                 }
-                if let hr = segment.averageHeartRate {
-                    VStack(alignment: .leading) {
-                        Text("FC Media").font(.caption).foregroundColor(.secondary)
-                        Text(String(format: "%.0f", hr))
-                    }
-                }
+                .font(.footnote)
             }
-            .font(.footnote)
-        }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
-    }
-}
-
-private class GPXFile: NSObject, UIActivityItemSource {
-    let data: Data
-    let filename: String
-    
-    init(data: Data, filename: String) {
-        self.data = data
-        self.filename = filename
-    }
-    
-    var url: URL? {
-        let tempDirectory = FileManager.default.temporaryDirectory
-        let fileURL = tempDirectory.appendingPathComponent(filename)
-        do {
-            try data.write(to: fileURL)
-            return fileURL
-        } catch {
-            return nil
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
         }
     }
     
-    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
-        return ""
+    private class GPXFile: NSObject, UIActivityItemSource {
+        let data: Data
+        let filename: String
+    
+        init(data: Data, filename: String) {
+            self.data = data
+            self.filename = filename
+        }
+    
+        var url: URL? {
+            let tempDirectory = FileManager.default.temporaryDirectory
+            let fileURL = tempDirectory.appendingPathComponent(filename)
+            do {
+                try data.write(to: fileURL)
+                return fileURL
+            } catch {
+                return nil
+            }
+        }
+    
+        func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) ->
+    Any {
+            return ""
+        }
+    
+        func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType
+         activityType: UIActivity.ActivityType?) -> Any? {
+            return url
+      }
+    
+        func activityViewController(_ activityViewController: UIActivityViewController,
+    subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
+            return filename
+        }
+    
+        func activityViewController(_ activityViewController: UIViewController,
+    dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
+            return "com.topografix.gpx"
+        }
     }
     
-    func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
-        return url
-    }
+    private struct ShareSheet: UIViewControllerRepresentable {
+        var activityItems: [Any]
+        var applicationActivities: [UIActivity]? = nil
     
-    func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {
-        return filename
-    }
+        func makeUIViewController(context: Context) -> UIActivityViewController {
+            let controller = UIActivityViewController(activityItems: activityItems, applicationActivities:
+    applicationActivities)
+            return controller
+        }
     
-    func activityViewController(_ activityViewController: UIActivityViewController, dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
-        return "com.topografix.gpx"
+        func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
     }
-}
-
-private struct ShareSheet: UIViewControllerRepresentable {
-    var activityItems: [Any]
-    var applicationActivities: [UIActivity]? = nil
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
-        return controller
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
