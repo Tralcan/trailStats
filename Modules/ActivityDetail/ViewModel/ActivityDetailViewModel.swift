@@ -639,8 +639,7 @@ class ActivityDetailViewModel: ObservableObject {
         for (kpi, recentValues, label) in kpis {
             guard let currentValue = kpi?.value, let average = recentValues.averageOrNil() else { continue }
 
-            // Normalization: Use the greater of current or average * 1.5 as the max scale to handle outliers
-            // and prevent the polygon from always touching the edge.
+            // Normalization: Use the greater of the two values to set the scale for this axis, with a floor to avoid division by zero.
             let maxVal = max(currentValue, average) * 1.5
             
             let isLowerBetter = !(kpi?.higherIsBetter ?? true)
@@ -875,7 +874,7 @@ struct ActivityAnalyticsCalculator {
         var isClimbing: Bool? = nil
         for i in 1..<altitudeData.count {
             let prevPoint = (dist: distanceData[i-1].value, alt: altitudeData[i-1].value, time: altitudeData[i-1].time)
-            let currentPoint = (dist: distanceData[i].value, alt: altitudeData[i].value, time: distanceData[i].time)
+            let currentPoint = (dist: distanceData[i].value, alt: altitudeData[i].value, time: altitudeData[i].time)
             let currentlyClimbing = (currentPoint.alt - prevPoint.alt) > 0.1
             if isClimbing == nil { isClimbing = currentlyClimbing }
             if currentlyClimbing == isClimbing {
