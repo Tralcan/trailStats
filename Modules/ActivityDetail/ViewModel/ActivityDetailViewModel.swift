@@ -627,16 +627,16 @@ class ActivityDetailViewModel: ObservableObject {
     private func prepareRadarChartData(recentMetrics: [ActivityProcessedMetrics], recentActivities: [Activity]) {
         var points: [RadarChartDataPoint] = []
 
-        let kpis: [(kpi: KPIInfo?, recentValues: [Double], label: String)] = [
-            (vamKPI, recentMetrics.compactMap { $0.verticalSpeedVAM }, "VAM"),
-            (decouplingKPI, recentMetrics.compactMap { $0.cardiacDecoupling }, "Desacop."),
-            (normalizedPowerKPI, recentMetrics.compactMap { $0.normalizedPower }, "NP"),
-            (gapKPI, recentMetrics.compactMap { $0.gradeAdjustedPace }, "GAP"),
-            (efficiencyIndexKPI, recentMetrics.compactMap { $0.efficiencyIndex }, "Eficiencia"),
-            (verticalRatioKPI, recentActivities.compactMap { $0.verticalRatio }, "Ratio Vert.")
+        let kpis: [(kpi: KPIInfo?, recentValues: [Double], label: String, color: Color)] = [
+            (vamKPI, recentMetrics.compactMap { $0.verticalSpeedVAM }, "VAM", .orange),
+            (decouplingKPI, recentMetrics.compactMap { $0.cardiacDecoupling }, "Desacop.", .yellow),
+            (normalizedPowerKPI, recentMetrics.compactMap { $0.normalizedPower }, "NP", .green),
+            (gapKPI, recentMetrics.compactMap { $0.gradeAdjustedPace }, "GAP", .cyan),
+            (efficiencyIndexKPI, recentMetrics.compactMap { $0.efficiencyIndex }, "Eficiencia", .mint),
+            (verticalRatioKPI, recentActivities.compactMap { $0.verticalRatio }, "Ratio Vert.", .purple)
         ]
 
-        for (kpi, recentValues, label) in kpis {
+        for (kpi, recentValues, label, color) in kpis {
             guard let currentValue = kpi?.value, let average = recentValues.averageOrNil() else { continue }
 
             // Normalization: Use the greater of the two values to set the scale for this axis, with a floor to avoid division by zero.
@@ -665,7 +665,8 @@ class ActivityDetailViewModel: ObservableObject {
                 .init(
                     label: label,
                     currentValue: min(max(currentScaled, 0), 100), // Clamp between 0 and 100
-                    averageValue: min(max(averageScaled, 0), 100)
+                    averageValue: min(max(averageScaled, 0), 100),
+                    color: color
                 )
             )
         }

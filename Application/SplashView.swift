@@ -10,6 +10,21 @@ struct SplashView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: geometry.size.width)
+
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image("Power")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100)
+                            .padding()
+                    }
+                    .padding(.top, 175)
+                    Spacer()
+                    Spacer()
+                }
                 
                 VStack {
                     Spacer()

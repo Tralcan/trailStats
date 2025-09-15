@@ -5,6 +5,7 @@ struct RadarChartDataPoint {
     let label: String
     let currentValue: Double
     let averageValue: Double
+    let color: Color
 }
 
 // The main Radar Chart View
@@ -106,7 +107,8 @@ struct RadarChartView: View {
             else if angleDegrees >= 190 && angleDegrees <= 350 { anchor = .trailing }
             else { anchor = .leading }
             
-            context.draw(Text(data[i].label).font(labelFont), at: labelPoint, anchor: anchor)
+            let labelText = Text(data[i].label).font(labelFont).foregroundColor(data[i].color)
+            context.draw(labelText, at: labelPoint, anchor: anchor)
         }
     }
 
@@ -152,12 +154,12 @@ struct RadarChartView: View {
 #if DEBUG
 struct RadarChartView_Previews: PreviewProvider {
     static var sampleData: [RadarChartDataPoint] = [
-        .init(label: "Potencia", currentValue: 85, averageValue: 75),
-        .init(label: "FC", currentValue: 60, averageValue: 70),
-        .init(label: "Cadencia", currentValue: 90, averageValue: 80),
-        .init(label: "T. Contacto", currentValue: 50, averageValue: 65),
-        .init(label: "Osc. Vertical", currentValue: 40, averageValue: 55),
-        .init(label: "Ratio Vert.", currentValue: 75, averageValue: 60)
+        .init(label: "Potencia", currentValue: 85, averageValue: 75, color: .green),
+        .init(label: "FC", currentValue: 60, averageValue: 70, color: .red),
+        .init(label: "Cadencia", currentValue: 90, averageValue: 80, color: .blue),
+        .init(label: "T. Contacto", currentValue: 50, averageValue: 65, color: .purple),
+        .init(label: "Osc. Vertical", currentValue: 40, averageValue: 55, color: .yellow),
+        .init(label: "Ratio Vert.", currentValue: 75, averageValue: 60, color: .mint)
     ]
 
     static var previews: some View {

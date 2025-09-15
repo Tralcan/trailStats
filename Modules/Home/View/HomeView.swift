@@ -105,16 +105,11 @@ struct HomeView: View {
             Spacer()
             
             Button(action: viewModel.connectToStrava) {
-                HStack {
-                    Image(systemName: "link")
-                    Text("Connect with Strava")
-                        .fontWeight(.bold)
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.accentColor)
-                .foregroundColor(.white)
-                .cornerRadius(12)
+                Image("boton")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .padding()
             }
         }
         .padding()
