@@ -67,6 +67,7 @@ class ActivityDetailViewModel: ObservableObject {
     // RPE & Notes
     @Published var rpe: Double = 5.0
     @Published var notes: String = ""
+    @Published var tag: ActivityTag? = nil
 
     // UI State
     @Published var errorMessage: String? = nil
@@ -90,6 +91,7 @@ class ActivityDetailViewModel: ObservableObject {
         self.activity = activity
         self.rpe = activity.rpe ?? 5.0
         self.notes = activity.notes ?? ""
+        self.tag = activity.tag
 
         $rpe
             .debounce(for: .seconds(2), scheduler: RunLoop.main)
@@ -115,6 +117,21 @@ class ActivityDetailViewModel: ObservableObject {
                 self.cacheManager.saveActivityDetail(activity: self.activity)
             }
             .store(in: &cancellables)
+
+        $tag
+            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .sink { [weak self] newTag in
+                guard let self = self else { return }
+                let previousTag = self.activity.tag
+                self.activity.tag = newTag
+                self.cacheManager.saveActivityDetail(activity: self.activity)
+
+                if newTag != previousTag {
+                    self.cacheManager.deleteAICoachText(activityId: self.activity.id)
+                    self.getAICoachObservation()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Public Methods
@@ -125,6 +142,7 @@ class ActivityDetailViewModel: ObservableObject {
             self.activity = cachedActivity
             self.rpe = cachedActivity.rpe ?? 5.0 // Update RPE from cached activity
             self.notes = cachedActivity.notes ?? "" // Update notes from cached activity
+            self.tag = cachedActivity.tag
         }
 
         // If the loaded activity (either from cache or initial) is missing dynamics, fetch them.
@@ -359,7 +377,7 @@ class ActivityDetailViewModel: ObservableObject {
         // Ordenar KPIs para una presentación consistente
         let orderedKeys = [
             "Fecha", "Distancia", "Tiempo en Movimiento", "Desnivel Positivo", "Esfuerzo Percibido (RPE)",
-            "Ritmo Ajustado por Pendiente (GAP)", "Frecuencia Cardíaca Promedio",
+            "Tipo de Carrera", "Ritmo Ajustado por Pendiente (GAP)", "Frecuencia Cardíaca Promedio",
             "VAM (Velocidad de Ascenso Media)", "Velocidad de Descenso Media",
             "Desacoplamiento Cardíaco (Ritmo:FC)", "Potencia Normalizada (NP)",
             "Potencia Promedio", "Cadencia Promedio", "Índice de Eficiencia (Velocidad/FC)",
@@ -381,6 +399,15 @@ class ActivityDetailViewModel: ObservableObject {
     func getAICoachObservation() {
         // Evitar llamadas múltiples si ya está cargando
         if aiCoachLoading { return }
+
+        // Salir si el tipo de carrera no está definido
+        guard self.tag != nil else {
+            self.aiCoachObservation = "Por favor, selecciona un tipo de carrera para obtener el análisis de la IA."
+            self.aiCoachError = nil
+            self.aiCoachLoading = false
+            self.cacheManager.deleteAICoachText(activityId: self.activity.id)
+            return
+        }
 
         // Salir si los datos clave aún no se han procesado.
         // Se volverá a llamar cuando finalice el procesamiento de datos.
@@ -491,6 +518,9 @@ class ActivityDetailViewModel: ObservableObject {
         }
         if let rpe = activity.rpe {
             kpis["Esfuerzo Percibido (RPE)"] = String(format: "%.1f/10", rpe)
+        }
+        if let tag = activity.tag {
+            kpis["Tipo de Carrera"] = tag.rawValue
         }
 
         // Complex KPIs formatting

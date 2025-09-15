@@ -90,6 +90,38 @@ struct ActivityDetailView: View {
         .cornerRadius(12)
     }
 
+    private var tagSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Tipo de Carrera")
+                .font(.headline)
+                .padding(.horizontal)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(ActivityTag.allCases) { tag in
+                        Button(action: {
+                            viewModel.tag = viewModel.tag == tag ? nil : tag
+                        }) {
+                            VStack {
+                                Image(systemName: tag.icon)
+                                    .font(.title2)
+                                Text(tag.rawValue)
+                                    .font(.caption)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding()
+                            .frame(width: 120, height: 100)
+                            .background(viewModel.tag == tag ? Color.accentColor : Color(.secondarySystemBackground))
+                            .foregroundColor(viewModel.tag == tag ? .white : .primary)
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Mis Notas", systemImage: "note.text")
@@ -293,6 +325,7 @@ struct ActivityDetailView: View {
                         .padding(.horizontal)
                     rpeSection
                         .padding(.horizontal)
+                    tagSection
                     trailKPIsSection
                         .padding(.horizontal)
                     RunningDynamicsView(
