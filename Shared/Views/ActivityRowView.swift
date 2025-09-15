@@ -17,9 +17,15 @@ struct ActivityRowView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 8) {
-                Text(activity.name)
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                HStack {
+                    if let tag = activity.tag {
+                        Image(systemName: tag.icon)
+                            .foregroundColor(.accentColor)
+                    }
+                    Text(activity.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
                 
                 Text(dateFormatter.string(from: activity.date))
                     .font(.caption)

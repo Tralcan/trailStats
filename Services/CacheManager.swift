@@ -122,6 +122,15 @@ class CacheManager {
         }
     }
 
+    func updateActivityInSummaryCache(activity: Activity) {
+        guard var activities = loadActivities() else { return }
+        if let index = activities.firstIndex(where: { $0.id == activity.id }) {
+            activities[index] = activity
+            saveActivities(activities)
+            print("Updated activity \(activity.id) in summary cache.")
+        }
+    }
+
     func loadActivityDetail(activityId: Int) -> Activity? {
         guard let folder = summaryFolderURL(for: activityId) else { return nil }
         let fileURL = folder.appendingPathComponent("activity_detail.json")

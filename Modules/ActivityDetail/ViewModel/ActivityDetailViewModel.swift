@@ -94,15 +94,22 @@ class ActivityDetailViewModel: ObservableObject {
         self.notes = activity.notes ?? ""
         self.tag = activity.tag
 
+        // Centralized saving mechanism
+        $activity
+            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .sink { [weak self] updatedActivity in
+                self?.cacheManager.saveActivityDetail(activity: updatedActivity)
+                self?.cacheManager.updateActivityInSummaryCache(activity: updatedActivity)
+            }
+            .store(in: &cancellables)
+
         $rpe
-            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .dropFirst()
             .sink { [weak self] newRPE in
                 guard let self = self else { return }
-                let previousRPE = self.activity.rpe // Capture RPE before updating
+                let previousRPE = self.activity.rpe
                 self.activity.rpe = newRPE
-                self.cacheManager.saveActivityDetail(activity: self.activity)
                 
-                // Si el RPE ha cambiado, invalidar el caché del AI Coach y regenerar la observación
                 if newRPE != previousRPE {
                     self.cacheManager.deleteAICoachText(activityId: self.activity.id)
                     self.getAICoachObservation()
@@ -111,21 +118,18 @@ class ActivityDetailViewModel: ObservableObject {
             .store(in: &cancellables)
 
         $notes
-            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .dropFirst()
             .sink { [weak self] newNotes in
-                guard let self = self else { return }
-                self.activity.notes = newNotes
-                self.cacheManager.saveActivityDetail(activity: self.activity)
+                self?.activity.notes = newNotes
             }
             .store(in: &cancellables)
 
         $tag
-            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .dropFirst()
             .sink { [weak self] newTag in
                 guard let self = self else { return }
                 let previousTag = self.activity.tag
                 self.activity.tag = newTag
-                self.cacheManager.saveActivityDetail(activity: self.activity)
 
                 if newTag != previousTag {
                     self.cacheManager.deleteAICoachText(activityId: self.activity.id)
@@ -133,6 +137,8 @@ class ActivityDetailViewModel: ObservableObject {
 
                     if newTag == .race && !self.isAlreadyRaceOfProcess {
                         self.showAssociateToProcessDialog = true
+                    } else if previousTag == .race && newTag != .race {
+                        self.disassociateRaceFromProcess()
                     }
                 }
             }
@@ -176,6 +182,18 @@ class ActivityDetailViewModel: ObservableObject {
             cacheManager.deleteProcessGeminiCoachResponse(processId: updatedProcess.id)
             print("Process '\(updatedProcess.name)' updated and associated with activity \(self.activity.id).")
             self.isAlreadyRaceOfProcess = true // Update state after association
+        }
+    }
+
+    private func disassociateRaceFromProcess() {
+        var allProcesses = cacheManager.loadTrainingProcesses()
+        if let index = allProcesses.firstIndex(where: { $0.goalActivityID == self.activity.id }) {
+            var processToUpdate = allProcesses[index]
+            processToUpdate.goalActivityID = nil
+            allProcesses[index] = processToUpdate
+            cacheManager.saveTrainingProcesses(allProcesses)
+            self.isAlreadyRaceOfProcess = false
+            print("Process '\(processToUpdate.name)' disassociated from activity \(self.activity.id).")
         }
     }
 
@@ -582,8 +600,6 @@ class ActivityDetailViewModel: ObservableObject {
                             self.activity.groundContactTime = dynamics.groundContactTime
                             self.activity.strideLength = dynamics.strideLength
                             self.activity.verticalRatio = dynamics.verticalRatio
-                            
-                            self.cacheManager.saveActivityDetail(activity: self.activity)
                             
                         case .failure(let error):
                             print("[DEBUG] Failed to fetch running dynamics: \(error.localizedDescription)")

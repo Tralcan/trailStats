@@ -91,7 +91,7 @@ struct ActivityDetailView: View {
 
     private var tagSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Tipo de Carrera")
+            Text("Tipo de Actividad")
                 .font(.headline)
                 .padding(.horizontal)
 
@@ -99,7 +99,7 @@ struct ActivityDetailView: View {
                 HStack(spacing: 10) {
                     ForEach(ActivityTag.allCases) { tag in
                         Button(action: {
-                            viewModel.tag = viewModel.tag == tag ? nil : tag
+                            viewModel.tag = tag
                         }) {
                             VStack {
                                 Image(systemName: tag.icon)
@@ -346,21 +346,21 @@ struct ActivityDetailView: View {
                         .padding(.horizontal)
                     
                     // Botón para convertir en carrera
-                    if !viewModel.isAlreadyRaceOfProcess {
-                        Button(action: {
-                            viewModel.prepareToAssociateRace()
-                        }) {
-                            Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.green)
-                                .cornerRadius(12)
-                        }
-                        .padding(.top)
-                        .padding(.horizontal)
-                    }
+//                    if !viewModel.isAlreadyRaceOfProcess && viewModel.tag != .race {
+//                        Button(action: {
+//                            viewModel.prepareToAssociateRace()
+//                        }) {
+//                            Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
+//                                .font(.headline)
+//                                .foregroundColor(.white)
+//                                .padding()
+//                                .frame(maxWidth: .infinity)
+//                                .background(Color.green)
+//                                .cornerRadius(12)
+//                        }
+//                        .padding(.top)
+//                        .padding(.horizontal)
+//                    }
 
                     // Botón para compartir análisis
                     Button(action: {
@@ -431,6 +431,12 @@ struct ActivityDetailView: View {
             }
             .animation(.easeInOut, value: selectedKpiInfo != nil)
         )
+        .confirmationDialog("¿Quieres asociar esta carrera a un proceso?", isPresented: $viewModel.showAssociateToProcessDialog, titleVisibility: .visible) {
+            Button("Asociar a Proceso") {
+                viewModel.prepareToAssociateRace()
+            }
+            Button("Cancelar", role: .cancel) {}
+        }
     }
     
     private func share(items: [Any]) {

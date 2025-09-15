@@ -21,7 +21,7 @@ enum ActivityTag: String, CaseIterable, Codable, Identifiable {
         case .intensityWorkout:
             return "flame.fill"
         case .hillWorkout:
-            return "mountain.2.fill"
+            return "airplane.departure"
         case .technicalWorkout:
             return "airplane.arrival"
         case .race:

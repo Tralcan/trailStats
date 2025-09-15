@@ -15,17 +15,65 @@ struct RacePrepView: View {
                 } else {
                     List {
                         ForEach(viewModel.raceActivities) { activity in
-                            ActivityRowView(activity: activity, isCached: true)
-                                .onTapGesture {
-                                    self.selectedActivity = activity
+                            HStack {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: "medal.fill")
+                                            .foregroundColor(.yellow)
+                                        Text(activity.name)
+                                            .font(.headline)
+                                            .fontWeight(.semibold)
+                                    }
+                                    
+                                    Text(activity.date, style: .date)
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                    
+                                    HStack(spacing: 15) {
+                                        // Distance
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "location.fill")
+                                                .foregroundColor(.red)
+                                            Text(String(format: "%.2f km", activity.distance / 1000))
+                                                .font(.caption)
+                                                .foregroundColor(.red)
+                                        }
+                                        
+                                        // Elevation
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "mountain.2.fill")
+                                                .foregroundColor(.green)
+                                            Text(String(format: "%.0f m", activity.elevationGain))
+                                                .font(.caption)
+                                                .foregroundColor(.green)
+                                        }
+                                        
+                                        // Duration
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "hourglass")
+                                                .foregroundColor(.blue)
+                                            Text(Int(activity.duration).toHoursMinutesSeconds())
+                                                .font(.caption)
+                                                .foregroundColor(.blue)
+                                        }
+                                        
+                                        Spacer()
+                                    }
                                 }
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                self.selectedActivity = activity
+                            }
                         }
                     }
                 }
             }
             .navigationTitle("Carreras")
-            .onAppear {
-                viewModel.loadRaceActivities()
+            .task {
+                await viewModel.loadRaceActivities()
             }
             .sheet(item: $selectedActivity) { activity in
                 ActivityDetailView(activity: activity)
