@@ -68,6 +68,7 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var rpe: Double = 5.0
     @Published var notes: String = ""
     @Published var tag: ActivityTag? = nil
+    @Published var showAssociateToProcessDialog = false
 
     // UI State
     @Published var errorMessage: String? = nil
@@ -119,7 +120,7 @@ class ActivityDetailViewModel: ObservableObject {
             .store(in: &cancellables)
 
         $tag
-            .debounce(for: .seconds(2), scheduler: RunLoop.main)
+            .debounce(for: .seconds(1), scheduler: RunLoop.main)
             .sink { [weak self] newTag in
                 guard let self = self else { return }
                 let previousTag = self.activity.tag
@@ -129,6 +130,10 @@ class ActivityDetailViewModel: ObservableObject {
                 if newTag != previousTag {
                     self.cacheManager.deleteAICoachText(activityId: self.activity.id)
                     self.getAICoachObservation()
+
+                    if newTag == .race && !self.isAlreadyRaceOfProcess {
+                        self.showAssociateToProcessDialog = true
+                    }
                 }
             }
             .store(in: &cancellables)

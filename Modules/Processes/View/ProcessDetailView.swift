@@ -7,6 +7,7 @@ struct ProcessDetailView: View {
     @State private var isShowingAddMetricSheet = false
     @State private var isShowingAddCommentSheet = false
     @State private var showingAddOptions = false
+    @State private var selectedRace: Activity? = nil
 
     private let gridColumns = [
         GridItem(.flexible(), spacing: 16),
@@ -93,6 +94,9 @@ struct ProcessDetailView: View {
                 viewModel.addCommentEntry(notes: comment)
             }
         }
+        .sheet(item: $selectedRace) { race in
+            ActivityDetailView(activity: race)
+        }
     }
 
     private var processSummarySection: some View {
@@ -125,20 +129,23 @@ struct ProcessDetailView: View {
             VStack(alignment: .center, spacing: 10) {
                 // Si ya hay una actividad de carrera real, mostrar sus resultados
                 if let race = viewModel.goalActivity {
-                    NavigationLink(destination: ActivityDetailView(activity: race)) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "flag.checkered.2.crossed")
-                                .font(.system(size: 40))
-                                .foregroundColor(.yellow)
-                            
-                            VStack(alignment: .leading) {
-                                Text(Int(race.duration).toHoursMinutesSeconds())
-                                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                                    .foregroundColor(.blue)
-                                Text("Tiempo Oficial")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
+                    HStack(spacing: 12) {
+                        Image(systemName: "flag.checkered.2.crossed")
+                            .font(.system(size: 40))
+                            .foregroundColor(.yellow)
+                        
+                        VStack(alignment: .leading) {
+                            Text(Int(race.duration).toHoursMinutesSeconds())
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(.blue)
+                            Text("Tiempo Oficial")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .onTapGesture {
+                        if viewModel.process.isCompleted {
+                            self.selectedRace = race
                         }
                     }
                     .padding(.bottom, 8)

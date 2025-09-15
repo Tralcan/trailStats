@@ -37,7 +37,7 @@ struct ActivityRowView: View {
                     
                     // Elevation
                     HStack(spacing: 4) {
-                        Image(systemName: "mountain.2")
+                        Image(systemName: "mountain.2.fill")
                             .foregroundColor(.green)
                         Text(String(format: "%.0f m", activity.elevationGain))
                             .font(.caption)

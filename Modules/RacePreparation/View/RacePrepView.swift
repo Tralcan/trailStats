@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RacePrepView: View {
     @StateObject private var viewModel = RacePrepViewModel()
+    @State private var selectedActivity: Activity? = nil
 
     var body: some View {
         NavigationView {
@@ -14,9 +15,10 @@ struct RacePrepView: View {
                 } else {
                     List {
                         ForEach(viewModel.raceActivities) { activity in
-                            NavigationLink(destination: ActivityDetailView(activity: activity)) {
-                                ActivityRowView(activity: activity, isCached: true)
-                            }
+                            ActivityRowView(activity: activity, isCached: true)
+                                .onTapGesture {
+                                    self.selectedActivity = activity
+                                }
                         }
                     }
                 }
@@ -24,6 +26,9 @@ struct RacePrepView: View {
             .navigationTitle("Carreras")
             .onAppear {
                 viewModel.loadRaceActivities()
+            }
+            .sheet(item: $selectedActivity) { activity in
+                ActivityDetailView(activity: activity)
             }
         }
     }

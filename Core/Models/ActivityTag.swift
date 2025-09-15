@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 enum ActivityTag: String, CaseIterable, Codable, Identifiable {
-    case easyRun = "Carrera Fáciln"
+    case easyRun = "Carrera Fácil"
     case longRun = "Carrera Larga"
     case intensityWorkout = "Entreno de Intensidad"
     case hillWorkout = "Entreno en Subidas"
