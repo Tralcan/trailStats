@@ -74,16 +74,15 @@ struct ActivityDetailView: View {
                 Text("Esfuerzo Percibido (RPE)")
                     .font(.headline)
                 Spacer()
-                Text(String(format: "%.1f / 10", viewModel.rpe))
+                Text(String(format: "%.1f", viewModel.rpe))
                     .font(.headline)
                     .fontWeight(.bold)
-                    .foregroundColor(colorForRPE(value: viewModel.rpe))
+                    .foregroundColor(.secondary)
             }
             .onTapGesture {
                 selectedKpiInfo = KPIInfo(title: "Esfuerzo Percibido (RPE)", description: kpiInfoData["Esfuerzo Percibido (RPE)"]!, higherIsBetter: false)
             }
             Slider(value: $viewModel.rpe, in: 1...10, step: 0.5)
-                .tint(colorForRPE(value: viewModel.rpe))
         }
         .padding()
         .background(Color(.secondarySystemBackground))
@@ -108,9 +107,10 @@ struct ActivityDetailView: View {
                                 Text(tag.rawValue)
                                     .font(.caption)
                                     .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                             .padding()
-                            .frame(width: 120, height: 100)
+                            .frame(width: 100, height: 90)
                             .background(viewModel.tag == tag ? Color.accentColor : Color(.secondarySystemBackground))
                             .foregroundColor(viewModel.tag == tag ? .white : .primary)
                             .cornerRadius(12)
@@ -143,15 +143,7 @@ struct ActivityDetailView: View {
         .cornerRadius(12)
     }
 
-    private func colorForRPE(value: Double) -> Color {
-        let normalizedValue = (value - 1) / 9 // Normalize RPE from 1-10 to 0-1
-        
-        // As value goes from 0 to 1, red goes from 0 to 1, and blue goes from 1 to 0.
-        let redComponent = normalizedValue
-        let blueComponent = 1 - normalizedValue
-        
-        return Color(red: redComponent, green: 0.2, blue: blueComponent)
-    }
+    
 
     // Sección de KPIs rediseñada y robusta
     private var trailKPIsSection: some View {

@@ -3,11 +3,11 @@ import Foundation
 import SwiftUI
 
 enum ActivityTag: String, CaseIterable, Codable, Identifiable {
-    case easyRun = "Carrera Fácil / Recuperación"
+    case easyRun = "Carrera Fáciln"
     case longRun = "Carrera Larga"
-    case intensityWorkout = "Entrenamiento de Intensidad"
-    case hillWorkout = "Entrenamiento en Subidas"
-    case technicalWorkout = "Entrenamiento en Bajadas / Técnico"
+    case intensityWorkout = "Entreno de Intensidad"
+    case hillWorkout = "Entreno en Subidas"
+    case technicalWorkout = "Entreno en Bajadas"
     case race = "Carrera o Test"
 
     var id: String { self.rawValue }
@@ -23,7 +23,7 @@ enum ActivityTag: String, CaseIterable, Codable, Identifiable {
         case .hillWorkout:
             return "mountain.2.fill"
         case .technicalWorkout:
-            return "wrench.and.screwdriver.fill"
+            return "airplane.arrival"
         case .race:
             return "flag.checkered.2.crossed"
         }
