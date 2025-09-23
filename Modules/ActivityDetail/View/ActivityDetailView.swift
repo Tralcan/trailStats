@@ -1,3 +1,4 @@
+
 import SwiftUI
 import UIKit
 
@@ -11,6 +12,11 @@ struct ActivityDetailView: View {
     @State private var selectedKpiInfo: KPIInfo?
     @FocusState private var notesFieldIsFocused: Bool
     
+    @Environment(\.presentationMode) var presentationMode
+    
+    var onAppearAction: () -> Void
+    var onDisappearAction: () -> Void
+    
     // Diccionario con las descripciones para cada KPI.
     private let kpiInfoData: [String: String] = [
         "Esfuerzo Percibido (RPE)": "1 - 3 (Fácil): Podrías mantener una conversación completa sin problema. Sería un trote regenerativo.\n\n4 - 6 (Moderado): Te sientes cómodo y puedes hablar, pero con frases cortas. Es tu ritmo de resistencia.\n\n7 - 8 (Duro): Te cuesta mucho hablar. Estás en tu umbral o ritmo de carrera.\n\n9 - 10 (Máximo): Estás al límite, jadeando. Solo puedes mantenerlo por periodos muy cortos.",
@@ -23,8 +29,10 @@ struct ActivityDetailView: View {
         "VAM (Velocidad de Ascenso Media)": "Mide los metros que asciendes por hora (m/h) específicamente en este rango de pendiente. Es un indicador clave de tu eficiencia como escalador en diferentes inclinaciones."
     ]
     
-    init(activity: Activity) {
+    init(activity: Activity, onAppearAction: @escaping () -> Void, onDisappearAction: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
+        self.onAppearAction = onAppearAction
+        self.onDisappearAction = onDisappearAction
     }
     
     // Header principal de la vista de actividad
@@ -299,20 +307,6 @@ struct ActivityDetailView: View {
         ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    HStack {
-                        Text(viewModel.activity.name)
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                        Spacer()
-                        Button(action: { viewModel.shareGPX() }) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.title2)
-                                .foregroundColor(.accentColor)
-                        }
-                        .disabled(viewModel.isGeneratingGPX)
-                    }
-                    .padding(.horizontal)
-                    
                     headerView
                         .padding(.horizontal)
                     rpeSection
@@ -386,8 +380,29 @@ struct ActivityDetailView: View {
             }
         }
         .navigationTitle(viewModel.activity.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Volver")
+                    }
+                    .foregroundColor(.accentColor)
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { viewModel.shareGPX() }) {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundColor(.accentColor)
+                }
+                .disabled(viewModel.isGeneratingGPX)
+            }
+        }
         .background(Color(.systemGroupedBackground))
+        .onAppear(perform: onAppearAction)
+        .onDisappear(perform: onDisappearAction)
         .task {
             await viewModel.loadActivityDetails()
         }

@@ -105,6 +105,13 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    func reloadDataFromCache() {
+        if let cachedActivities = cacheManager.loadActivities() {
+            self.activities = cachedActivities.sorted { $0.date > $1.date }
+            refreshCacheStatus()
+        }
+    }
+    
     func connectToStrava() {
         print("Initiating Strava connection...")
         stravaService.authenticate { [weak self] result in

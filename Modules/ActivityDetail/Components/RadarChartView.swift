@@ -16,7 +16,7 @@ struct RadarChartView: View {
     // Configuration for colors and style
     private let gridColor = Color.gray.opacity(0.5)
     private let averageColor = Color.orange
-    private let currentColor = Color.accentColor
+    private let currentColor = Color.blue
     private let labelFont: Font = .caption
 
     var body: some View {

@@ -20,7 +20,7 @@ struct ActivityRowView: View {
                 HStack {
                     if let tag = activity.tag {
                         Image(systemName: tag.icon)
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(.white)
                     }
                     Text(activity.name)
                         .font(.headline)

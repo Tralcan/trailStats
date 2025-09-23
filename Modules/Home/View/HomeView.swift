@@ -1,3 +1,4 @@
+
 import SwiftUI
 
 /// The primary view for the first tab.
@@ -7,7 +8,7 @@ struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     
     @State private var showOptionsMenu = false
-    @State private var selectedActivity: Activity? // New: State to control sheet presentation
+    
     var body: some View {
         NavigationView {
             Group {
@@ -57,16 +58,18 @@ struct HomeView: View {
             }
             List {
                 ForEach(viewModel.filteredActivities) { activity in
-                    ActivityRowView(activity: activity, isCached: viewModel.isActivityCached(activityId: activity.id))
-                        .onTapGesture {
-                            viewModel.markActivityAsCached(activityId: activity.id)
-                            selectedActivity = activity
+                    NavigationLink(destination: ActivityDetailView(activity: activity, onAppearAction: {
+                        viewModel.markActivityAsCached(activityId: activity.id)
+                    }, onDisappearAction: {
+                        viewModel.reloadDataFromCache()
+                    })) {
+                        ActivityRowView(activity: activity, isCached: viewModel.isActivityCached(activityId: activity.id))
+                    }
+                    .onAppear {
+                        if viewModel.shouldLoadMoreActivities(activity: activity) {
+                            viewModel.fetchActivities()
                         }
-                        .onAppear {
-                            if viewModel.shouldLoadMoreActivities(activity: activity) {
-                                viewModel.fetchActivities()
-                            }
-                        }
+                    }
                 }
                 if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
                     ProgressView()
@@ -78,9 +81,6 @@ struct HomeView: View {
                 viewModel.refreshActivities()
             }
             .onAppear(perform: viewModel.refreshCacheStatus)
-            .sheet(item: $selectedActivity) { activity in
-                ActivityDetailView(activity: activity)
-            }
         }
     }
     

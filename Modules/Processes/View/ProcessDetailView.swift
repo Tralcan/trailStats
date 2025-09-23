@@ -95,7 +95,7 @@ struct ProcessDetailView: View {
             }
         }
         .sheet(item: $selectedRace) { race in
-            ActivityDetailView(activity: race)
+            ActivityDetailView(activity: race, onAppearAction: {}, onDisappearAction: {})
         }
     }
 

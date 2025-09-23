@@ -76,7 +76,7 @@ struct RacePrepView: View {
                 await viewModel.loadRaceActivities()
             }
             .sheet(item: $selectedActivity) { activity in
-                ActivityDetailView(activity: activity)
+                ActivityDetailView(activity: activity, onAppearAction: {}, onDisappearAction: {})
             }
         }
     }
