@@ -51,6 +51,7 @@ struct ProcessDetailView: View {
                         if !result.weeklyDecouplingData.isEmpty { WeeklyDecouplingChartView(weeklyData: result.weeklyDecouplingData) }
                         if !result.weeklyZoneDistribution.isEmpty { IntensityChartView(weeklyData: result.weeklyZoneDistribution) }
                         if !result.performanceByGradeData.isEmpty { PerformanceByGradeView(performanceData: result.performanceByGradeData) }
+                        TrainingTypeDistributionChartView(process: viewModel.process)
                         if result.totalActivities == 0 { emptyStateView }
 
                         MetricHistoryView(
@@ -200,7 +201,7 @@ struct ProcessDetailView: View {
                             Button(action: {
                                 self.selectedKpiInfo = KPIInfo(
                                     title: "Recomendaciones IA",
-                                    description: "**Importante:**\n" + projection.importante + "\n\n**Nutrición:**\n" + projection.nutricion,
+                                    description: "**Importante:**\n" + projection.importante.joined(separator: "\n") + "\n\n**Nutrición:**\n" + projection.nutricion.joined(separator: "\n"),
                                     higherIsBetter: false
                                 )
                             }) {

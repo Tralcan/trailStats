@@ -73,7 +73,7 @@ class RaceGeminiCoachService {
         Además de la estimación de tiempo, debes recomendar temas importantes a considerar durante la carrera y una recomendación de nutrición.
 
         Responde únicamente con un JSON en el siguiente formato, asegurándote de que la estimación de tiempo sea solo un número (ej. "4:30:00"). La explicación en 'razon' no debe exceder los 500 caracteres, el resto puede ser más largo y debe referirse a las carreras por su nombre, no por su ID.
-        { "tiempo":"tiempo calculado", "razon":"razon del tiempo calculado", "importante":"temas importantes a considerar durante la carrera", "nutricion":"recomendación de nutricion durante la carrera" }
+        { "tiempo":"tiempo calculado", "razon":"razon del tiempo calculado", "importante":["temas importantes a considerar durante la carrera"], "nutricion":["recomendación de nutricion durante la carrera"] }
         """
 
         let userPrompt = """

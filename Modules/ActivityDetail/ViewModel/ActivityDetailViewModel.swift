@@ -94,15 +94,6 @@ class ActivityDetailViewModel: ObservableObject {
         self.notes = activity.notes ?? ""
         self.tag = activity.tag
 
-        // Centralized saving mechanism
-        $activity
-            .debounce(for: .seconds(1), scheduler: RunLoop.main)
-            .sink { [weak self] updatedActivity in
-                self?.cacheManager.saveActivityDetail(activity: updatedActivity)
-                self?.cacheManager.updateActivityInSummaryCache(activity: updatedActivity)
-            }
-            .store(in: &cancellables)
-
         $rpe
             .dropFirst()
             .sink { [weak self] newRPE in
@@ -113,6 +104,7 @@ class ActivityDetailViewModel: ObservableObject {
                 if newRPE != previousRPE {
                     self.cacheManager.deleteAICoachText(activityId: self.activity.id)
                     self.getAICoachObservation()
+                    self.saveActivity()
                 }
             }
             .store(in: &cancellables)
@@ -121,6 +113,7 @@ class ActivityDetailViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newNotes in
                 self?.activity.notes = newNotes
+                self?.saveActivity()
             }
             .store(in: &cancellables)
 
@@ -133,7 +126,8 @@ class ActivityDetailViewModel: ObservableObject {
 
                 if newTag != previousTag {
                     self.cacheManager.deleteAICoachText(activityId: self.activity.id)
-                    self.getAICoachObservation()
+                    self.getAICoachObservation(newTag: newTag)
+                    self.saveActivity()
 
                     if newTag == .race && !self.isAlreadyRaceOfProcess {
                         self.showAssociateToProcessDialog = true
@@ -185,6 +179,38 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
 
+    func forceRefreshActivity() async {
+        // 1. Clear all caches for this specific activity
+        cacheManager.clearCache(for: self.activity.id)
+        
+        // 2. Reset all published properties to give immediate feedback to the user
+        self.heartRateData = []
+        self.cadenceData = []
+        self.powerData = []
+        self.altitudeData = []
+        self.paceData = []
+        self.distanceData = []
+        self.strideLengthData = []
+        self.vamKPI = nil
+        self.decouplingKPI = nil
+        self.descentVamKPI = nil
+        self.normalizedPowerKPI = nil
+        self.gapKPI = nil
+        self.efficiencyIndexKPI = nil
+        self.verticalOscillationKPI = nil
+        self.groundContactTimeKPI = nil
+        self.strideLengthKPI = nil
+        self.verticalRatioKPI = nil
+        self.radarChartDataPoints = []
+        self.climbSegments = []
+        self.heartRateZoneDistribution = nil
+        self.performanceByGrade = []
+        self.aiCoachObservation = nil
+        
+        // 3. Reload all data from the network
+        await loadActivityDetails()
+    }
+
     private func disassociateRaceFromProcess() {
         var allProcesses = cacheManager.loadTrainingProcesses()
         if let index = allProcesses.firstIndex(where: { $0.goalActivityID == self.activity.id }) {
@@ -195,6 +221,11 @@ class ActivityDetailViewModel: ObservableObject {
             self.isAlreadyRaceOfProcess = false
             print("Process '\(processToUpdate.name)' disassociated from activity \(self.activity.id).")
         }
+    }
+
+    private func saveActivity() {
+        cacheManager.saveActivityDetail(activity: activity)
+        cacheManager.updateActivityInSummaryCache(activity: activity)
     }
 
     private func loadActiveProcesses() {
@@ -419,12 +450,14 @@ class ActivityDetailViewModel: ObservableObject {
         return analysis
     }
 
-    func getAICoachObservation() {
+    func getAICoachObservation(newTag: ActivityTag? = nil) {
         // Evitar llamadas múltiples si ya está cargando
         if aiCoachLoading { return }
 
+        let currentTag = newTag ?? self.tag
+
         // Salir si el tipo de carrera no está definido
-        guard self.tag != nil else {
+        guard currentTag != nil else {
             self.aiCoachObservation = "Por favor, selecciona un tipo de carrera para obtener el análisis de la IA."
             self.aiCoachError = nil
             self.aiCoachLoading = false
@@ -447,7 +480,7 @@ class ActivityDetailViewModel: ObservableObject {
         }
         aiCoachLoading = true
         aiCoachError = nil
-        let kpis = gatherActivityKPIs()
+        let kpis = gatherActivityKPIs(newTag: newTag)
         GeminiCoachService.fetchObservation(kpis: kpis) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
@@ -485,7 +518,7 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
     
-    private func gatherActivityKPIs() -> [String: String] {
+    private func gatherActivityKPIs(newTag: ActivityTag? = nil) -> [String: String] {
         var kpis: [String: String] = [: ]
 
         // Basic Activity Data
@@ -540,9 +573,11 @@ class ActivityDetailViewModel: ObservableObject {
             kpis["Índice de Eficiencia (Velocidad/FC)"] = Formatters.formatEfficiencyIndex(efficiency)
         }
         if let rpe = activity.rpe {
-            kpis["Esfuerzo Percibido (RPE)"] = String(format: "%.1f/10", rpe)
+            kpis["Esfuerzo Percibido (RPE)"] = String(format: "%.0f/10", rpe)
         }
-        if let tag = activity.tag {
+        
+        let currentTag = newTag ?? self.tag
+        if let tag = currentTag {
             kpis["Tipo de Carrera"] = tag.rawValue
         }
 

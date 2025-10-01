@@ -4,7 +4,7 @@ struct GeminiCoachService {
     // WARNING: Do not hardcode API keys in production code.
     // This should be stored securely, e.g., in a configuration file excluded from git.
     static let apiKey = "AIzaSyAivQS0y_J_Z87mktDabiVbPQo9z0T-HGM"
-    static let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=\(apiKey)"
+    static let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\(apiKey)"
 
     static func fetchObservation(kpis: [String: String], completion: @escaping (Result<String, Error>) -> Void) {
         // 1. Define the new system prompt
@@ -31,7 +31,6 @@ struct GeminiCoachService {
         3) Tono y estilo:
             a) Mantén un tono motivador y de apoyo, como un verdadero coach.
             b) Usa lenguaje técnico del trail running cuando sea apropiado, pero explícalo de manera sencilla.
-            c) Termina cada respuesta con una pregunta abierta para fomentar la conversación y el compromiso del usuario.
 
         Tono general:
         * Amigable y accesible.
@@ -53,7 +52,7 @@ struct GeminiCoachService {
                 ["parts": [["text": finalPrompt]]]
             ],
             "generationConfig": [
-                "maxOutputTokens": 1024
+                "maxOutputTokens": 8192
             ]
         ]
 

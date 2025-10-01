@@ -77,6 +77,8 @@ struct AdvancedAnalyticsView: View {
                             PerformanceByGradeView(performanceData: viewModel.performanceByGradeData)
                         }
                         
+                        TrainingTypeDistributionChartView(dayCount: selectedPeriod.dayCount)
+                        
                         // Show empty state only if all charts are empty
                         if viewModel.totalActivities == 0 {
                             emptyStateView

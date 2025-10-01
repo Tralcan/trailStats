@@ -33,7 +33,7 @@ struct IntensityChartView: View {
         Chart(weeklyData) { week in
             WeeklyBarMarks(week: week)
         }
-        .chartForegroundStyleScale(domain: zoneDomains, range: zoneColors)
+        .chartForegroundStyleScale(domain: zoneDomains, range: zoneColors.map { $0.opacity(0.4) })
         .chartXAxis {
             AxisMarks(values: .automatic) {
                 AxisValueLabel(centered: false)
@@ -41,6 +41,36 @@ struct IntensityChartView: View {
         }
         .chartYAxis {
             AxisMarks(format: FloatingPointFormatStyle<Double>.Percent())
+        }
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                let plotFrame = geo[proxy.plotAreaFrame]
+                ForEach(weeklyData) { week in
+                    if let xPos = proxy.position(forX: week.id),
+                       let yMax = proxy.position(forY: 1.0),
+                       let yMin = proxy.position(forY: 0.0) {
+
+                        let bandwidth: CGFloat = {
+                            let xValues = weeklyData.map { $0.id }
+                            let uniqueXValues = Array(Set(xValues)).sorted()
+                            if uniqueXValues.count > 1 {
+                                let firstPos = proxy.position(forX: uniqueXValues[0]) ?? 0
+                                let secondPos = proxy.position(forX: uniqueXValues[1]) ?? 0
+                                return abs(secondPos - firstPos) * 0.8
+                            } else {
+                                return plotFrame.width * 0.8
+                            }
+                        }()
+
+                        let rect = CGRect(x: xPos - bandwidth / 2, y: yMax, width: bandwidth, height: yMin - yMax)
+
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.primary.opacity(0.5), lineWidth: 1)
+                            .frame(width: rect.width, height: rect.height)
+                            .position(x: rect.midX + plotFrame.origin.x, y: rect.midY + plotFrame.origin.y)
+                    }
+                }
+            }
         }
         .frame(height: 300)
     }

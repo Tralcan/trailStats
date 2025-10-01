@@ -82,7 +82,7 @@ struct ActivityDetailView: View {
                 Text("Esfuerzo Percibido (RPE)")
                     .font(.headline)
                 Spacer()
-                Text(String(format: "%.1f", viewModel.rpe))
+                Text(String(format: "%.0f", viewModel.rpe))
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.secondary)
@@ -90,7 +90,7 @@ struct ActivityDetailView: View {
             .onTapGesture {
                 selectedKpiInfo = KPIInfo(title: "Esfuerzo Percibido (RPE)", description: kpiInfoData["Esfuerzo Percibido (RPE)"]!, higherIsBetter: false)
             }
-            Slider(value: $viewModel.rpe, in: 1...10, step: 0.5)
+            Slider(value: $viewModel.rpe, in: 1...10, step: 1)
         }
         .padding()
         .background(Color(.secondarySystemBackground))
@@ -375,6 +375,7 @@ struct ActivityDetailView: View {
                 }
                 .padding(.vertical)
             }
+            .refreshable { await viewModel.forceRefreshActivity() }
             .onTapGesture {
                 notesFieldIsFocused = false
             }

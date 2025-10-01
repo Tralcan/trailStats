@@ -32,6 +32,7 @@ class HomeViewModel: ObservableObject {
     @Published var advancedSearchDistance: Double? = nil
     @Published var advancedSearchElevation: Double? = nil
     @Published var advancedSearchDuration: TimeInterval? = nil
+    @Published var advancedSearchTrainingTag: ActivityTag? = nil
     @Published private(set) var cachedActivityIds = Set<Int>()
     
     private let stravaService = StravaService()
@@ -55,7 +56,7 @@ class HomeViewModel: ObservableObject {
     var filteredActivities: [Activity] {
         var filtered = activities
         // Apply basic name search if advanced search is not active
-        if advancedSearchName.isEmpty && advancedSearchDate == nil && advancedSearchDistance == nil && advancedSearchElevation == nil && advancedSearchDuration == nil {
+        if advancedSearchName.isEmpty && advancedSearchDate == nil && advancedSearchDistance == nil && advancedSearchElevation == nil && advancedSearchDuration == nil && advancedSearchTrainingTag == nil {
             if !searchText.isEmpty {
                 filtered = filtered.filter { $0.name.lowercased().contains(searchText.lowercased()) }
             }
@@ -77,17 +78,21 @@ class HomeViewModel: ObservableObject {
             if let searchDuration = advancedSearchDuration {
                 filtered = filtered.filter { $0.duration >= searchDuration }
             }
+            if let searchTag = advancedSearchTrainingTag {
+                filtered = filtered.filter { $0.tag == searchTag }
+            }
         }
         // Siempre ordenar por fecha descendente
         return filtered.sorted { $0.date > $1.date }
     }
     
-    func applyAdvancedSearch(name: String, date: Date?, distance: Double?, elevation: Double?, duration: TimeInterval?) {
+    func applyAdvancedSearch(name: String, date: Date?, distance: Double?, elevation: Double?, duration: TimeInterval?, trainingTag: ActivityTag?) {
         self.advancedSearchName = name
         self.advancedSearchDate = date
         self.advancedSearchDistance = distance
         self.advancedSearchElevation = elevation
         self.advancedSearchDuration = duration
+        self.advancedSearchTrainingTag = trainingTag
         // Clear basic search text when advanced search is applied
         self.searchText = ""
     }
@@ -138,7 +143,7 @@ class HomeViewModel: ObservableObject {
     
     func shouldLoadMoreActivities(activity: Activity) -> Bool {
         let isLastActivity = activity.id == filteredActivities.last?.id
-        let isSearchActive = !searchText.isEmpty || !advancedSearchName.isEmpty || advancedSearchDate != nil || advancedSearchDistance != nil || advancedSearchElevation != nil || advancedSearchDuration != nil
+        let isSearchActive = !searchText.isEmpty || !advancedSearchName.isEmpty || advancedSearchDate != nil || advancedSearchDistance != nil || advancedSearchElevation != nil || advancedSearchDuration != nil || advancedSearchTrainingTag != nil
         return isLastActivity && !isSearchActive && canLoadMoreActivities
     }
     
@@ -167,14 +172,26 @@ class HomeViewModel: ObservableObject {
                     // Si es la primera página, reemplazamos las actividades locales con las de Strava
                     // para asegurar que el orden y los datos son los más recientes.
                     if self.currentPage == 1 {
-                        let existingIds = Set(trailRuns.map { $0.id })
-                        var updatedActivities = trailRuns
-                        // Añadir actividades antiguas que no vinieron en la primera página
+                        var updatedActivities: [Activity] = []
+                        let existingActivitiesById = Dictionary(uniqueKeysWithValues: self.activities.map { ($0.id, $0) })
+                        
+                        for var newActivity in trailRuns {
+                            if let existingActivity = existingActivitiesById[newActivity.id] {
+                                // Preserve the tag and other local data
+                                newActivity.tag = existingActivity.tag
+                                newActivity.rpe = existingActivity.rpe
+                                newActivity.notes = existingActivity.notes
+                            }
+                            updatedActivities.append(newActivity)
+                        }
+                        
+                        let existingIds = Set(updatedActivities.map { $0.id })
                         for activity in self.activities {
                             if !existingIds.contains(activity.id) {
                                 updatedActivities.append(activity)
                             }
                         }
+                        
                         self.activities = updatedActivities
                     } else {
                         // Para páginas siguientes, solo añadimos las que no tengamos

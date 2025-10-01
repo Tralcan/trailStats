@@ -424,6 +424,23 @@ class CacheManager {
         }
     }
 
+    /// Deletes all cached data for a single activity.
+    func clearCache(for activityId: Int) {
+        guard let folderURL = summaryFolderURL(for: activityId) else {
+            print("Cache folder for activity \(activityId) not found.")
+            return
+        }
+        
+        if FileManager.default.fileExists(atPath: folderURL.path) {
+            do {
+                try FileManager.default.removeItem(at: folderURL)
+                print("Successfully cleared cache for activity \(activityId).")
+            } catch {
+                print("Error clearing cache for activity \(activityId): \(error.localizedDescription)")
+            }
+        }
+    }
+
     private var raceCoachingDirectoryURL: URL? {
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             print("Error: Could not find documents directory.")

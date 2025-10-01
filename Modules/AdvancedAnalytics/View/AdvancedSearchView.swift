@@ -70,6 +70,19 @@ struct AdvancedSearchView: View {
                             Text("Minimum Duration")
                         }
                     }
+
+                    Picker(selection: $viewModel.trainingTag) {
+                        Text("None").tag(nil as ActivityTag?)
+                        ForEach(ActivityTag.allCases) { tag in
+                            Text(tag.rawValue).tag(tag as ActivityTag?)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "tag")
+                                .foregroundColor(.purple)
+                            Text("Training Type")
+                        }
+                    }
                 }
                 
                 }

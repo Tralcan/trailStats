@@ -20,12 +20,47 @@ struct WeeklyDistanceChartView: View {
                     x: .value("Semana", week.id),
                     y: .value("Distancia", week.distance / 1000) // Convert to km
                 )
-                .foregroundStyle(Color.red.gradient)
-                .cornerRadius(6)
+                .foregroundStyle(.clear) // Make the original bar transparent
                 .annotation(position: .top) {
                     Text(String(format: "%.1f km", week.distance / 1000))
                         .font(.caption2)
                         .foregroundColor(.secondary)
+                }
+            }
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    let plotFrame = geo[proxy.plotAreaFrame]
+                    ForEach(weeklyData) { week in
+                        if let xPos = proxy.position(forX: week.id),
+                           let yTop = proxy.position(forY: week.distance / 1000),
+                           let yBase = proxy.position(forY: 0) {
+
+                            let bandwidth: CGFloat = {
+                                let xValues = weeklyData.map { $0.id }
+                                let uniqueXValues = Array(Set(xValues)).sorted()
+                                if uniqueXValues.count > 1 {
+                                    let firstPos = proxy.position(forX: uniqueXValues[0]) ?? 0
+                                    let secondPos = proxy.position(forX: uniqueXValues[1]) ?? 0
+                                    return abs(secondPos - firstPos) * 0.8 // 80% of the band width
+                                } else {
+                                    return plotFrame.width * 0.8
+                                }
+                            }()
+                            
+                            let width = bandwidth * 0.8
+                            let height = abs(yBase - yTop)
+                            let rect = CGRect(x: xPos - width / 2, y: yTop, width: width, height: height)
+
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.red.opacity(0.2))
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.red, lineWidth: 1)
+                            }
+                            .frame(width: rect.width, height: rect.height)
+                            .position(x: rect.midX + plotFrame.origin.x, y: rect.midY + plotFrame.origin.y)
+                        }
+                    }
                 }
             }
             .chartYAxis {

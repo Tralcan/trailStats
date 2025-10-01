@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 /// The primary view for the first tab.
@@ -38,8 +37,8 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $isShowingAdvancedSearch) {
-                AdvancedSearchView(viewModel: AdvancedSearchViewModel(onSearch: { name, date, distance, elevation, duration in
-                    viewModel.applyAdvancedSearch(name: name, date: date, distance: distance, elevation: elevation, duration: duration)
+                AdvancedSearchView(viewModel: AdvancedSearchViewModel(onSearch: { name, date, distance, elevation, duration, trainingTag in
+                    viewModel.applyAdvancedSearch(name: name, date: date, distance: distance, elevation: elevation, duration: duration, trainingTag: trainingTag)
                 }))
             }
         }

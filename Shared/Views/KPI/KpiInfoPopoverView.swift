@@ -14,7 +14,7 @@ struct KpiInfoPopoverView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(info.title)
                 .font(.headline)
                 .foregroundColor(.white)
@@ -25,9 +25,9 @@ struct KpiInfoPopoverView: View {
                     .foregroundColor(.white.opacity(0.9))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxHeight: 300)
+            .frame(maxHeight: 200)
         }
-        .padding()
+        .padding(16)
         .background(Color.black.opacity(0.8))
         .cornerRadius(12)
         .shadow(radius: 20)
