@@ -7,8 +7,8 @@ struct AdvancedSearchView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Search Criteria")) {
-                    TextField("Name contains", text: $viewModel.name)
+                Section(header: Text(NSLocalizedString("Search Criteria", comment: ""))) {
+                    TextField(NSLocalizedString("Name contains", comment: ""), text: $viewModel.name)
                     
                     Toggle(isOn: Binding<Bool>(
                         get: { viewModel.date != nil },
@@ -16,12 +16,12 @@ struct AdvancedSearchView: View {
                             if isOn { viewModel.date = Date() } else { viewModel.date = nil }
                         }
                     )) {
-                        Text("Filter by Date")
+                        Text(NSLocalizedString("Filter by Date", comment: ""))
                     }
                     
                     if viewModel.date != nil {
                         DatePicker(
-                            "Date",
+                            NSLocalizedString("Date", comment: ""),
                             selection: Binding<Date>(
                                 get: { viewModel.date ?? Date() },
                                 set: { viewModel.date = $0 }
@@ -32,7 +32,7 @@ struct AdvancedSearchView: View {
                     }
                     
                     Picker(selection: $viewModel.distance) {
-                        Text("None").tag(nil as Double?)
+                        Text(NSLocalizedString("None", comment: "")).tag(nil as Double?)
                         ForEach(1..<101) { km in
                             Text("\(km) km").tag(Double(km * 1000) as Double?)
                         }
@@ -40,12 +40,12 @@ struct AdvancedSearchView: View {
                         HStack {
                             Image(systemName: "figure.walk")
                                 .foregroundColor(.red)
-                            Text("Minimum Distance (km)")
+                            Text(NSLocalizedString("Minimum Distance (km)", comment: ""))
                         }
                     }
                     
                     Picker(selection: $viewModel.elevation) {
-                        Text("None").tag(nil as Double?)
+                        Text(NSLocalizedString("None", comment: "")).tag(nil as Double?)
                         ForEach(0..<51) { i in
                             let elevation = i * 100
                             Text("\(elevation) m").tag(Double(elevation) as Double?)
@@ -54,12 +54,12 @@ struct AdvancedSearchView: View {
                         HStack {
                             Image(systemName: "mountain.2")
                                 .foregroundColor(.green)
-                            Text("Minimum Elevation (m)")
+                            Text(NSLocalizedString("Minimum Elevation (m)", comment: ""))
                         }
                     }
                     
                     Picker(selection: $viewModel.duration) {
-                        Text("None").tag(nil as TimeInterval?)
+                        Text(NSLocalizedString("None", comment: "")).tag(nil as TimeInterval?)
                         ForEach(durationOptions, id: \.self) { duration in
                             Text(format(duration: duration)).tag(duration as TimeInterval?)
                         }
@@ -67,12 +67,12 @@ struct AdvancedSearchView: View {
                         HStack {
                             Image(systemName: "clock")
                                 .foregroundColor(.blue)
-                            Text("Minimum Duration")
+                            Text(NSLocalizedString("Minimum Duration", comment: ""))
                         }
                     }
 
                     Picker(selection: $viewModel.trainingTag) {
-                        Text("None").tag(nil as ActivityTag?)
+                        Text(NSLocalizedString("None", comment: "")).tag(nil as ActivityTag?)
                         ForEach(ActivityTag.allCases) { tag in
                             Text(tag.rawValue).tag(tag as ActivityTag?)
                         }
@@ -80,23 +80,23 @@ struct AdvancedSearchView: View {
                         HStack {
                             Image(systemName: "tag")
                                 .foregroundColor(.purple)
-                            Text("Training Type")
+                            Text(NSLocalizedString("Training Type", comment: ""))
                         }
                     }
                 }
                 
                 }
-            .navigationTitle("Advanced Search")
+            .navigationTitle(NSLocalizedString("Advanced Search", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(NSLocalizedString("Cancel", comment: "")) {
                         dismiss()
                     }
                     .foregroundColor(Color(red: 1.0, green: 0.55, blue: 0.0))
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button("Search") {
+                    Button(NSLocalizedString("Search", comment: "")) {
                         viewModel.performSearch()
                         dismiss()
                     }

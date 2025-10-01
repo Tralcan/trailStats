@@ -17,7 +17,7 @@ struct HomeView: View {
                     authenticationPrompt
                 }
             }
-            .navigationTitle(viewModel.isAuthenticated ? "Activities" : "Welcome")
+            .navigationTitle(viewModel.isAuthenticated ? Text(NSLocalizedString("Activities", comment: "")) : Text(NSLocalizedString("Welcome", comment: "")))
             .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -25,14 +25,14 @@ struct HomeView: View {
                         Image(systemName: "ellipsis.circle")
                             .imageScale(.large)
                     }
-                    .confirmationDialog("Options", isPresented: $showOptionsMenu, titleVisibility: .visible) {
-                        Button("Clear cache and reload", role: .none) {
+                    .confirmationDialog(Text(NSLocalizedString("Options", comment: "")), isPresented: $showOptionsMenu, titleVisibility: .visible) {
+                        Button(NSLocalizedString("Clear cache and reload", comment: ""), role: .none) {
                             viewModel.clearCachesAndReload()
                         }
-                        Button("Logout and clear cache", role: .destructive) {
+                        Button(NSLocalizedString("Logout and clear cache", comment: ""), role: .destructive) {
                             viewModel.logout()
                         }
-                        Button("Cancel", role: .cancel) {}
+                        Button(NSLocalizedString("Cancel", comment: ""), role: .cancel) {}
                     }
                 }
             }
@@ -50,7 +50,7 @@ struct HomeView: View {
         VStack {
             HStack {
                 Spacer()
-                Button("Advanced Search") {
+                Button(NSLocalizedString("Advanced Search", comment: "")) {
                     isShowingAdvancedSearch = true
                 }
                 .padding(.horizontal)
@@ -91,12 +91,12 @@ struct HomeView: View {
                 .font(.system(size: 80))
                 .foregroundColor(.accentColor)
             
-            Text("Welcome to trailStats")
+            Text(NSLocalizedString("Welcome to trailStats", comment: ""))
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
             
-            Text("Connect to Strava to automatically sync your trail and mountain runs.")
+            Text(NSLocalizedString("Connect to Strava to automatically sync your trail and mountain runs.", comment: ""))
                 .font(.headline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

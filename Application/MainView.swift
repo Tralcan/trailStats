@@ -20,7 +20,7 @@ struct MainView: View {
             // Tab for Training Processes
             ProcessesView()
                 .tabItem {
-                    Label("Procesos", systemImage: "chart.line.uptrend.xyaxis")
+                    Label("Processes", systemImage: "chart.line.uptrend.xyaxis")
                 }
             
             // Tab 3: Race Preparation

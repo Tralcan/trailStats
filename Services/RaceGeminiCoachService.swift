@@ -62,26 +62,8 @@ class RaceGeminiCoachService {
 
         }
 
-        let systemPrompt = """
-        Eres un experto entrenador de trail. Tu misión es calcular el tiempo estimado de una carrera futura, basándote en los datos de carreras anteriores.
-        Para el cálculo del tiempo, considera que los datos de entrenamiento representan un 55% del esfuerzo y rendimiento real que se puede alcanzar en una competencia. Por lo tanto, tu estimación debe proyectar un tiempo optimista y agresivo, reflejando tu máximo potencial de carrera.
-        Aplica la siguiente lógica:
-        1.  **Ajusta el ritmo base:** Proyecta un ritmo base (GAP) de carrera que sea significativamente más rápido que el de los entrenamientos más largos (que están al 55% del esfuerzo), asumiendo que el día de la carrera correrás a un nivel de intensidad del 100%.
-        2.  **Aplica la fatiga:** Considera la fatiga como un factor que afectará el ritmo proyectado, no el ritmo de entrenamiento (que están al 55% del esfuerzo). Modera la proyección de ritmo en los tramos finales para reflejar un nivel de fatiga realista para una competencia. No bases este cálculo en el desacoplamiento de entrenamientos.
-        3.  **Usa los mejores datos:** Prioriza la información de tus mejores Ritmos Ajustados (GAP) y Velocidades de Ascenso y Descenso (VAM) para la proyección, ajustándolos para reflejar un rendimiento óptimo.
-        La carrera futura tiene una distancia y un desnivel específicos.
-        Además de la estimación de tiempo, debes recomendar temas importantes a considerar durante la carrera y una recomendación de nutrición.
-
-        Responde únicamente con un JSON en el siguiente formato, asegurándote de que la estimación de tiempo sea solo un número (ej. "4:30:00"). La explicación en 'razon' no debe exceder los 500 caracteres, el resto puede ser más largo y debe referirse a las carreras por su nombre, no por su ID.
-        { "tiempo":"tiempo calculado", "razon":"razon del tiempo calculado", "importante":["temas importantes a considerar durante la carrera"], "nutricion":["recomendación de nutricion durante la carrera"] }
-        """
-
-        let userPrompt = """
-        Datos de carreras anteriores (últimas 30):
-        \(activitiesDataString)
-
-        Para una carrera futura con Distancia: \(Formatters.formatDistance(race.distance)) y Desnivel: \(Formatters.formatElevation(race.elevationGain)), ¿cuánto tiempo estimado, consideraciones importantes a considerar en la carrera misma y recomendaciones de nutrición durante la carrera? Nada genérico, que sea muy orientado a la persona que correrá.
-        """
+        let systemPrompt = NSLocalizedString("RaceEstimationSystemPrompt", tableName: "Prompts", comment: "")
+        let userPrompt = String(format: NSLocalizedString("RaceEstimationUserPrompt", tableName: "Prompts", comment: ""), activitiesDataString, Formatters.formatDistance(race.distance), Formatters.formatElevation(race.elevationGain))
 
         let finalPrompt = "\(systemPrompt)\n\n\(userPrompt)"
         //print("[DEBUG] \(finalPrompt)");
