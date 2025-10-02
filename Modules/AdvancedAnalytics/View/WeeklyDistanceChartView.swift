@@ -4,25 +4,33 @@ import Charts
 struct WeeklyDistanceChartView: View {
     let weeklyData: [WeeklyDistanceData]
 
+    private var distanceUnit: String {
+        return Formatters.isMetric ? "km" : "mi"
+    }
+
+    private func convertDistance(_ distance: Double) -> Double {
+        return Formatters.isMetric ? distance / 1000 : distance / 1609.34
+    }
+
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Distancia Semanal")
+            Text(NSLocalizedString("Weekly Distance", comment: "Weekly Distance chart title"))
                 .font(.title2).bold()
                 .padding(.bottom, 5)
 
-            Text("Visualiza el volumen total de kilómetros recorridos cada semana en el período seleccionado.")
+            Text(NSLocalizedString("Visualizes the total volume of kilometers/miles run each week in the selected period.", comment: "Weekly Distance chart description"))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 20)
 
             Chart(weeklyData) { week in
                 BarMark(
-                    x: .value("Semana", week.id),
-                    y: .value("Distancia", week.distance / 1000) // Convert to km
+                    x: .value(NSLocalizedString("Week", comment: "Week axis label"), week.id),
+                    y: .value(NSLocalizedString("Distance", comment: "Distance axis label"), convertDistance(week.distance))
                 )
                 .foregroundStyle(.clear) // Make the original bar transparent
                 .annotation(position: .top) {
-                    Text(String(format: "%.1f km", week.distance / 1000))
+                    Text(String(format: "%.1f %@", convertDistance(week.distance), distanceUnit))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -32,7 +40,7 @@ struct WeeklyDistanceChartView: View {
                     let plotFrame = geo[proxy.plotAreaFrame]
                     ForEach(weeklyData) { week in
                         if let xPos = proxy.position(forX: week.id),
-                           let yTop = proxy.position(forY: week.distance / 1000),
+                           let yTop = proxy.position(forY: convertDistance(week.distance)),
                            let yBase = proxy.position(forY: 0) {
 
                             let bandwidth: CGFloat = {

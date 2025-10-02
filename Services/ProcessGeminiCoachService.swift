@@ -137,10 +137,3 @@ enum ProcessGeminiCoachServiceError: Error {
     case noActivityData
     case invalidResponse
 }
-
-struct ProcessGeminiCoachResponse: Codable {
-    let tiempo: String
-    let razon: String
-    let importante: String
-    let nutricion: String
-}

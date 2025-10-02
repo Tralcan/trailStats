@@ -20,8 +20,12 @@ class CreateProcessViewModel: ObservableObject {
         !name.trimmingCharacters(in: .whitespaces).isEmpty && !goal.trimmingCharacters(in: .whitespaces).isEmpty && endDate > startDate
     }
 
+    var isEditing: Bool {
+        processToEdit != nil
+    }
+
     var navigationTitle: String {
-        processToEdit == nil ? "Nuevo Proceso" : "Editar Proceso"
+        isEditing ? NSLocalizedString("Edit Process", comment: "Edit Process view title") : NSLocalizedString("New Process", comment: "New Process view title")
     }
 
     init(processToEdit: TrainingProcess? = nil) {

@@ -5,28 +5,26 @@ struct PerformanceByGradeView: View {
     let performanceData: [PerformanceByGrade]
     var onKpiTapped: ((KPIInfo) -> Void)? = nil
 
-    private let vamDescription = "Mide los metros que asciendes por hora (m/h) específicamente en este rango de pendiente. Es un indicador clave de tu eficiencia como escalador en diferentes inclinaciones."
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Rendimiento por Pendiente")
+            Text(NSLocalizedString("Performance by Grade", comment: "Performance by Grade section title"))
                 .font(.title2).bold()
                 .foregroundColor(.primary)
 
             // Header Row
             HStack {
-                Text("Pendiente")
+                Text(NSLocalizedString("Grade", comment: "Grade column header"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("Ritmo")
+                Text(NSLocalizedString("Pace", comment: "Pace column header"))
                     .frame(maxWidth: .infinity, alignment: .trailing)
-                Text("VAM")
+                Text(NSLocalizedString("VAM", comment: "VAM column header"))
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .onTapGesture {
-                        onKpiTapped?(KPIInfo(title: "VAM (Velocidad de Ascenso Media)", description: vamDescription, higherIsBetter: true))
+                        onKpiTapped?(KPIInfo(title: NSLocalizedString("kpi.vamGrade.title", comment: "VAM Grade KPI title"), description: NSLocalizedString("kpi.vamGrade.description", comment: "VAM Grade KPI description"), higherIsBetter: true))
                     }
-                Text("Cadencia")
+                Text(NSLocalizedString("Cadence", comment: "Cadence column header"))
                     .frame(maxWidth: .infinity, alignment: .trailing)
-                Text("Tiempo")
+                Text(NSLocalizedString("Time", comment: "Time column header"))
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .font(.footnote.weight(.semibold))

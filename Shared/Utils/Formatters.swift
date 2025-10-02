@@ -16,14 +16,26 @@ public extension Int {
 
 // Extensión para formatear un valor Double que representa minutos/km a un formato de ritmo (M'SS").
 public extension Double {
-    func toPaceFormat() -> String {
-        if self.isInfinite || self.isNaN {
-            return "--'--\"/km"
+    func toPaceFormat(withUnit: Bool = true) -> String {
+        let isMetric = Locale.current.usesMetricSystem
+        let paceToFormat = isMetric ? self : self * 1.60934
+
+        let value: String
+        if paceToFormat.isInfinite || paceToFormat.isNaN {
+            value = "--'--\""
+        } else {
+            let totalSeconds = paceToFormat * 60
+            let minutes = Int(totalSeconds) / 60
+            let seconds = Int(totalSeconds) % 60
+            value = String(format: "%d'%02d\"", minutes, seconds)
         }
-        let totalSeconds = self * 60
-        let minutes = Int(totalSeconds) / 60
-        let seconds = Int(totalSeconds) % 60
-        return String(format: "%d'%02d\"/km", minutes, seconds)
+
+        if withUnit {
+            let unit = isMetric ? "/km" : "/mi"
+            return value + unit
+        } else {
+            return value
+        }
     }
 }
 
@@ -38,6 +50,10 @@ public extension Collection where Element == Double {
 // Clase de utilidad para formatear diferentes tipos de datos de la aplicación.
 public class Formatters {
     
+    public static var isMetric: Bool {
+        return Locale.current.usesMetricSystem
+    }
+    
     // Formateador de fecha para mostrar en las vistas.
     public static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -48,13 +64,23 @@ public class Formatters {
     
     // Formatea la distancia de metros a kilómetros con dos decimales.
     public static func formatDistance(_ distance: Double) -> String {
-        let distanceInKm = distance / 1000.0
-        return String(format: "%.2f km", distanceInKm)
+        if isMetric {
+            let distanceInKm = distance / 1000.0
+            return String(format: "%.2f km", distanceInKm)
+        } else {
+            let distanceInMiles = distance / 1609.34
+            return String(format: "%.2f mi", distanceInMiles)
+        }
     }
     
     // Formatea la elevación en metros, añadiendo "m" al final.
     public static func formatElevation(_ elevation: Double) -> String {
-        return String(format: "%.0f m", elevation)
+        if isMetric {
+            return String(format: "%.0f m", elevation)
+        } else {
+            let elevationInFeet = elevation * 3.28084
+            return String(format: "%.0f ft", elevationInFeet)
+        }
     }
     
     // Formatea la duración de segundos a un formato legible (HH:MM:SS o MM:SS).
@@ -69,12 +95,12 @@ public class Formatters {
     
     // Formatea la frecuencia cardíaca, añadiendo "lpm" (latidos por minuto).
     public static func formatHeartRate(_ hr: Double) -> String {
-        return String(format: "%.0f lpm", hr)
+        return String(format: "%.0f %@", hr, NSLocalizedString("bpm", comment: "beats per minute"))
     }
     
     // Formatea la cadencia, añadiendo "ppm" (pasos por minuto).
     public static func formatCadence(_ cadence: Double) -> String {
-        return String(format: "%.0f ppm", cadence)
+        return String(format: "%.0f %@", cadence, NSLocalizedString("spm", comment: "steps per minute"))
     }
     
     // Formatea la potencia, añadiendo "W" (vatios).
@@ -84,7 +110,12 @@ public class Formatters {
     
     // Formatea la velocidad vertical en metros por hora, añadiendo "m/h".
     public static func formatVerticalSpeed(_ speed: Double) -> String {
-        return String(format: "%.0f m/h", speed)
+        if isMetric {
+            return String(format: "%.0f m/h", speed)
+        } else {
+            let speedInFeetPerHour = speed * 3.28084
+            return String(format: "%.0f ft/h", speedInFeetPerHour)
+        }
     }
     
     // Formatea el porcentaje de desacoplamiento cardíaco.

@@ -8,32 +8,44 @@ struct CreateProcessView: View {
         _viewModel = StateObject(wrappedValue: CreateProcessViewModel(processToEdit: processToEdit))
     }
     
+    private var distanceUnit: String {
+        return Formatters.isMetric ? "km" : "mi"
+    }
+    
+    private var elevationUnit: String {
+        return Formatters.isMetric ? "m" : "ft"
+    }
+    
+    private var weightUnit: String {
+        return Formatters.isMetric ? "kg" : "lbs"
+    }
+    
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Información del Proceso")) {
-                    TextField("Nombre (Ej: Preparación UTMB)", text: $viewModel.name)
-                    DatePicker("Fecha de Inicio", selection: $viewModel.startDate, displayedComponents: .date)
-                    DatePicker("Fecha de la Carrera", selection: $viewModel.endDate, displayedComponents: .date)
+                Section(header: Text(NSLocalizedString("Process Information", comment: "Process Information section header"))) {
+                    TextField(NSLocalizedString("Name (e.g. UTMB Preparation)", comment: "Process name textfield placeholder"), text: $viewModel.name)
+                    DatePicker(NSLocalizedString("Start Date", comment: "Start Date date picker"), selection: $viewModel.startDate, displayedComponents: .date)
+                    DatePicker(NSLocalizedString("Race Date", comment: "Race Date date picker"), selection: $viewModel.endDate, displayedComponents: .date)
                 }
 
-                Section(header: Text("Objetivo")) {
-                    TextField("Describe tu objetivo para este proceso", text: $viewModel.goal)
+                Section(header: Text(NSLocalizedString("Goal", comment: "Goal section header"))) {
+                    TextField(NSLocalizedString("Describe your goal for this process", comment: "Goal textfield placeholder"), text: $viewModel.goal)
                 }
                 
-                Section(header: Text("Carrera Objetivo")) {
+                Section(header: Text(NSLocalizedString("Target Race", comment: "Target Race section header"))) {
                     HStack {
-                        Text("Distancia")
+                        Text(NSLocalizedString("Distance", comment: "Distance label"))
                         Spacer()
-                        TextField("km", text: $viewModel.raceDistance)
+                        TextField(distanceUnit, text: $viewModel.raceDistance)
                             .keyboardType(.decimalPad)
                             .frame(width: 80)
                             .multilineTextAlignment(.trailing)
                     }
                     HStack {
-                        Text("Desnivel")
+                        Text(NSLocalizedString("Elevation", comment: "Elevation label"))
                         Spacer()
-                        TextField("m", text: $viewModel.raceElevation)
+                        TextField(elevationUnit, text: $viewModel.raceElevation)
                             .keyboardType(.numberPad)
                             .frame(width: 80)
                             .multilineTextAlignment(.trailing)
@@ -41,28 +53,28 @@ struct CreateProcessView: View {
                 }
                 
                 // Only show initial metrics for new processes
-                if viewModel.navigationTitle == "Nuevo Proceso" {
-                    Section(header: Text("Métricas Iniciales")) {
+                if !viewModel.isEditing {
+                    Section(header: Text(NSLocalizedString("Initial Metrics", comment: "Initial Metrics section header"))) {
                         HStack {
-                            Text("Peso")
+                            Text(NSLocalizedString("Weight", comment: "Weight label"))
                             Spacer()
-                            TextField("kg", text: $viewModel.startWeight)
+                            TextField(weightUnit, text: $viewModel.startWeight)
                                 .keyboardType(.decimalPad)
                                 .frame(width: 80)
                                 .multilineTextAlignment(.trailing)
                         }
                         HStack {
-                            Text("% Grasa Corporal")
+                            Text(NSLocalizedString("Body Fat %%", comment: "Body Fat %% label"))
                             Spacer()
-                            TextField("%%", text: $viewModel.bodyFatPercentage)
+                            TextField(NSLocalizedString("%%", comment: "Percentage symbol"), text: $viewModel.bodyFatPercentage)
                                 .keyboardType(.decimalPad)
                                 .frame(width: 80)
                                 .multilineTextAlignment(.trailing)
                         }
                         HStack {
-                            Text("Masa Magra")
+                            Text(NSLocalizedString("Lean Body Mass", comment: "Lean Body Mass label"))
                             Spacer()
-                            TextField("kg", text: $viewModel.leanBodyMass)
+                            TextField(weightUnit, text: $viewModel.leanBodyMass)
                                 .keyboardType(.decimalPad)
                                 .frame(width: 80)
                                 .multilineTextAlignment(.trailing)
@@ -72,10 +84,10 @@ struct CreateProcessView: View {
             }
             .navigationTitle(viewModel.navigationTitle)
             .navigationBarItems(
-                leading: Button("Cancelar") {
+                leading: Button(NSLocalizedString("Cancel", comment: "Cancel button")) {
                     presentationMode.wrappedValue.dismiss()
                 },
-                trailing: Button("Guardar") {
+                trailing: Button(NSLocalizedString("Save", comment: "Save button")) {
                     viewModel.save()
                     presentationMode.wrappedValue.dismiss()
                 }

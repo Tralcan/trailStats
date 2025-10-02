@@ -9,11 +9,11 @@ struct IntensityChartView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Intensidad Semanal")
+            Text(NSLocalizedString("Weekly Intensity", comment: "Weekly Intensity chart title"))
                 .font(.title2).bold()
                 .padding(.bottom, 5)
 
-            Text("Muestra el porcentaje de tiempo que pasas en cada Zona de Frecuencia Cardíaca cada semana. Ideal para ver el balance entre entrenamientos suaves y duros.")
+            Text(NSLocalizedString("Shows the percentage of time you spend in each Heart Rate Zone each week. Ideal for seeing the balance between easy and hard workouts.", comment: "Weekly Intensity chart description"))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 20)
@@ -81,11 +81,11 @@ struct IntensityChartView: View {
             Image(systemName: "waveform.path.ecg.rectangle")
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
-            Text("No hay datos de intensidad")
+            Text(NSLocalizedString("No intensity data", comment: "Empty state title for intensity chart"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top)
-            Text("Las actividades necesitan datos de frecuencia cardíaca para calcular la intensidad.")
+            Text(NSLocalizedString("Activities need heart rate data to calculate intensity.", comment: "Empty state message for intensity chart"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -111,10 +111,10 @@ private struct WeeklyBarMarks: ChartContent {
             let percentage = timeInZone / totalTime
             
             BarMark(
-                x: .value("Semana", week.id),
-                y: .value("Porcentaje", percentage)
+                x: .value(NSLocalizedString("Week", comment: "Week axis label"), week.id),
+                y: .value(NSLocalizedString("Percentage", comment: "Percentage axis label"), percentage)
             )
-            .foregroundStyle(by: .value("Zona", zoneName))
+            .foregroundStyle(by: .value(NSLocalizedString("Zone", comment: "Zone legend label"), zoneName))
         }
     }
 }

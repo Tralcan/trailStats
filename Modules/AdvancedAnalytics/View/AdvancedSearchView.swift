@@ -34,7 +34,7 @@ struct AdvancedSearchView: View {
                     Picker(selection: $viewModel.distance) {
                         Text(NSLocalizedString("None", comment: "")).tag(nil as Double?)
                         ForEach(1..<101) { km in
-                            Text("\(km) km").tag(Double(km * 1000) as Double?)
+                            Text(Formatters.formatDistance(Double(km * 1000))).tag(Double(km * 1000) as Double?)
                         }
                     } label: {
                         HStack {
@@ -48,7 +48,7 @@ struct AdvancedSearchView: View {
                         Text(NSLocalizedString("None", comment: "")).tag(nil as Double?)
                         ForEach(0..<51) { i in
                             let elevation = i * 100
-                            Text("\(elevation) m").tag(Double(elevation) as Double?)
+                            Text(Formatters.formatElevation(Double(elevation))).tag(Double(elevation) as Double?)
                         }
                     } label: {
                         HStack {
@@ -74,7 +74,7 @@ struct AdvancedSearchView: View {
                     Picker(selection: $viewModel.trainingTag) {
                         Text(NSLocalizedString("None", comment: "")).tag(nil as ActivityTag?)
                         ForEach(ActivityTag.allCases) { tag in
-                            Text(tag.rawValue).tag(tag as ActivityTag?)
+                            Text(tag.localizedName).tag(tag as ActivityTag?)
                         }
                     } label: {
                         HStack {

@@ -6,26 +6,26 @@ struct WeeklyDecouplingChartView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Desacople Cardíaco Semanal")
+            Text(NSLocalizedString("Weekly Cardiac Decoupling", comment: "Weekly Cardiac Decoupling chart title"))
                 .font(.title2).bold()
                 .padding(.bottom, 5)
 
-            Text("Muestra la evolución de tu resistencia. Un valor consistentemente bajo o en descenso indica una fuerte base aeróbica.")
+            Text(NSLocalizedString("Shows the evolution of your endurance. A consistently low or decreasing value indicates a strong aerobic base.", comment: "Weekly Cardiac Decoupling chart description"))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 20)
 
             Chart(weeklyData) { week in
                 LineMark(
-                    x: .value("Semana", week.id),
-                    y: .value("Desacople", week.averageDecoupling)
+                    x: .value(NSLocalizedString("Week", comment: "Week axis label"), week.id),
+                    y: .value(NSLocalizedString("Decoupling", comment: "Decoupling axis label"), week.averageDecoupling)
                 )
                 .foregroundStyle(Color.blue)
                 .symbol(Circle().strokeBorder(lineWidth: 2))
                 
                 PointMark(
-                    x: .value("Semana", week.id),
-                    y: .value("Desacople", week.averageDecoupling)
+                    x: .value(NSLocalizedString("Week", comment: "Week axis label"), week.id),
+                    y: .value(NSLocalizedString("Decoupling", comment: "Decoupling axis label"), week.averageDecoupling)
                 )
                 .foregroundStyle(Color.blue)
                 .annotation(position: .top) {

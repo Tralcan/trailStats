@@ -25,11 +25,11 @@ struct TrainingTypeDistributionChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Tipos de Entrenamiento")
+            Text(NSLocalizedString("Training Types", comment: "Training Types chart title"))
                 .font(.title2).bold()
                 .foregroundColor(.primary)
 
-            Text("Cantidad de entrenamientos por tipo en el período seleccionado.")
+            Text(NSLocalizedString("Number of workouts by type in the selected period.", comment: "Training Types chart description"))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 8)
@@ -48,8 +48,8 @@ struct TrainingTypeDistributionChartView: View {
     private var chartView: some View {
         Chart(data) { item in
             BarMark(
-                x: .value("Tipo", item.label),
-                y: .value("Entrenamientos", item.count)
+                x: .value(NSLocalizedString("Type", comment: "Type axis label"), item.label),
+                y: .value(NSLocalizedString("Workouts", comment: "Workouts axis label"), item.count)
             )
             .foregroundStyle(.clear)
         }
@@ -120,11 +120,11 @@ struct TrainingTypeDistributionChartView: View {
             Image(systemName: "chart.bar.fill")
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
-            Text("No hay datos de tipos")
+            Text(NSLocalizedString("No type data", comment: "Empty state title for training type chart"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top)
-            Text("Aún no hay entrenamientos para el período seleccionado.")
+            Text(NSLocalizedString("There are no workouts for the selected period yet.", comment: "Empty state message for training type chart"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -163,7 +163,7 @@ struct TrainingTypeDistributionChartView: View {
             .compactMap { tag -> TagCount? in
                 let count = countsByTag[tag, default: 0]
                 guard count > 0 else { return nil }
-                return TagCount(tag: tag, label: tag.rawValue, count: count)
+                return TagCount(tag: tag, label: tag.localizedName, count: count)
             }
 
         return ordered

@@ -6,13 +6,17 @@ struct AdvancedAnalyticsView: View {
     @State private var selectedKpiInfo: KPIInfo? = nil
     
     enum TimePeriod: String, CaseIterable, Identifiable {
-        case last7 = "7 Días"
-        case last15 = "15 Días"
-        case last30 = "30 Días"
-        case last60 = "60 Días"
-        case last90 = "90 Días"
+        case last7 = "7 Days"
+        case last15 = "15 Days"
+        case last30 = "30 Days"
+        case last60 = "60 Days"
+        case last90 = "90 Days"
         
         var id: String { rawValue }
+        
+        var localizedName: String {
+            NSLocalizedString(self.rawValue, comment: "Time period for analytics")
+        }
         
         var dayCount: Int {
             switch self {
@@ -38,9 +42,9 @@ struct AdvancedAnalyticsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         
-                        Picker("Período", selection: $selectedPeriod) {
+                        Picker(NSLocalizedString("Period", comment: "Period picker label"), selection: $selectedPeriod) {
                             ForEach(TimePeriod.allCases) { period in
-                                Text(period.rawValue).tag(period)
+                                Text(period.localizedName).tag(period)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -86,7 +90,7 @@ struct AdvancedAnalyticsView: View {
                     }
                     .padding(.vertical)
                 }
-                .navigationTitle("Análisis de Progreso")
+                .navigationTitle(NSLocalizedString("Progress Analysis", comment: "Progress Analysis view title"))
                 .onAppear {
                     viewModel.recalculateAnalyticsIfNeeded()
                 }
@@ -111,15 +115,15 @@ struct AdvancedAnalyticsView: View {
     
     private var kpiSummarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Totales del Período")
+            Text(NSLocalizedString("Period Totals", comment: "Period Totals section title"))
                 .font(.title3).bold()
                 .padding(.horizontal)
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Actividades", value: "\(viewModel.totalActivities)", systemImage: "figure.run", color: .orange)
-                KPISummaryCard(title: "Tiempo Total", value: Formatters.formatTime(Int(viewModel.totalDuration)), systemImage: "hourglass", color: .blue)
-                KPISummaryCard(title: "Distancia Total", value: Formatters.formatDistance(viewModel.totalDistance), systemImage: "location.fill", color: .red)
-                KPISummaryCard(title: "Desnivel Total", value: Formatters.formatElevation(viewModel.totalElevation), systemImage: "mountain.2.fill", color: .green)
+                KPISummaryCard(title: NSLocalizedString("Activities", comment: "Activities KPI"), value: "\(viewModel.totalActivities)", systemImage: "figure.run", color: .orange)
+                KPISummaryCard(title: NSLocalizedString("Total Time", comment: "Total Time KPI"), value: Formatters.formatTime(Int(viewModel.totalDuration)), systemImage: "hourglass", color: .blue)
+                KPISummaryCard(title: NSLocalizedString("Total Distance", comment: "Total Distance KPI"), value: Formatters.formatDistance(viewModel.totalDistance), systemImage: "location.fill", color: .red)
+                KPISummaryCard(title: NSLocalizedString("Total Elevation", comment: "Total Elevation KPI"), value: Formatters.formatElevation(viewModel.totalElevation), systemImage: "mountain.2.fill", color: .green)
             }
             .padding(.horizontal)
         }
@@ -127,22 +131,22 @@ struct AdvancedAnalyticsView: View {
     
     private var trailPerformanceSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análitica de Trail")
+            Text(NSLocalizedString("Trail Analytics", comment: "Trail Analytics section title"))
                 .font(.title3).bold()
                 .padding(.horizontal)
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Vel. Ascenso", value: "\(String(format: "%.0f", viewModel.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .orange)
+                KPISummaryCard(title: NSLocalizedString("Ascent Speed", comment: "Ascent Speed KPI"), value: Formatters.formatVerticalSpeed(viewModel.averageVAM), systemImage: "arrow.up.right.circle.fill", color: .orange)
                     .onTapGesture { selectedKpiInfo = .vam }
                 KPISummaryCard(title: "GAP", value: viewModel.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .cyan)
                     .onTapGesture { selectedKpiInfo = .gap }
-                KPISummaryCard(title: "Vel. Descenso", value: "\(String(format: "%.0f", viewModel.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
+                KPISummaryCard(title: NSLocalizedString("Descent Speed", comment: "Descent Speed KPI"), value: Formatters.formatVerticalSpeed(viewModel.averageDescentVAM), systemImage: "arrow.down.right.circle.fill", color: .blue)
                     .onTapGesture { selectedKpiInfo = .descentVam }
-                KPISummaryCard(title: "Potencia Norm.", value: "\(String(format: "%.0f", viewModel.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
+                KPISummaryCard(title: NSLocalizedString("Norm. Power", comment: "Normalized Power KPI"), value: "\(String(format: "%.0f", viewModel.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
                     .onTapGesture { selectedKpiInfo = .normalizedPower }
-                KPISummaryCard(title: "Índice Eficiencia", value: String(format: "%.3f", viewModel.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
+                KPISummaryCard(title: NSLocalizedString("Efficiency Index", comment: "Efficiency Index KPI"), value: String(format: "%.3f", viewModel.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
                     .onTapGesture { selectedKpiInfo = .efficiencyIndex }
-                KPISummaryCard(title: "Desacople", value: "\(String(format: "%.1f", viewModel.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
+                KPISummaryCard(title: NSLocalizedString("Decoupling", comment: "Decoupling KPI"), value: "\(String(format: "%.1f", viewModel.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
                     .onTapGesture { selectedKpiInfo = .decoupling }
             }
             .padding(.horizontal)
@@ -151,18 +155,18 @@ struct AdvancedAnalyticsView: View {
     
     private var runningDynamicsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Dinámica de Carrera")
+            Text(NSLocalizedString("Running Dynamics", comment: "Running Dynamics section title"))
                 .font(.title3).bold()
                 .padding(.horizontal)
             
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Oscilación Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .purple)
+                KPISummaryCard(title: NSLocalizedString("Vertical Oscillation", comment: "Vertical Oscillation KPI"), value: "\(String(format: "%.1f", viewModel.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .purple)
                     .onTapGesture { selectedKpiInfo = .verticalOscillation }
-                KPISummaryCard(title: "Tiempo de Contacto", value: "\(String(format: "%.0f", viewModel.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
+                KPISummaryCard(title: NSLocalizedString("Contact Time", comment: "Contact Time KPI"), value: "\(String(format: "%.0f", viewModel.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
                     .onTapGesture { selectedKpiInfo = .groundContactTime }
-                KPISummaryCard(title: "Longitud de Zancada", value: "\(String(format: "%.2f", viewModel.averageStrideLength)) m", systemImage: "ruler.fill", color: .orange)
+                KPISummaryCard(title: NSLocalizedString("Stride Length", comment: "Stride Length KPI"), value: "\(String(format: "%.2f", viewModel.averageStrideLength)) m", systemImage: "ruler.fill", color: .orange)
                     .onTapGesture { selectedKpiInfo = .strideLength }
-                KPISummaryCard(title: "Ratio Vertical", value: "\(String(format: "%.1f", viewModel.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
+                KPISummaryCard(title: NSLocalizedString("Vertical Ratio", comment: "Vertical Ratio KPI"), value: "\(String(format: "%.1f", viewModel.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
                     .onTapGesture { selectedKpiInfo = .verticalRatio }
             }
             .padding(.horizontal)
@@ -175,11 +179,11 @@ struct AdvancedAnalyticsView: View {
             Image(systemName: "chart.line.uptrend.xyaxis.circle")
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
-            Text("No hay suficientes datos")
+            Text(NSLocalizedString("Not enough data", comment: "Empty state title"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top)
-            Text("Registra más actividades para ver tu progreso a lo largo del tiempo.")
+            Text(NSLocalizedString("Log more activities to see your progress over time.", comment: "Empty state message"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

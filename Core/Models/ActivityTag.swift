@@ -3,14 +3,18 @@ import Foundation
 import SwiftUI
 
 enum ActivityTag: String, CaseIterable, Codable, Identifiable {
-    case easyRun = "Carrera Fácil"
-    case longRun = "Carrera Larga"
-    case intensityWorkout = "Entreno de Intensidad"
-    case hillWorkout = "Entreno en Subidas"
-    case technicalWorkout = "Entreno en Bajadas"
-    case race = "Carrera o Test"
+    case easyRun = "Easy Run"
+    case longRun = "Long Run"
+    case intensityWorkout = "Intensity Workout"
+    case hillWorkout = "Hill Workout"
+    case technicalWorkout = "Technical Workout"
+    case race = "Race or Test"
 
     var id: String { self.rawValue }
+
+    var localizedName: String {
+        return NSLocalizedString(self.rawValue, comment: "Activity tag")
+    }
 
     var icon: String {
         switch self {

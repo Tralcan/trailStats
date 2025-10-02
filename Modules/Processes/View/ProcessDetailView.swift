@@ -31,7 +31,7 @@ struct ProcessDetailView: View {
         ZStack {
             ScrollView {
                 if viewModel.isLoading {
-                    ProgressView("Calculando analíticas del proceso...").padding()
+                    ProgressView(NSLocalizedString("process_loading_analytics", comment: "Loading process analytics")).padding()
                 } else if let result = viewModel.result {
                     VStack(alignment: .leading, spacing: 24) {
                         processSummarySection
@@ -69,13 +69,13 @@ struct ProcessDetailView: View {
             .navigationBarItems(trailing: Button(action: { showingAddOptions = true }) {
                 Image(systemName: "plus.circle.fill").font(.title2)
             }.disabled(viewModel.process.isCompleted))
-            .confirmationDialog("Añadir Registro", isPresented: $showingAddOptions, titleVisibility: .visible) {
-                Button("Métrica Corporal") { isShowingAddMetricSheet = true }
-                Button("Visita al Kinesiologo") { viewModel.addSimpleEntry(type: .kinesiologo) }
-                Button("Visita al Medico") { viewModel.addSimpleEntry(type: .medico) }
-                Button("Sesión de Masajes") { viewModel.addSimpleEntry(type: .masajes) }
-                Button("Comentario") { isShowingAddCommentSheet = true } // Reordenado
-                Button("Cancelar", role: .cancel) { } 
+            .confirmationDialog(NSLocalizedString("add_entry_title", comment: "Add Entry title"), isPresented: $showingAddOptions, titleVisibility: .visible) {
+                Button(NSLocalizedString("add_body_metric_button", comment: "Add Body Metric button")) { isShowingAddMetricSheet = true }
+                Button(NSLocalizedString("add_kinesiologist_visit_button", comment: "Add Kinesiologist Visit button")) { viewModel.addSimpleEntry(type: .kinesiologo) }
+                Button(NSLocalizedString("add_doctor_visit_button", comment: "Add Doctor Visit button")) { viewModel.addSimpleEntry(type: .medico) }
+                Button(NSLocalizedString("add_massage_session_button", comment: "Add Massage Session button")) { viewModel.addSimpleEntry(type: .masajes) }
+                Button(NSLocalizedString("add_comment_button", comment: "Add Comment button")) { isShowingAddCommentSheet = true }
+                Button(NSLocalizedString("cancel_button", comment: "Cancel button"), role: .cancel) { } 
             }
 
             if selectedKpiInfo != nil {
@@ -91,8 +91,8 @@ struct ProcessDetailView: View {
             AddMetricEntryView(process: viewModel.process)
         }
         .sheet(isPresented: $isShowingAddCommentSheet) {
-            AddCommentView { comment in
-                viewModel.addCommentEntry(notes: comment)
+            AddCommentView {
+                comment in viewModel.addCommentEntry(notes: comment)
             }
         }
         .sheet(item: $selectedRace) { race in
@@ -102,8 +102,7 @@ struct ProcessDetailView: View {
 
     private var processSummarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Resumen del Proceso")
-                .font(.title3).bold()
+            Text(NSLocalizedString("process_summary_title", comment: "Process Summary title")).font(.title3).bold()
                 .padding(.horizontal)
 
             VStack(alignment: .leading, spacing: 10) {
@@ -123,8 +122,7 @@ struct ProcessDetailView: View {
     @ViewBuilder
     private var raceGoalSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Carrera Objetivo")
-                .font(.title3).bold()
+            Text(NSLocalizedString("goal_race_title", comment: "Goal Race title")).font(.title3).bold()
                 .padding(.horizontal)
 
             VStack(alignment: .center, spacing: 10) {
@@ -139,7 +137,7 @@ struct ProcessDetailView: View {
                             Text(Int(race.duration).toHoursMinutesSeconds())
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(.blue)
-                            Text("Tiempo Oficial")
+                            Text(NSLocalizedString("official_time_label", comment: "Official Time label"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -165,7 +163,7 @@ struct ProcessDetailView: View {
                     .padding(.top, 8)
 
                 } else if viewModel.isEstimatingTime {
-                    ProgressView("Consultando al coach Gemini...")
+                    ProgressView(NSLocalizedString("gemini_coach_loading", comment: "Loading message for Gemini Coach"))
                 } else if let projection = viewModel.raceProjection {
                     HStack(spacing: 12) {
                         Image(systemName: "medal.fill")
@@ -176,7 +174,7 @@ struct ProcessDetailView: View {
                             Text(projection.tiempo)
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(.blue)
-                            Text("Tiempo Estimado")
+                            Text(NSLocalizedString("estimated_time_label", comment: "Estimated Time label"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -184,7 +182,7 @@ struct ProcessDetailView: View {
                     .padding(.bottom, 8)
                     .onTapGesture {
                         self.selectedKpiInfo = KPIInfo(
-                            title: "Razón de la Estimación",
+                            title: NSLocalizedString("estimation_reason_title", comment: "Estimation Reason title"),
                             description: projection.razon,
                             higherIsBetter: false
                         )
@@ -200,8 +198,8 @@ struct ProcessDetailView: View {
                             
                             Button(action: {
                                 self.selectedKpiInfo = KPIInfo(
-                                    title: "Recomendaciones IA",
-                                    description: "**Importante:**\n" + projection.importante.joined(separator: "\n") + "\n\n**Nutrición:**\n" + projection.nutricion.joined(separator: "\n"),
+                                    title: NSLocalizedString("ai_recommendations_title", comment: "AI Recommendations title"),
+                                    description: "**" + NSLocalizedString("important_recommendation_label", comment: "Important recommendation label") + ":**\n" + projection.importante.joined(separator: "\n") + "\n\n**" + NSLocalizedString("nutrition_recommendation_label", comment: "Nutrition recommendation label") + ":**\n" + projection.nutricion.joined(separator: "\n"),
                                     higherIsBetter: false
                                 )
                             }) {
@@ -236,7 +234,7 @@ struct ProcessDetailView: View {
 
     private var goalSection: some View {
         HStack {
-            (Text("Objetivo: ") + Text(viewModel.process.goal))
+            (Text(NSLocalizedString("goal_label", comment: "Goal label")) + Text(viewModel.process.goal))
                 .font(.body)
                 .italic()
                 .foregroundColor(.secondary)
@@ -269,15 +267,14 @@ struct ProcessDetailView: View {
 
     private func kpiSummarySection(result: AnalyticsResult) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Totales del Período")
-                .font(.title3).bold()
+            Text(NSLocalizedString("period_totals_title", comment: "Period Totals title")).font(.title3).bold()
                 .padding(.horizontal)
 
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Actividades", value: "\(result.totalActivities)", systemImage: "figure.run", color: .orange)
-                KPISummaryCard(title: "Tiempo Total", value: Formatters.formatTime(Int(result.totalDuration)), systemImage: "hourglass", color: .blue)
-                KPISummaryCard(title: "Distancia Total", value: Formatters.formatDistance(result.totalDistance), systemImage: "location.fill", color: .red)
-                KPISummaryCard(title: "Desnivel Total", value: Formatters.formatElevation(result.totalElevation), systemImage: "mountain.2.fill", color: .green)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_activities", comment: "Activities KPI"), value: "\(result.totalActivities)", systemImage: "figure.run", color: .orange)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_total_time", comment: "Total Time KPI"), value: Formatters.formatTime(Int(result.totalDuration)), systemImage: "hourglass", color: .blue)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_total_distance", comment: "Total Distance KPI"), value: Formatters.formatDistance(result.totalDistance), systemImage: "location.fill", color: .red)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_total_elevation", comment: "Total Elevation KPI"), value: Formatters.formatElevation(result.totalElevation), systemImage: "mountain.2.fill", color: .green)
             }
             .padding(.horizontal)
         }
@@ -285,22 +282,21 @@ struct ProcessDetailView: View {
 
     private func trailPerformanceSection(result: AnalyticsResult) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análitica de Trail")
-                .font(.title3).bold()
+            Text(NSLocalizedString("trail_analytics_title", comment: "Trail Analytics title")).font(.title3).bold()
                 .padding(.horizontal)
 
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Vel. Ascenso", value: "\(String(format: "%.0f", result.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .orange)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_vam", comment: "VAM KPI"), value: "\(String(format: "%.0f", result.averageVAM)) m/h", systemImage: "arrow.up.right.circle.fill", color: .orange)
                     .onTapGesture { selectedKpiInfo = .vam }
-                KPISummaryCard(title: "GAP", value: result.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .cyan)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_gap", comment: "GAP KPI"), value: result.averageGAP.toPaceFormat(), systemImage: "speedometer", color: .cyan)
                     .onTapGesture { selectedKpiInfo = .gap }
-                KPISummaryCard(title: "Vel. Descenso", value: "\(String(format: "%.0f", result.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_descent_vam", comment: "Descent VAM KPI"), value: "\(String(format: "%.0f", result.averageDescentVAM)) m/h", systemImage: "arrow.down.right.circle.fill", color: .blue)
                     .onTapGesture { selectedKpiInfo = .descentVam }
-                KPISummaryCard(title: "Potencia Norm.", value: "\(String(format: "%.0f", result.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_normalized_power", comment: "Normalized Power KPI"), value: "\(String(format: "%.0f", result.averageNormalizedPower)) W", systemImage: "bolt.circle.fill", color: .green)
                     .onTapGesture { selectedKpiInfo = .normalizedPower }
-                KPISummaryCard(title: "Índice Eficiencia", value: String(format: "%.3f", result.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_efficiency_index", comment: "Efficiency Index KPI"), value: String(format: "%.3f", result.averageEfficiencyIndex), systemImage: "leaf.arrow.triangle.circlepath", color: .mint)
                     .onTapGesture { selectedKpiInfo = .efficiencyIndex }
-                KPISummaryCard(title: "Desacople", value: "\(String(format: "%.1f", result.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_decoupling", comment: "Decoupling KPI"), value: "\(String(format: "%.1f", result.averageDecoupling))%", systemImage: "heart.slash.circle.fill", color: .pink)
                     .onTapGesture { selectedKpiInfo = .decoupling }
             }
             .padding(.horizontal)
@@ -309,18 +305,17 @@ struct ProcessDetailView: View {
 
     private func runningDynamicsSection(result: AnalyticsResult) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Dinámica de Carrera")
-                .font(.title3).bold()
+            Text(NSLocalizedString("running_dynamics_title", comment: "Running Dynamics title")).font(.title3).bold()
                 .padding(.horizontal)
 
             LazyVGrid(columns: gridColumns, spacing: 16) {
-                KPISummaryCard(title: "Oscilación Vertical", value: "\(String(format: "%.1f", result.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .purple)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_vertical_oscillation", comment: "Vertical Oscillation KPI"), value: "\(String(format: "%.1f", result.averageVerticalOscillation)) cm", systemImage: "arrow.up.and.down.circle.fill", color: .purple)
                     .onTapGesture { selectedKpiInfo = .verticalOscillation }
-                KPISummaryCard(title: "Tiempo de Contacto", value: "\(String(format: "%.0f", result.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_ground_contact_time", comment: "Ground Contact Time KPI"), value: "\(String(format: "%.0f", result.averageGroundContactTime)) ms", systemImage: "timer", color: .indigo)
                     .onTapGesture { selectedKpiInfo = .groundContactTime }
-                KPISummaryCard(title: "Longitud de Zancada", value: "\(String(format: "%.2f", result.averageStrideLength)) m", systemImage: "ruler.fill", color: .orange)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_stride_length", comment: "Stride Length KPI"), value: "\(String(format: "%.2f", result.averageStrideLength)) m", systemImage: "ruler.fill", color: .orange)
                     .onTapGesture { selectedKpiInfo = .strideLength }
-                KPISummaryCard(title: "Ratio Vertical", value: "\(String(format: "%.1f", result.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
+                KPISummaryCard(title: NSLocalizedString("process_kpi_vertical_ratio", comment: "Vertical Ratio KPI"), value: "\(String(format: "%.1f", result.averageVerticalRatio)) %", systemImage: "percent", color: .teal)
                     .onTapGesture { selectedKpiInfo = .verticalRatio }
             }
             .padding(.horizontal)
@@ -329,15 +324,14 @@ struct ProcessDetailView: View {
 
     private var trainingRecommendationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Recomendación de entrenamientos IA")
-                .font(.title3).bold()
+            Text(NSLocalizedString("ai_training_recommendation_title", comment: "AI Training Recommendation title")).font(.title3).bold()
                 .padding(.horizontal)
 
             VStack(alignment: .leading, spacing: 10) {
                 if viewModel.isFetchingRecommendation {
                     HStack {
                         ProgressView()
-                        Text("Consultando al coach Gemini...")
+                        Text(NSLocalizedString("gemini_coach_loading", comment: "Loading message for Gemini Coach"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -363,11 +357,11 @@ struct ProcessDetailView: View {
             Image(systemName: "chart.line.uptrend.xyaxis.circle")
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
-            Text("No hay actividades en este proceso")
+            Text(NSLocalizedString("no_activities_in_process_title", comment: "No activities in process title"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top)
-            Text("Registra nuevas actividades para ver las analíticas de este período.")
+            Text(NSLocalizedString("no_activities_in_process_message", comment: "No activities in process message"))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

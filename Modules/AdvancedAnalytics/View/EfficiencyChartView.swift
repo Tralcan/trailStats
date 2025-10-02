@@ -6,11 +6,11 @@ struct EfficiencyChartView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Evolución de Eficiencia Aeróbica")
+            Text(NSLocalizedString("Aerobic Efficiency Evolution", comment: "Aerobic Efficiency Evolution chart title"))
                 .font(.title2).bold()
                 .padding(.bottom, 5)
             
-            Text("Muestra cómo evoluciona tu velocidad en relación a tu frecuencia cardíaca. Una tendencia al alza es señal de una mejora en tu estado de forma.")
+            Text(NSLocalizedString("Shows how your speed evolves in relation to your heart rate. An upward trend is a sign of improvement in your fitness.", comment: "Aerobic Efficiency Evolution chart description"))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.bottom, 20)
@@ -18,14 +18,14 @@ struct EfficiencyChartView: View {
             Chart {
                 ForEach(data) { point in
                     LineMark(
-                        x: .value("Fecha", Date(timeIntervalSince1970: TimeInterval(point.time))),
-                        y: .value("Índice", point.value)
+                        x: .value(NSLocalizedString("Date", comment: "Date axis label"), Date(timeIntervalSince1970: TimeInterval(point.time))),
+                        y: .value(NSLocalizedString("Index", comment: "Index axis label"), point.value)
                     )
                     .foregroundStyle(Color.accentColor)
                     
                     PointMark(
-                        x: .value("Fecha", Date(timeIntervalSince1970: TimeInterval(point.time))),
-                        y: .value("Índice", point.value)
+                        x: .value(NSLocalizedString("Date", comment: "Date axis label"), Date(timeIntervalSince1970: TimeInterval(point.time))),
+                        y: .value(NSLocalizedString("Index", comment: "Index axis label"), point.value)
                     )
                     .foregroundStyle(Color.accentColor)
                     .annotation(position: .top) {

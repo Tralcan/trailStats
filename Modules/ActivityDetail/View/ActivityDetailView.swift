@@ -1,4 +1,3 @@
-
 import SwiftUI
 import UIKit
 
@@ -17,18 +16,6 @@ struct ActivityDetailView: View {
     var onAppearAction: () -> Void
     var onDisappearAction: () -> Void
     
-    // Diccionario con las descripciones para cada KPI.
-    private let kpiInfoData: [String: String] = [
-        "Esfuerzo Percibido (RPE)": "1 - 3 (Fácil): Podrías mantener una conversación completa sin problema. Sería un trote regenerativo.\n\n4 - 6 (Moderado): Te sientes cómodo y puedes hablar, pero con frases cortas. Es tu ritmo de resistencia.\n\n7 - 8 (Duro): Te cuesta mucho hablar. Estás en tu umbral o ritmo de carrera.\n\n9 - 10 (Máximo): Estás al límite, jadeando. Solo puedes mantenerlo por periodos muy cortos.",
-        "Ritmo Ajustado (GAP)": "Calcula tu ritmo equivalente en terreno llano, ajustando el esfuerzo realizado en subidas y bajadas. Ayuda a comparar esfuerzos en terrenos variados.",
-        "Desacoplamiento Cardíaco": "Mide cómo tu frecuencia cardíaca aumenta con respecto a tu ritmo a lo largo del tiempo. Un valor bajo (idealmente < 5%) indica una excelente resistencia aeróbica.",
-        "Vel. Vertical (Ascenso)": "Mide los metros que asciendes por hora (m/h). Es un indicador clave de tu capacidad y eficiencia como escalador. También conocido como VAM.",
-        "Vel. Vertical (Descenso)": "Mide los metros que desciendes por hora (m/h). Un valor alto puede indicar una buena técnica y confianza en las bajadas.",
-        "Potencia Normalizada": "Estimación de la potencia que podrías haber mantenido con un esfuerzo constante. Es más precisa que la potencia media para esfuerzos variables como los del trail.",
-        "Índice Eficiencia": "Relaciona tu velocidad con tu frecuencia cardíaca. Un valor más alto sugiere que eres más eficiente, cubriendo más distancia por cada latido del corazón.",
-        "VAM (Velocidad de Ascenso Media)": "Mide los metros que asciendes por hora (m/h) específicamente en este rango de pendiente. Es un indicador clave de tu eficiencia como escalador en diferentes inclinaciones."
-    ]
-    
     init(activity: Activity, onAppearAction: @escaping () -> Void, onDisappearAction: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
         self.onAppearAction = onAppearAction
@@ -42,10 +29,10 @@ struct ActivityDetailView: View {
                 HStack {
                     Image(systemName: "location.fill")
                         .foregroundColor(.red)
-                    Text("Distance")
+                    Text(NSLocalizedString("Distance", comment: "Distance"))
                         .font(.subheadline).foregroundColor(.secondary)
                 }
-                Text(String(format: "%.2f km", viewModel.activity.distance / 1000))
+                Text(Formatters.formatDistance(viewModel.activity.distance))
                     .font(.title3).fontWeight(.bold)
             }
             Spacer()
@@ -53,10 +40,10 @@ struct ActivityDetailView: View {
                 HStack {
                     Image(systemName: "mountain.2.fill")
                         .foregroundColor(.green)
-                    Text("Elevation")
+                    Text(NSLocalizedString("Elevation", comment: "Elevation"))
                         .font(.subheadline).foregroundColor(.secondary)
                 }
-                Text(String(format: "%.0f m", viewModel.activity.elevationGain))
+                Text(Formatters.formatElevation(viewModel.activity.elevationGain))
                     .font(.title3).fontWeight(.bold)
             }
             Spacer()
@@ -64,7 +51,7 @@ struct ActivityDetailView: View {
                 HStack {
                     Image(systemName: "clock.fill")
                         .foregroundColor(.blue)
-                    Text("Time")
+                    Text(NSLocalizedString("Time", comment: "Time"))
                         .font(.subheadline).foregroundColor(.secondary)
                 }
                 Text(Int(viewModel.activity.duration).toHoursMinutesSeconds())
@@ -79,7 +66,7 @@ struct ActivityDetailView: View {
     private var rpeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Esfuerzo Percibido (RPE)")
+                Text(NSLocalizedString("kpi.rpe.title", comment: "RPE title"))
                     .font(.headline)
                 Spacer()
                 Text(String(format: "%.0f", viewModel.rpe))
@@ -88,7 +75,7 @@ struct ActivityDetailView: View {
                     .foregroundColor(.secondary)
             }
             .onTapGesture {
-                selectedKpiInfo = KPIInfo(title: "Esfuerzo Percibido (RPE)", description: kpiInfoData["Esfuerzo Percibido (RPE)"]!, higherIsBetter: false)
+                selectedKpiInfo = KPIInfo(title: NSLocalizedString("kpi.rpe.title", comment: "RPE title"), description: NSLocalizedString("kpi.rpe.description", comment: "RPE description"), higherIsBetter: false)
             }
             Slider(value: $viewModel.rpe, in: 1...10, step: 1)
         }
@@ -99,7 +86,7 @@ struct ActivityDetailView: View {
 
     private var tagSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Tipo de Actividad")
+            Text(NSLocalizedString("Activity Type", comment: "Activity Type"))
                 .font(.headline)
                 .padding(.horizontal)
 
@@ -112,7 +99,7 @@ struct ActivityDetailView: View {
                             VStack {
                                 Image(systemName: tag.icon)
                                     .font(.title2)
-                                Text(tag.rawValue)
+                                Text(tag.localizedName)
                                     .font(.caption)
                                     .multilineTextAlignment(.center)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -132,7 +119,7 @@ struct ActivityDetailView: View {
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Mis Notas", systemImage: "note.text")
+            Label(NSLocalizedString("My Notes", comment: "My Notes"), systemImage: "note.text")
                 .font(.headline)
             
             TextEditor(text: $viewModel.notes)
@@ -156,13 +143,13 @@ struct ActivityDetailView: View {
     // Sección de KPIs rediseñada y robusta
     private var trailKPIsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análisis de Trail")
+            Text(NSLocalizedString("Trail Analysis", comment: "Trail Analysis"))
                 .font(.title2).bold()
                 .foregroundColor(.primary)
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
                 if let gapKPI = viewModel.gapKPI {
-                    KPICardView(kpi: gapKPI, unit: "/km", icon: "speedometer", color: .cyan)
+                    KPICardView(kpi: gapKPI, unit: Formatters.isMetric ? "/km" : "/mi", icon: "speedometer", color: .cyan)
                         .onTapGesture { selectedKpiInfo = gapKPI }
                 }
                 
@@ -172,12 +159,12 @@ struct ActivityDetailView: View {
                 }
                 
                 if let vamKPI = viewModel.vamKPI {
-                    KPICardView(kpi: vamKPI, unit: "m/h", icon: "arrow.up.right.circle.fill", color: .orange)
+                    KPICardView(kpi: vamKPI, unit: Formatters.isMetric ? "m/h" : "ft/h", icon: "arrow.up.right.circle.fill", color: .orange)
                         .onTapGesture { selectedKpiInfo = vamKPI }
                 }
                 
                 if let descentVamKPI = viewModel.descentVamKPI {
-                    KPICardView(kpi: descentVamKPI, unit: "m/h", icon: "arrow.down.right.circle.fill", color: .blue)
+                    KPICardView(kpi: descentVamKPI, unit: Formatters.isMetric ? "m/h" : "ft/h", icon: "arrow.down.right.circle.fill", color: .blue)
                         .onTapGesture { selectedKpiInfo = descentVamKPI }
                 }
                 
@@ -198,7 +185,7 @@ struct ActivityDetailView: View {
     private var radarChartSection: some View {
         if !viewModel.radarChartDataPoints.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Análisis Comparativo Radar")
+                Text(NSLocalizedString("Comparative Radar Analysis", comment: "Comparative Radar Analysis"))
                     .font(.title2).bold()
                     .foregroundColor(.primary)
                     .padding(.horizontal)
@@ -216,7 +203,7 @@ struct ActivityDetailView: View {
     private var segmentsSection: some View {
         if !viewModel.climbSegments.isEmpty {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Segmentos Clave")
+                Text(NSLocalizedString("Key Segments", comment: "Key Segments"))
                     .font(.title2).bold()
                     .foregroundColor(.primary)
 
@@ -233,7 +220,7 @@ struct ActivityDetailView: View {
         if viewModel.heartRateZoneDistribution == nil && viewModel.performanceByGrade.isEmpty {
             VStack(spacing: 10) {
                 ProgressView()
-                Text("Calculando análisis avanzado...")
+                Text(NSLocalizedString("Calculating advanced analysis...", comment: "Calculating advanced analysis..."))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -261,12 +248,12 @@ struct ActivityDetailView: View {
     private var interactiveChartSection: some View {
         if viewModel.altitudeData.isEmpty {
             VStack {
-                Text("Análisis Interactivo")
+                Text(NSLocalizedString("Interactive Analysis", comment: "Interactive Analysis"))
                     .font(.title2).bold()
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Spacer()
                 ProgressView()
-                Text("Cargando datos del gráfico...")
+                Text(NSLocalizedString("Loading chart data...", comment: "Loading chart data..."))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
@@ -279,25 +266,25 @@ struct ActivityDetailView: View {
             InteractiveChartView(
                 altitudeData: viewModel.altitudeData,
                 overlayData: [
-                    "Ritmo": viewModel.paceData,
-                    "Frec. Cardíaca": viewModel.heartRateData,
-                    "Cadencia": viewModel.cadenceData,
-                    "Potencia": viewModel.powerData,
-                    "Zancada": viewModel.strideLengthData
+                    NSLocalizedString("Pace", comment: "Pace"): viewModel.paceData,
+                    NSLocalizedString("Heart Rate", comment: "Heart Rate"): viewModel.heartRateData,
+                    NSLocalizedString("Cadence", comment: "Cadence"): viewModel.cadenceData,
+                    NSLocalizedString("Power", comment: "Power"): viewModel.powerData,
+                    NSLocalizedString("Stride", comment: "Stride"): viewModel.strideLengthData
                 ],
                 overlayColors: [
-                    "Ritmo": .purple,
-                    "Frec. Cardíaca": .red,
-                    "Cadencia": .blue,
-                    "Potencia": .green,
-                    "Zancada": .orange
+                    NSLocalizedString("Pace", comment: "Pace"): .purple,
+                    NSLocalizedString("Heart Rate", comment: "Heart Rate"): .red,
+                    NSLocalizedString("Cadence", comment: "Cadence"): .blue,
+                    NSLocalizedString("Power", comment: "Power"): .green,
+                    NSLocalizedString("Stride", comment: "Stride"): .orange
                 ],
                 overlayUnits: [
-                    "Ritmo": "min/km",
-                    "Frec. Cardíaca": "BPM",
-                    "Cadencia": "spm",
-                    "Potencia": "W",
-                    "Zancada": "m"
+                    NSLocalizedString("Pace", comment: "Pace"): Formatters.isMetric ? "min/km" : "min/mi",
+                    NSLocalizedString("Heart Rate", comment: "Heart Rate"): NSLocalizedString("bpm", comment: "beats per minute"),
+                    NSLocalizedString("Cadence", comment: "Cadence"): NSLocalizedString("spm", comment: "steps per minute"),
+                    NSLocalizedString("Power", comment: "Power"): "W",
+                    NSLocalizedString("Stride", comment: "Stride"): Formatters.isMetric ? "m" : "ft"
                 ]
             )
         }
@@ -361,7 +348,7 @@ struct ActivityDetailView: View {
                         let analysisText = viewModel.generateAnalysisString()
                         share(items: [analysisText])
                     }) {
-                        Label("Compartir Análisis", systemImage: "text.quote")
+                        Label(NSLocalizedString("Share Analysis", comment: "Share Analysis"), systemImage: "text.quote")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding()
@@ -388,7 +375,7 @@ struct ActivityDetailView: View {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
                     HStack {
                         Image(systemName: "chevron.left")
-                        Text("Volver")
+                        Text(NSLocalizedString("Back", comment: "Back button"))
                     }
                     .foregroundColor(.accentColor)
                 }
@@ -447,11 +434,11 @@ struct ActivityDetailView: View {
             }
             .animation(.easeInOut, value: selectedKpiInfo != nil)
         )
-        .confirmationDialog("¿Quieres asociar esta carrera a un proceso?", isPresented: $viewModel.showAssociateToProcessDialog, titleVisibility: .visible) {
-            Button("Asociar a Proceso") {
+        .confirmationDialog(NSLocalizedString("Do you want to associate this race to a process?", comment: "Association confirmation"), isPresented: $viewModel.showAssociateToProcessDialog, titleVisibility: .visible) {
+            Button(NSLocalizedString("Associate to Process", comment: "Associate to Process")) {
                 viewModel.prepareToAssociateRace()
             }
-            Button("Cancelar", role: .cancel) {}
+            Button(NSLocalizedString("Cancel", comment: "Cancel button"), role: .cancel) {}
         }
     }
     
@@ -480,7 +467,7 @@ struct ActivityDetailView: View {
     
     private var aiCoachSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análisis IA")
+            Text(NSLocalizedString("AI Analysis", comment: "AI Analysis"))
                 .font(.title2).bold()
                 .foregroundColor(.primary)
             
@@ -488,7 +475,7 @@ struct ActivityDetailView: View {
                 if viewModel.aiCoachLoading {
                     HStack(spacing: 8) {
                         ProgressView()
-                        Text("Generando análisis...")
+                        Text(NSLocalizedString("Generating analysis...", comment: "Generating analysis..."))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -501,7 +488,7 @@ struct ActivityDetailView: View {
                         Text(err)
                             .font(.body)
                             .foregroundColor(.red)
-                        Button("Reintentar Análisis") {
+                        Button(NSLocalizedString("Retry Analysis", comment: "Retry Analysis")) {
                             viewModel.getAICoachObservation()
                         }
                         .buttonStyle(.bordered)
@@ -526,32 +513,32 @@ private struct SegmentRowView: View {
                 HStack {
                     Image(systemName: segment.type == .climb ? "arrow.up.forward.circle.fill" : "arrow.down.forward.circle.fill")
                         .foregroundColor(segment.type == .climb ? .green : .blue)
-                    Text(segment.type.rawValue)
+                    Text(segment.type.localizedName)
                         .font(.headline).bold()
                     Spacer()
-                    Text(String(format: "%.2f km @ %.1f%%", segment.distance / 1000, segment.averageGrade))
+                    Text(String(format: "%@ @ %.1f%%", Formatters.formatDistance(segment.distance), segment.averageGrade))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading) {
-                        Text("Ritmo").font(.caption).foregroundColor(.secondary)
+                        Text(NSLocalizedString("Pace", comment: "Pace")).font(.caption).foregroundColor(.secondary)
                         Text(segment.averagePace.toPaceFormat())
                     }
                     VStack(alignment: .leading) {
-                        Text("Desnivel").font(.caption).foregroundColor(.secondary)
-                        Text(String(format: "%@%.0f m", segment.elevationChange > 0 ? "+" : "", segment.elevationChange))
+                        Text(NSLocalizedString("Elevation", comment: "Elevation")).font(.caption).foregroundColor(.secondary)
+                        Text(String(format: "%@%@", segment.elevationChange > 0 ? "+" : "", Formatters.formatElevation(segment.elevationChange)))
                     }
                     if let vam = segment.verticalSpeed {
                         VStack(alignment: .leading) {
                             Text("VAM").font(.caption).foregroundColor(.secondary)
-                            Text(String(format: "%.0f m/h", vam))
+                            Text(Formatters.formatVerticalSpeed(vam))
                         }
                     }
                     if let hr = segment.averageHeartRate {
                         VStack(alignment: .leading) {
-                            Text("FC Media").font(.caption).foregroundColor(.secondary)
-                            Text(String(format: "%.0f", hr))
+                            Text(NSLocalizedString("Avg HR", comment: "Average Heart Rate")).font(.caption).foregroundColor(.secondary)
+                            Text(Formatters.formatHeartRate(hr))
                         }
                     }
                 }
@@ -598,7 +585,7 @@ private struct SegmentRowView: View {
             return filename
         }
     
-        func activityViewController(_ activityViewController: UIViewController,
+        func activityViewController(_ uiViewController: UIViewController,
     dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
             return "com.topografix.gpx"
         }

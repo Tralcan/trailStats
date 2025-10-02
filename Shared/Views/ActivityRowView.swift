@@ -36,7 +36,7 @@ struct ActivityRowView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "location.fill")
                             .foregroundColor(.red)
-                        Text(String(format: "%.2f km", activity.distance / 1000))
+                        Text(Formatters.formatDistance(activity.distance))
                             .font(.caption)
                             .foregroundColor(.red)
                     }
@@ -45,7 +45,7 @@ struct ActivityRowView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "mountain.2.fill")
                             .foregroundColor(.green)
-                        Text(String(format: "%.0f m", activity.elevationGain))
+                        Text(Formatters.formatElevation(activity.elevationGain))
                             .font(.caption)
                             .foregroundColor(.green)
                     }

@@ -11,7 +11,7 @@ struct KPICardView: View {
 
         switch kpi.title {
         case KPIInfo.gap.title:
-            return value.toPaceFormat()
+            return value.toPaceFormat(withUnit: false)
         case KPIInfo.decoupling.title:
             return String(format: "%.1f", value)
         case KPIInfo.vam.title, KPIInfo.descentVam.title:
@@ -47,8 +47,8 @@ struct KPICardView: View {
                     
                     if kpi.value != nil {
                         Text(unit)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.title2).bold()
+                            .foregroundColor(color)
                     }
                 }
 

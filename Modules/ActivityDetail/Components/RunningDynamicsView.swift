@@ -11,14 +11,14 @@ struct RunningDynamicsView: View {
     var body: some View {
         if hasAnyMetric {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Dinámica de Carrera")
+                Text(NSLocalizedString("running_dynamics_title", comment: "Running Dynamics title"))
                     .font(.title2).bold()
                     .foregroundColor(.primary)
 
                 VStack(spacing: 16) {
                     HStack(spacing: 16) {
                         if let kpi = verticalOscillationKPI {
-                            KPICardView(kpi: kpi, unit: "cm", icon: "arrow.up.and.down.circle.fill", color: .purple)
+                            KPICardView(kpi: kpi, unit: Formatters.isMetric ? "cm" : "in", icon: "arrow.up.and.down.circle.fill", color: .purple)
                                 .onTapGesture { onKpiTapped(kpi) }
                         }
                         if let kpi = groundContactTimeKPI {
@@ -28,7 +28,7 @@ struct RunningDynamicsView: View {
                     }
                     HStack(spacing: 16) {
                         if let kpi = strideLengthKPI {
-                            KPICardView(kpi: kpi, unit: "m", icon: "ruler.fill", color: .orange)
+                            KPICardView(kpi: kpi, unit: Formatters.isMetric ? "m" : "ft", icon: "ruler.fill", color: .orange)
                                 .onTapGesture { onKpiTapped(kpi) }
                         }
                         if let kpi = verticalRatioKPI {

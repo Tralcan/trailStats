@@ -25,7 +25,7 @@ struct ProcessesView: View {
                                 .foregroundColor(.secondary)
                             Spacer()
                             if processData.isActive {
-                                Text("ACTIVO")
+                                Text(NSLocalizedString("ACTIVE", comment: "Active process label"))
                                     .font(.caption.bold())
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 8)
@@ -71,7 +71,7 @@ struct ProcessesView: View {
                         Button {
                             processToEdit = processData.process
                         } label: {
-                            Label("Editar", systemImage: "pencil")
+                            Label(NSLocalizedString("Edit", comment: "Edit button"), systemImage: "pencil")
                         }
                         .tint(.blue)
                     }
@@ -80,7 +80,7 @@ struct ProcessesView: View {
                     viewModel.deleteProcess(at: indexSet)
                 }
             }
-            .navigationTitle("Procesos")
+            .navigationTitle(NSLocalizedString("Processes", comment: "Processes view title"))
             .navigationBarItems(trailing: Button(action: {
                 isShowingCreateSheet = true
             }) {

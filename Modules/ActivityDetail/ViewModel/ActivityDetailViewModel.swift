@@ -17,8 +17,12 @@ struct ActivitySegment: Identifiable, Hashable, Codable {
     let verticalSpeed: Double?
 
     enum SegmentType: String, Codable {
-        case climb = "Subida"
-        case descent = "Bajada"
+        case climb = "Climb"
+        case descent = "Descent"
+
+        var localizedName: String {
+            return NSLocalizedString(self.rawValue, comment: "Segment type")
+        }
     }
     
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -317,41 +321,45 @@ class ActivityDetailViewModel: ObservableObject {
             self.aiCoachLoading = false
         }
         if let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
+            let vamValue = cachedMetrics.verticalSpeedVAM
+            let descentVamValue = cachedMetrics.descentVerticalSpeed
+            let isMetric = Formatters.isMetric
+
             self.vamKPI = KPIInfo(
-                title: KPIInfo.vam.title,
-                description: KPIInfo.vam.description,
-                value: cachedMetrics.verticalSpeedVAM,
-                higherIsBetter: KPIInfo.vam.higherIsBetter
+                title: NSLocalizedString("kpi.vam.title", comment: "VAM title"),
+                description: NSLocalizedString("kpi.vam.description", comment: "VAM description"),
+                value: isMetric ? vamValue : vamValue.map { $0 * 3.28084 },
+                higherIsBetter: true
             )
             self.decouplingKPI = KPIInfo(
-                title: KPIInfo.decoupling.title,
-                description: KPIInfo.decoupling.description,
+                title: NSLocalizedString("kpi.decoupling.title", comment: "Decoupling title"),
+                description: NSLocalizedString("kpi.decoupling.description", comment: "Decoupling description"),
                 value: cachedMetrics.cardiacDecoupling,
-                higherIsBetter: KPIInfo.decoupling.higherIsBetter
+                higherIsBetter: false
             )
             self.descentVamKPI = KPIInfo(
-                title: KPIInfo.descentVam.title,
-                description: KPIInfo.descentVam.description,
-                value: cachedMetrics.descentVerticalSpeed,
-                higherIsBetter: KPIInfo.descentVam.higherIsBetter
+                title: NSLocalizedString("kpi.descentVam.title", comment: "Descent VAM title"),
+                description: NSLocalizedString("kpi.descentVam.description", comment: "Descent VAM description"),
+                value: isMetric ? descentVamValue : descentVamValue.map { $0 * 3.28084 },
+                higherIsBetter: true
             )
             self.normalizedPowerKPI = KPIInfo(
-                title: KPIInfo.normalizedPower.title,
-                description: KPIInfo.normalizedPower.description,
+                title: NSLocalizedString("kpi.normalizedPower.title", comment: "Normalized Power title"),
+                description: NSLocalizedString("kpi.normalizedPower.description", comment: "Normalized Power description"),
                 value: cachedMetrics.normalizedPower,
-                higherIsBetter: KPIInfo.normalizedPower.higherIsBetter
+                higherIsBetter: true
             )
             self.gapKPI = KPIInfo(
-                title: KPIInfo.gap.title,
-                description: KPIInfo.gap.description,
+                title: NSLocalizedString("kpi.gap.title", comment: "GAP title"),
+                description: NSLocalizedString("kpi.gap.description", comment: "GAP description"),
                 value: cachedMetrics.gradeAdjustedPace,
-                higherIsBetter: KPIInfo.gap.higherIsBetter
+                higherIsBetter: false
             )
             self.efficiencyIndexKPI = KPIInfo(
-                title: KPIInfo.efficiencyIndex.title,
-                description: KPIInfo.efficiencyIndex.description,
+                title: NSLocalizedString("kpi.efficiencyIndex.title", comment: "Efficiency Index title"),
+                description: NSLocalizedString("kpi.efficiencyIndex.description", comment: "Efficiency Index description"),
                 value: cachedMetrics.efficiencyIndex,
-                higherIsBetter: KPIInfo.efficiencyIndex.higherIsBetter
+                higherIsBetter: true
             )
             
             self.climbSegments = cachedMetrics.climbSegments
@@ -374,41 +382,45 @@ class ActivityDetailViewModel: ObservableObject {
         self.paceData = pace
         self.strideLengthData = strideLength
         if let metrics = metrics {
+            let vamValue = metrics.verticalSpeedVAM
+            let descentVamValue = metrics.descentVerticalSpeed
+            let isMetric = Formatters.isMetric
+
             self.vamKPI = KPIInfo(
-                title: KPIInfo.vam.title,
-                description: KPIInfo.vam.description,
-                value: metrics.verticalSpeedVAM,
-                higherIsBetter: KPIInfo.vam.higherIsBetter
+                title: NSLocalizedString("kpi.vam.title", comment: "VAM title"),
+                description: NSLocalizedString("kpi.vam.description", comment: "VAM description"),
+                value: isMetric ? vamValue : vamValue.map { $0 * 3.28084 },
+                higherIsBetter: true
             )
             self.decouplingKPI = KPIInfo(
-                title: KPIInfo.decoupling.title,
-                description: KPIInfo.decoupling.description,
+                title: NSLocalizedString("kpi.decoupling.title", comment: "Decoupling title"),
+                description: NSLocalizedString("kpi.decoupling.description", comment: "Decoupling description"),
                 value: metrics.cardiacDecoupling,
-                higherIsBetter: KPIInfo.decoupling.higherIsBetter
+                higherIsBetter: false
             )
             self.descentVamKPI = KPIInfo(
-                title: KPIInfo.descentVam.title,
-                description: KPIInfo.descentVam.description,
-                value: metrics.descentVerticalSpeed,
-                higherIsBetter: KPIInfo.descentVam.higherIsBetter
+                title: NSLocalizedString("kpi.descentVam.title", comment: "Descent VAM title"),
+                description: NSLocalizedString("kpi.descentVam.description", comment: "Descent VAM description"),
+                value: isMetric ? descentVamValue : descentVamValue.map { $0 * 3.28084 },
+                higherIsBetter: true
             )
             self.normalizedPowerKPI = KPIInfo(
-                title: KPIInfo.normalizedPower.title,
-                description: KPIInfo.normalizedPower.description,
+                title: NSLocalizedString("kpi.normalizedPower.title", comment: "Normalized Power title"),
+                description: NSLocalizedString("kpi.normalizedPower.description", comment: "Normalized Power description"),
                 value: metrics.normalizedPower,
-                higherIsBetter: KPIInfo.normalizedPower.higherIsBetter
+                higherIsBetter: true
             )
             self.gapKPI = KPIInfo(
-                title: KPIInfo.gap.title,
-                description: KPIInfo.gap.description,
+                title: NSLocalizedString("kpi.gap.title", comment: "GAP title"),
+                description: NSLocalizedString("kpi.gap.description", comment: "GAP description"),
                 value: metrics.gradeAdjustedPace,
-                higherIsBetter: KPIInfo.gap.higherIsBetter
+                higherIsBetter: false
             )
             self.efficiencyIndexKPI = KPIInfo(
-                title: KPIInfo.efficiencyIndex.title,
-                description: KPIInfo.efficiencyIndex.description,
+                title: NSLocalizedString("kpi.efficiencyIndex.title", comment: "Efficiency Index title"),
+                description: NSLocalizedString("kpi.efficiencyIndex.description", comment: "Efficiency Index description"),
                 value: metrics.efficiencyIndex,
-                higherIsBetter: KPIInfo.efficiencyIndex.higherIsBetter
+                higherIsBetter: true
             )
             
             self.climbSegments = metrics.climbSegments
@@ -424,21 +436,33 @@ class ActivityDetailViewModel: ObservableObject {
     
     // MARK: - User Actions
     func generateAnalysisString() -> String {
-        var analysis = "*Análisis de la Actividad: \(activity.name)*\n\n"
+        var analysis = String(format: NSLocalizedString("Activity Analysis: %@", comment: "Activity analysis title"), activity.name) + "\n\n"
 
-        let kpis = gatherActivityKPIs() 
+        let kpis = gatherActivityKPIs()
         
-        // Ordenar KPIs para una presentación consistente
         let orderedKeys = [
-            "Fecha", "Distancia", "Tiempo en Movimiento", "Desnivel Positivo", "Esfuerzo Percibido (RPE)",
-            "Tipo de Carrera", "Ritmo Ajustado por Pendiente (GAP)", "Frecuencia Cardíaca Promedio",
-            "VAM (Velocidad de Ascenso Media)", "Velocidad de Descenso Media",
-            "Desacoplamiento Cardíaco (Ritmo:FC)", "Potencia Normalizada (NP)",
-            "Potencia Promedio", "Cadencia Promedio", "Índice de Eficiencia (Velocidad/FC)",
-            // Nuevas métricas de dinámica de carrera
-            "Oscilación Vertical", "Tiempo de Contacto con el Suelo", "Longitud de Zancada", "Ratio Vertical",
-            // KPIs complejos al final
-            "Distribución de Zonas de FC", "Rendimiento por Pendiente", "Segmentos Clave"
+            NSLocalizedString("Date", comment: "Date"),
+            NSLocalizedString("Distance", comment: "Distance"),
+            NSLocalizedString("Moving Time", comment: "Moving Time"),
+            NSLocalizedString("Positive Elevation", comment: "Positive Elevation"),
+            NSLocalizedString("Perceived Effort (RPE)", comment: "Perceived Effort (RPE)"),
+            NSLocalizedString("Race Type", comment: "Race Type"),
+            NSLocalizedString("Grade Adjusted Pace (GAP)", comment: "Grade Adjusted Pace (GAP)"),
+            NSLocalizedString("Average Heart Rate", comment: "Average Heart Rate"),
+            NSLocalizedString("VAM (Average Ascent Speed)", comment: "VAM (Average Ascent Speed)"),
+            NSLocalizedString("Average Descent Speed", comment: "Average Descent Speed"),
+            NSLocalizedString("Cardiac Decoupling (Pace:HR)", comment: "Cardiac Decoupling (Pace:HR)"),
+            NSLocalizedString("Normalized Power (NP)", comment: "Normalized Power (NP)"),
+            NSLocalizedString("Average Power", comment: "Average Power"),
+            NSLocalizedString("Average Cadence", comment: "Average Cadence"),
+            NSLocalizedString("Efficiency Index (Speed/HR)", comment: "Efficiency Index (Speed/HR)"),
+            NSLocalizedString("Vertical Oscillation", comment: "Vertical Oscillation"),
+            NSLocalizedString("Ground Contact Time", comment: "Ground Contact Time"),
+            NSLocalizedString("Stride Length", comment: "Stride Length"),
+            NSLocalizedString("Vertical Ratio", comment: "Vertical Ratio"),
+            NSLocalizedString("Heart Rate Zone Distribution", comment: "Heart Rate Zone Distribution"),
+            NSLocalizedString("Performance by Grade", comment: "Performance by Grade"),
+            NSLocalizedString("Key Segments", comment: "Key Segments")
         ]
         
         for key in orderedKeys {
@@ -451,24 +475,20 @@ class ActivityDetailViewModel: ObservableObject {
     }
 
     func getAICoachObservation(newTag: ActivityTag? = nil) {
-        // Evitar llamadas múltiples si ya está cargando
         if aiCoachLoading { return }
 
         let currentTag = newTag ?? self.tag
 
-        // Salir si el tipo de carrera no está definido
         guard currentTag != nil else {
-            self.aiCoachObservation = "Por favor, selecciona un tipo de carrera para obtener el análisis de la IA."
+            self.aiCoachObservation = NSLocalizedString("Please select a race type to get AI analysis.", comment: "AI analysis placeholder")
             self.aiCoachError = nil
             self.aiCoachLoading = false
             self.cacheManager.deleteAICoachText(activityId: self.activity.id)
             return
         }
 
-        // Salir si los datos clave aún no se han procesado.
-        // Se volverá a llamar cuando finalice el procesamiento de datos.
         guard vamKPI != nil else { 
-            print("[AICoach] Datos de KPI aún no procesados. Omitiendo la solicitud.")
+            print("[AICoach] KPI data not yet processed. Skipping request.")
             return
         }
 
@@ -490,7 +510,7 @@ class ActivityDetailViewModel: ObservableObject {
                     self.aiCoachObservation = observation
                     self.cacheManager.saveAICoachText(activityId: self.activity.id, text: observation)
                 case .failure(let error):
-                    self.aiCoachError = "Análisis del IA Coach no disponible: \(error.localizedDescription)"
+                    self.aiCoachError = String(format: NSLocalizedString("AI Coach analysis not available: %@", comment: "AI analysis error"), error.localizedDescription)
                 }
             }
         }
@@ -509,10 +529,10 @@ class ActivityDetailViewModel: ObservableObject {
                         self?.gpxDataToShare = gpxString.data(using: .utf8)
                     }
                     else {
-                        self?.errorMessage = "Failed to generate GPX data."
+                        self?.errorMessage = NSLocalizedString("Failed to generate GPX data.", comment: "GPX generation error")
                     }
                 case .failure(let error):
-                    self?.errorMessage = "Failed to fetch activity streams for GPX: \(error.localizedDescription)"
+                    self?.errorMessage = String(format: NSLocalizedString("Failed to fetch activity streams for GPX: %@", comment: "GPX fetch error"), error.localizedDescription)
                 }
             }
         }
@@ -521,67 +541,62 @@ class ActivityDetailViewModel: ObservableObject {
     private func gatherActivityKPIs(newTag: ActivityTag? = nil) -> [String: String] {
         var kpis: [String: String] = [: ]
 
-        // Basic Activity Data
-        kpis["Nombre de la Actividad"] = activity.name
-        kpis["Fecha"] = Formatters.dateFormatter.string(from: activity.date)
-        kpis["Distancia"] = Formatters.formatDistance(activity.distance)
-        kpis["Tiempo en Movimiento"] = Formatters.formatTime(Int(activity.duration))
-        kpis["Desnivel Positivo"] = Formatters.formatElevation(activity.elevationGain)
+        kpis[NSLocalizedString("Activity Name", comment: "Activity Name")] = activity.name
+        kpis[NSLocalizedString("Date", comment: "Date")] = Formatters.dateFormatter.string(from: activity.date)
+        kpis[NSLocalizedString("Distance", comment: "Distance")] = Formatters.formatDistance(activity.distance)
+        kpis[NSLocalizedString("Moving Time", comment: "Moving Time")] = Formatters.formatTime(Int(activity.duration))
+        kpis[NSLocalizedString("Positive Elevation", comment: "Positive Elevation")] = Formatters.formatElevation(activity.elevationGain)
 
-        // Main KPIs from Activity object
         if let avgHR = activity.averageHeartRate {
-            kpis["Frecuencia Cardíaca Promedio"] = Formatters.formatHeartRate(avgHR)
+            kpis[NSLocalizedString("Average Heart Rate", comment: "Average Heart Rate")] = Formatters.formatHeartRate(avgHR)
         }
         if let avgCadence = activity.averageCadence {
-            kpis["Cadencia Promedio"] = Formatters.formatCadence(avgCadence)
+            kpis[NSLocalizedString("Average Cadence", comment: "Average Cadence")] = Formatters.formatCadence(avgCadence)
         }
         if let avgPower = activity.averagePower {
-            kpis["Potencia Promedio"] = Formatters.formatPower(avgPower)
+            kpis[NSLocalizedString("Average Power", comment: "Average Power")] = Formatters.formatPower(avgPower)
         }
 
-        // HealthKit Running Dynamics
         if let vo = activity.verticalOscillation {
-            kpis["Oscilación Vertical"] = String(format: "%.1f cm", vo)
+            kpis[NSLocalizedString("Vertical Oscillation", comment: "Vertical Oscillation")] = String(format: "%.1f cm", vo)
         }
         if let gct = activity.groundContactTime {
-            kpis["Tiempo de Contacto con el Suelo"] = String(format: "%.0f ms", gct)
+            kpis[NSLocalizedString("Ground Contact Time", comment: "Ground Contact Time")] = String(format: "%.0f ms", gct)
         }
         if let sl = activity.strideLength {
-            kpis["Longitud de Zancada"] = String(format: "%.2f m", sl)
+            kpis[NSLocalizedString("Stride Length", comment: "Stride Length")] = String(format: "%.2f m", sl)
         }
         if let vr = activity.verticalRatio {
-            kpis["Ratio Vertical"] = String(format: "%.1f %%", vr)
+            kpis[NSLocalizedString("Vertical Ratio", comment: "Vertical Ratio")] = String(format: "%.1f %%", vr)
         }
 
-        // Calculated KPIs from ViewModel
         if let vam = vamKPI?.value {
-            kpis["VAM (Velocidad de Ascenso Media)"] = Formatters.formatVerticalSpeed(vam)
+            kpis[NSLocalizedString("VAM (Average Ascent Speed)", comment: "VAM (Average Ascent Speed)")] = Formatters.formatVerticalSpeed(vam)
         }
         if let decoupling = decouplingKPI?.value {
-            kpis["Desacoplamiento Cardíaco (Ritmo:FC)"] = Formatters.formatDecoupling(decoupling)
+            kpis[NSLocalizedString("Cardiac Decoupling (Pace:HR)", comment: "Cardiac Decoupling (Pace:HR)")] = Formatters.formatDecoupling(decoupling)
         }
         if let descentV = descentVamKPI?.value {
-            kpis["Velocidad de Descenso Media"] = Formatters.formatVerticalSpeed(descentV)
+            kpis[NSLocalizedString("Average Descent Speed", comment: "Average Descent Speed")] = Formatters.formatVerticalSpeed(descentV)
         }
         if let np = normalizedPowerKPI?.value {
-            kpis["Potencia Normalizada (NP)"] = Formatters.formatPower(np)
+            kpis[NSLocalizedString("Normalized Power (NP)", comment: "Normalized Power (NP)")] = Formatters.formatPower(np)
         }
         if let gap = gapKPI?.value {
-            kpis["Ritmo Ajustado por Pendiente (GAP)"] = gap.toPaceFormat()
+            kpis[NSLocalizedString("Grade Adjusted Pace (GAP)", comment: "Grade Adjusted Pace (GAP)")] = gap.toPaceFormat()
         }
         if let efficiency = efficiencyIndexKPI?.value {
-            kpis["Índice de Eficiencia (Velocidad/FC)"] = Formatters.formatEfficiencyIndex(efficiency)
+            kpis[NSLocalizedString("Efficiency Index (Speed/HR)", comment: "Efficiency Index (Speed/HR)")] = Formatters.formatEfficiencyIndex(efficiency)
         }
         if let rpe = activity.rpe {
-            kpis["Esfuerzo Percibido (RPE)"] = String(format: "%.0f/10", rpe)
+            kpis[NSLocalizedString("Perceived Effort (RPE)", comment: "Perceived Effort (RPE)")] = String(format: "%.0f/10", rpe)
         }
         
         let currentTag = newTag ?? self.tag
         if let tag = currentTag {
-            kpis["Tipo de Carrera"] = tag.rawValue
+            kpis[NSLocalizedString("Race Type", comment: "Race Type")] = tag.localizedName
         }
 
-        // Complex KPIs formatting
         if let hrZones = heartRateZoneDistribution {
             let zones = [
                 "Z1: \(Int(hrZones.timeInZone1).toHoursMinutesSeconds())",
@@ -590,27 +605,27 @@ class ActivityDetailViewModel: ObservableObject {
                 "Z4: \(Int(hrZones.timeInZone4).toHoursMinutesSeconds())",
                 "Z5: \(Int(hrZones.timeInZone5).toHoursMinutesSeconds())"
             ]
-            kpis["Distribución de Zonas de FC"] = "\n" + zones.joined(separator: "\n")
+            kpis[NSLocalizedString("Heart Rate Zone Distribution", comment: "Heart Rate Zone Distribution")] = "\n" + zones.joined(separator: "\n")
         }
 
         if !performanceByGrade.isEmpty {
             let performanceSummary = performanceByGrade.map {
                 "\($0.gradeBucket): \($0.averagePace.toPaceFormat())"
             }.joined(separator: "\n")
-            kpis["Rendimiento por Pendiente"] = "\n" + performanceSummary
+            kpis[NSLocalizedString("Performance by Grade", comment: "Performance by Grade")] = "\n" + performanceSummary
         }
         
         if !climbSegments.isEmpty {
             let segmentsSummary = climbSegments.map {
-                let type = $0.type == .climb ? "Subida" : "Bajada"
+                let type = $0.type.localizedName
                 let distance = Formatters.formatDistance($0.distance)
                 let grade = Formatters.formatGrade($0.averageGrade)
                 let pace = $0.averagePace.toPaceFormat()
-                return "- \(type) de \(distance) al \(grade) (Ritmo: \(pace))"
+                return "- \(type) " + String(format: NSLocalizedString("of %@ at %@ (Pace: %@)", comment: "segment summary format"), distance, grade, pace)
             }.joined(separator: "\n")
 
             if !segmentsSummary.isEmpty {
-                kpis["Segmentos Clave"] = "\n" + segmentsSummary
+                kpis[NSLocalizedString("Key Segments", comment: "Key Segments")] = "\n" + segmentsSummary
             }
         }
 
@@ -656,6 +671,8 @@ class ActivityDetailViewModel: ObservableObject {
         
         let recentMetrics = recentActivities.compactMap { cacheManager.loadProcessedMetrics(activityId: $0.id) }
         
+        let isMetric = Formatters.isMetric
+
         // Update KPIs from Processed Metrics
         vamKPI = vamKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.verticalSpeedVAM }) }
         decouplingKPI = decouplingKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.cardiacDecoupling }) }
@@ -665,13 +682,13 @@ class ActivityDetailViewModel: ObservableObject {
         efficiencyIndexKPI = efficiencyIndexKPI.map { updateTrend(for: $0, with: recentMetrics.compactMap { $0.efficiencyIndex }) }
         
         // Update KPIs from Activity object (Running Dynamics)
-        verticalOscillationKPI = activity.verticalOscillation.map { KPIInfo(title: KPIInfo.verticalOscillation.title, description: KPIInfo.verticalOscillation.description, value: $0, higherIsBetter: KPIInfo.verticalOscillation.higherIsBetter) }
+        verticalOscillationKPI = activity.verticalOscillation.map { KPIInfo(title: KPIInfo.verticalOscillation.title, description: KPIInfo.verticalOscillation.description, value: isMetric ? $0 : $0 * 0.393701, higherIsBetter: KPIInfo.verticalOscillation.higherIsBetter) }
         verticalOscillationKPI = verticalOscillationKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.verticalOscillation }) }
 
         groundContactTimeKPI = activity.groundContactTime.map { KPIInfo(title: KPIInfo.groundContactTime.title, description: KPIInfo.groundContactTime.description, value: $0, higherIsBetter: KPIInfo.groundContactTime.higherIsBetter) }
         groundContactTimeKPI = groundContactTimeKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.groundContactTime }) }
 
-        strideLengthKPI = activity.strideLength.map { KPIInfo(title: KPIInfo.strideLength.title, description: KPIInfo.strideLength.description, value: $0, higherIsBetter: KPIInfo.strideLength.higherIsBetter) }
+        strideLengthKPI = activity.strideLength.map { KPIInfo(title: KPIInfo.strideLength.title, description: KPIInfo.strideLength.description, value: isMetric ? $0 : $0 * 3.28084, higherIsBetter: KPIInfo.strideLength.higherIsBetter) }
         strideLengthKPI = strideLengthKPI.map { updateTrend(for: $0, with: recentActivities.compactMap { $0.strideLength }) }
 
         verticalRatioKPI = activity.verticalRatio.map { KPIInfo(title: KPIInfo.verticalRatio.title, description: KPIInfo.verticalRatio.description, value: $0, higherIsBetter: KPIInfo.verticalRatio.higherIsBetter) }

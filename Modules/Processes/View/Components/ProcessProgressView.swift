@@ -5,7 +5,7 @@ struct ProcessProgressView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Progreso del Proceso")
+            Text(NSLocalizedString("process_progress_title", comment: "Process Progress title"))
                 .font(.title3).bold()
 
             GeometryReader { geometry in
@@ -30,7 +30,7 @@ struct ProcessProgressView: View {
             }
             .frame(height: 30) // Altura para contener la línea y el icono
 
-            Text("Completado: \(Int(progress * 100))%")
+            Text(String(format: NSLocalizedString("process_completed_format", comment: "Process completed percentage format"), Int(progress * 100)))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
