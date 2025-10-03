@@ -7,10 +7,23 @@ struct RacePrepView: View {
     var body: some View {
         NavigationView {
             VStack {
+                HStack(spacing: 0) {
+                    Text(NSLocalizedString("Completed Races Part 1", comment: "Primera parte del título principal de carreras completadas"))
+                        .foregroundColor(.primary)
+                    Text(NSLocalizedString("Completed Races Part 2", comment: "Segunda parte del título principal de carreras completadas"))
+                        .foregroundColor(Color("StravaOrange"))
+                }
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 60)
+                .padding(.bottom, 0)
+                .padding(.horizontal)
+
                 if viewModel.isLoading {
-                    ProgressView("Cargando carreras...")
+                    ProgressView(NSLocalizedString("Loading races...", comment: "Estado: cargando lista de carreras"))
                 } else if viewModel.raceActivities.isEmpty {
-                    Text("No se encontraron carreras.")
+                    Text(NSLocalizedString("No races found", comment: "Mensaje de lista vacía de carreras"))
                         .foregroundColor(.secondary)
                 } else {
                     List {
@@ -51,10 +64,10 @@ struct RacePrepView: View {
                                         // Duration
                                         HStack(spacing: 4) {
                                             Image(systemName: "hourglass")
-                                                .foregroundColor(.blue)
+                                                .foregroundColor(Color("StravaOrange"))
                                             Text(Int(activity.duration).toHoursMinutesSeconds())
                                                 .font(.caption)
-                                                .foregroundColor(.blue)
+                                                .foregroundColor(Color("StravaOrange"))
                                         }
                                         
                                         Spacer()
@@ -71,12 +84,14 @@ struct RacePrepView: View {
                     }
                 }
             }
-            .navigationTitle("Carreras")
+            .toolbar {
+                // Removed the ToolbarItem with placement: .principal
+            }
             .task {
                 await viewModel.loadRaceActivities()
             }
             .sheet(item: $selectedActivity) { activity in
-                ActivityDetailView(activity: activity, onAppearAction: {}, onDisappearAction: {})
+                ActivityDetailView(activity: activity, isReadOnly: true, onAppearAction: {}, onDisappearAction: {})
             }
         }
     }

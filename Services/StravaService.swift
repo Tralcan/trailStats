@@ -23,6 +23,7 @@ enum StravaAPIDefinition {
     case getActivities(page: Int, perPage: Int)
     case getActivityStreams(activityId: Int)
     case refreshToken
+    case getAthlete
     
     var url: URL? {
         var components = URLComponents()
@@ -45,6 +46,8 @@ enum StravaAPIDefinition {
             ]
         case .refreshToken:
             components.path = "/oauth/token"
+        case .getAthlete:
+            components.path = "/api/v3/athlete"
         }
         
         return components.url
@@ -190,6 +193,52 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
 
             case .failure(let error):
                 // Token refresh failed, propagate the error
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func getAthlete(completion: @escaping (Result<StravaAthlete, Error>) -> Void) {
+        refreshTokenIfNeeded { [weak self] refreshResult in
+            guard let self = self else { return }
+
+            switch refreshResult {
+            case .success:
+                guard let url = StravaAPIDefinition.getAthlete.url else {
+                    completion(.failure(StravaAuthError.invalidAPIRequestURL))
+                    return
+                }
+
+                guard let accessTokenData = KeychainHelper.read(service: "strava", account: "accessToken"), let accessToken = String(data: accessTokenData, encoding: .utf8) else {
+                    completion(.failure(StravaAuthError.missingAccessToken))
+                    return
+                }
+
+                var request = URLRequest(url: url)
+                request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    if let error = error {
+                        completion(.failure(error))
+                        return
+                    }
+
+                    guard let data = data else {
+                        completion(.failure(StravaAuthError.noDataInAPIResponse))
+                        return
+                    }
+
+                    do {
+                        let decoder = JSONDecoder()
+                        let athlete = try decoder.decode(StravaAthlete.self, from: data)
+                        completion(.success(athlete))
+                    } catch {
+                        print("Decoding error: \(error)")
+                        completion(.failure(error))
+                    }
+                }.resume()
+
+            case .failure(let error):
                 completion(.failure(error))
             }
         }

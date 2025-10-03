@@ -44,7 +44,8 @@ struct PerformanceByGradeView: View {
                         Text(data.averagePace.toPaceFormat())
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         
-                        Text(data.verticalSpeed != nil ? String(format: "%.0f", data.verticalSpeed!) : "--")
+                        let verticalSpeed = data.verticalSpeed.map { Formatters.isMetric ? $0 : $0 * 3.28084 }
+                        Text(verticalSpeed != nil ? String(format: "%.0f", verticalSpeed!) : "--")
                             .frame(maxWidth: .infinity, alignment: .trailing)
 
                         Text(data.averageCadence != nil ? String(format: "%.0f", data.averageCadence!) : "--")

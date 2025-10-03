@@ -44,11 +44,11 @@ struct InteractiveChartView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análisis Interactivo")
+            Text(NSLocalizedString("Interactive Analysis", comment: "Interactive Analysis"))
                 .font(.title2).bold()
 
             // Selector de métrica
-            Picker("Métrica", selection: $selectedOverlayKey) {
+            Picker(NSLocalizedString("Metric", comment: "Metric"), selection: $selectedOverlayKey) {
                 ForEach(overlayKeys, id: \.self) { key in
                     Text(key)
                 }
@@ -79,7 +79,7 @@ struct InteractiveChartView: View {
             if !altitudeData.isEmpty {
                 TimeSeriesChartView(
                     data: altitudeData,
-                    title: "Perfil de Altimetría",
+                    title: NSLocalizedString("Altimetry Profile", comment: "Altimetry Profile"),
                     yAxisLabel: "m",
                     color: .purple,
                     showAverage: false,
@@ -87,7 +87,7 @@ struct InteractiveChartView: View {
                 )
                 .frame(height: 120)
             } else {
-                placeholderView(for: "Altimetría")
+                placeholderView(for: NSLocalizedString("Altimetry Profile", comment: "Altimetry Profile"))
             }
         }
         .padding()
@@ -100,7 +100,7 @@ struct InteractiveChartView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.gray.opacity(0.1))
-            Text("No hay datos para \(metricName)")
+            Text(String(format: NSLocalizedString("No data for %@", comment: "No data for %@"), metricName))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

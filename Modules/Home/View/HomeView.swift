@@ -17,8 +17,6 @@ struct HomeView: View {
                     authenticationPrompt
                 }
             }
-            .navigationTitle(viewModel.isAuthenticated ? Text(NSLocalizedString("Activities", comment: "")) : Text(NSLocalizedString("Welcome", comment: "")))
-            .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showOptionsMenu = true }) {
@@ -45,42 +43,95 @@ struct HomeView: View {
     }
     
     @State private var isShowingAdvancedSearch = false
-    
+    @State private var showTitle = true
+
     private var activityList: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button(NSLocalizedString("Advanced Search", comment: "")) {
-                    isShowingAdvancedSearch = true
-                }
-                .padding(.horizontal)
-            }
-            List {
-                ForEach(viewModel.filteredActivities) { activity in
-                    NavigationLink(destination: ActivityDetailView(activity: activity, onAppearAction: {
-                        viewModel.markActivityAsCached(activityId: activity.id)
-                    }, onDisappearAction: {
-                        viewModel.reloadDataFromCache()
-                    })) {
-                        ActivityRowView(activity: activity, isCached: viewModel.isActivityCached(activityId: activity.id))
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if showTitle {
+                        VStack(alignment: .leading) {
+                            HStack(spacing: 0) {
+                                Text(NSLocalizedString("Welcome", comment: "") + " ")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                Text(viewModel.athleteName ?? "")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.accentColor)
+                            }
+                            Text(NSLocalizedString("Activities", comment: ""))
+                                .font(.title)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.bottom)
                     }
-                    .onAppear {
-                        if viewModel.shouldLoadMoreActivities(activity: activity) {
-                            viewModel.fetchActivities()
+
+                    LazyVStack {
+                        ForEach(viewModel.filteredActivities) { activity in
+                            NavigationLink(destination: ActivityDetailView(activity: activity, onAppearAction: {
+                                viewModel.markActivityAsCached(activityId: activity.id)
+                            }, onDisappearAction: {
+                                viewModel.reloadDataFromCache()
+                            })) {
+                                ActivityRowView(activity: activity, isCached: viewModel.isActivityCached(activityId: activity.id))
+                            }
+                            .onAppear {
+                                if viewModel.shouldLoadMoreActivities(activity: activity) {
+                                    viewModel.fetchActivities()
+                                }
+                            }
+                            Rectangle()
+                                .frame(height: 0.5)
+                                .foregroundColor(Color.white.opacity(0.5))
+                                .padding(.horizontal, 12)
                         }
                     }
+                    .padding(.horizontal, 12)
+
+                    if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    Spacer()
+                        .frame(height: 80)
                 }
-                if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal, 12)
+                .background(GeometryReader {
+                    Color.clear.preference(key: ViewOffsetKey.self, value: -$0.frame(in: .named("scroll")).origin.y)
+                })
+                .onPreferenceChange(ViewOffsetKey.self) { offset in
+                    withAnimation {
+                        showTitle = offset < 40
+                    }
                 }
             }
-            .listStyle(.plain)
-            .refreshable {
-                viewModel.refreshActivities()
+            .coordinateSpace(name: "scroll")
+            
+            HStack {
+                TextField(NSLocalizedString("Search activities", comment: ""), text: $viewModel.searchText)
+                    .textFieldStyle(.plain)
+                
+                Button(action: {
+                    isShowingAdvancedSearch = true
+                }) {
+                    Image(systemName: "slider.horizontal.3")
+                }
             }
-            .onAppear(perform: viewModel.refreshCacheStatus)
+            .padding()
+            .background(.ultraThinMaterial, in: Capsule())
+            .padding()
         }
+        .listStyle(.plain)
+        .refreshable {
+            viewModel.refreshActivities()
+        }
+        .onAppear(perform: viewModel.refreshCacheStatus)
+        .navigationTitle(showTitle ? "" : NSLocalizedString("Activities", comment: ""))
+        .navigationBarTitleDisplayMode(.inline)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
     private var authenticationPrompt: some View {
@@ -117,4 +168,12 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
+}
+
+struct ViewOffsetKey: PreferenceKey {
+    typealias Value = CGFloat
+    static var defaultValue = CGFloat.zero
+    static func reduce(value: inout Value, nextValue: () -> Value) {
+        value += nextValue()
+    }
 }

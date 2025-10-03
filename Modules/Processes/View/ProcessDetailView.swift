@@ -96,7 +96,7 @@ struct ProcessDetailView: View {
             }
         }
         .sheet(item: $selectedRace) { race in
-            ActivityDetailView(activity: race, onAppearAction: {}, onDisappearAction: {})
+            ActivityDetailView(activity: race, isReadOnly: true, onAppearAction: {}, onDisappearAction: {})
         }
     }
 
@@ -136,7 +136,7 @@ struct ProcessDetailView: View {
                         VStack(alignment: .leading) {
                             Text(Int(race.duration).toHoursMinutesSeconds())
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color("StravaOrange"))
                             Text(NSLocalizedString("official_time_label", comment: "Official Time label"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -173,7 +173,7 @@ struct ProcessDetailView: View {
                         VStack(alignment: .leading) {
                             Text(projection.tiempo)
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color("StravaOrange"))
                             Text(NSLocalizedString("estimated_time_label", comment: "Estimated Time label"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)

@@ -12,7 +12,7 @@ struct HeartRateZoneView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Análisis por Zonas de FC")
+            Text(NSLocalizedString("Heart Rate Zone Analysis", comment: "Heart Rate Zone Analysis"))
                 .font(.title2).bold()
                 .foregroundColor(.primary)
 
@@ -24,7 +24,7 @@ struct HeartRateZoneView: View {
                     legendView
                 }
             } else {
-                Text("No hay datos de frecuencia cardíaca para analizar las zonas.")
+                Text(NSLocalizedString("No heart rate data to analyze zones.", comment: "No heart rate data to analyze zones."))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)

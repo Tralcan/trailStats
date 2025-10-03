@@ -3,21 +3,27 @@ import UIKit
 
 /// Displays the detailed metrics and charts for a single activity.
 struct ActivityDetailView: View {
-    
     @StateObject var viewModel: ActivityDetailViewModel
     @State private var showGpxShareSheet = false
-    
+
     // Estado para controlar el KPI seleccionado y mostrar el popover.
     @State private var selectedKpiInfo: KPIInfo?
     @FocusState private var notesFieldIsFocused: Bool
-    
+
     @Environment(\.presentationMode) var presentationMode
-    
+
     var onAppearAction: () -> Void
     var onDisappearAction: () -> Void
-    
-    init(activity: Activity, onAppearAction: @escaping () -> Void, onDisappearAction: @escaping () -> Void) {
+
+    // Nuevo: flag de solo lectura
+    let isReadOnly: Bool
+
+    init(activity: Activity,
+         isReadOnly: Bool = false,
+         onAppearAction: @escaping () -> Void,
+         onDisappearAction: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: ActivityDetailViewModel(activity: activity))
+        self.isReadOnly = isReadOnly
         self.onAppearAction = onAppearAction
         self.onDisappearAction = onDisappearAction
     }
@@ -28,12 +34,13 @@ struct ActivityDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "location.fill")
-                        .foregroundColor(.red)
+                        .foregroundColor(Color("StravaOrange"))
                     Text(NSLocalizedString("Distance", comment: "Distance"))
                         .font(.subheadline).foregroundColor(.secondary)
                 }
                 Text(Formatters.formatDistance(viewModel.activity.distance))
                     .font(.title3).fontWeight(.bold)
+                    .foregroundColor(Color("StravaOrange"))
             }
             Spacer()
             VStack(alignment: .leading, spacing: 8) {
@@ -78,6 +85,8 @@ struct ActivityDetailView: View {
                 selectedKpiInfo = KPIInfo(title: NSLocalizedString("kpi.rpe.title", comment: "RPE title"), description: NSLocalizedString("kpi.rpe.description", comment: "RPE description"), higherIsBetter: false)
             }
             Slider(value: $viewModel.rpe, in: 1...10, step: 1)
+                .disabled(isReadOnly)
+                .tint(Color("StravaOrange"))
         }
         .padding()
         .background(Color(.secondarySystemBackground))
@@ -94,7 +103,7 @@ struct ActivityDetailView: View {
                 HStack(spacing: 10) {
                     ForEach(ActivityTag.allCases) { tag in
                         Button(action: {
-                            viewModel.tag = tag
+                            if !isReadOnly { viewModel.tag = tag }
                         }) {
                             VStack {
                                 Image(systemName: tag.icon)
@@ -106,10 +115,11 @@ struct ActivityDetailView: View {
                             }
                             .padding()
                             .frame(width: 100, height: 90)
-                            .background(viewModel.tag == tag ? Color.accentColor : Color(.secondarySystemBackground))
+                            .background(viewModel.tag == tag ? Color("StravaOrange") : Color(.secondarySystemBackground))
                             .foregroundColor(viewModel.tag == tag ? .white : .primary)
                             .cornerRadius(12)
                         }
+                        .disabled(isReadOnly)
                     }
                 }
                 .padding(.horizontal)
@@ -132,6 +142,7 @@ struct ActivityDetailView: View {
                         .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                 )
                 .focused($notesFieldIsFocused)
+                .disabled(isReadOnly)
         }
         .padding()
         .background(Color(.secondarySystemBackground))
@@ -292,79 +303,179 @@ struct ActivityDetailView: View {
     
     var body: some View {
         ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    headerView
-                        .padding(.horizontal)
-                    rpeSection
-                        .padding(.horizontal)
-                    tagSection
-                    trailKPIsSection
-                        .padding(.horizontal)
-                    RunningDynamicsView(
-                        verticalOscillationKPI: viewModel.verticalOscillationKPI,
-                        groundContactTimeKPI: viewModel.groundContactTimeKPI,
-                        strideLengthKPI: viewModel.strideLengthKPI,
-                        verticalRatioKPI: viewModel.verticalRatioKPI
-                    ) { kpiInfo in
-                        withAnimation {
-                            selectedKpiInfo = kpiInfo
+            if isReadOnly {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "flag.checkered.2.crossed")
+                                .font(.system(size: 40))
+                                .foregroundColor(.yellow)
+                            Text(viewModel.activity.name)
+                                .font(.title2).bold()
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.primary)
                         }
-                    }
-                    .padding(.horizontal)
-                    
-                    radarChartSection
-                    
-                    advancedAnalysisSection
+                        .frame(maxWidth: .infinity)
+                        .padding(.top)
+
+                        headerView
+                            .padding(.horizontal)
+                        rpeSection
+                            .padding(.horizontal)
+                        tagSection
+                        trailKPIsSection
+                            .padding(.horizontal)
+                        RunningDynamicsView(
+                            verticalOscillationKPI: viewModel.verticalOscillationKPI,
+                            groundContactTimeKPI: viewModel.groundContactTimeKPI,
+                            strideLengthKPI: viewModel.strideLengthKPI,
+                            verticalRatioKPI: viewModel.verticalRatioKPI
+                        ) { kpiInfo in
+                            withAnimation {
+                                selectedKpiInfo = kpiInfo
+                            }
+                        }
                         .padding(.horizontal)
-                    segmentsSection
-                        .padding(.horizontal)
-                    interactiveChartSection
-                        .padding(.horizontal)
-                    notesSection
-                        .padding(.horizontal)
-                    aiCoachSection
-                        .padding(.horizontal)
-                    
-                    // Botón para convertir en carrera
-//                    if !viewModel.isAlreadyRaceOfProcess && viewModel.tag != .race {
-//                        Button(action: {
-//                            viewModel.prepareToAssociateRace()
-//                        }) {
-//                            Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
-//                                .font(.headline)
-//                                .foregroundColor(.white)
-//                                .padding()
-//                                .frame(maxWidth: .infinity)
-//                                .background(Color.green)
-//                                .cornerRadius(12)
+                        
+                        radarChartSection
+                        
+                        advancedAnalysisSection
+                            .padding(.horizontal)
+                        segmentsSection
+                            .padding(.horizontal)
+                        interactiveChartSection
+                            .padding(.horizontal)
+                        notesSection
+                            .padding(.horizontal)
+                        aiCoachSection
+                            .padding(.horizontal)
+                        
+                        // Botón para convertir en carrera
+//                        if !viewModel.isAlreadyRaceOfProcess && viewModel.tag != .race {
+//                            Button(action: {
+//                                viewModel.prepareToAssociateRace()
+//                            }) {
+//                                Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
+//                                    .font(.headline)
+//                                    .foregroundColor(.white)
+//                                    .padding()
+//                                    .frame(maxWidth: .infinity)
+//                                    .background(Color.green)
+//                                    .cornerRadius(12)
+//                            }
+//                            .padding(.top)
+//                            .padding(.horizontal)
 //                        }
-//                        .padding(.top)
-//                        .padding(.horizontal)
-//                    }
 
-                    // Botón para compartir análisis
-                    Button(action: {
-                        let analysisText = viewModel.generateAnalysisString()
-                        share(items: [analysisText])
-                    }) {
-                        Label(NSLocalizedString("Share Analysis", comment: "Share Analysis"), systemImage: "text.quote")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.accentColor)
-                            .cornerRadius(12)
+                        // Botón para compartir análisis
+                        Button(action: {
+                            let analysisText = viewModel.generateAnalysisString()
+                            share(items: [analysisText])
+                        }) {
+                            Label(NSLocalizedString("Share Analysis", comment: "Share Analysis"), systemImage: "text.quote")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color("StravaOrange"))
+                                .cornerRadius(12)
+                        }
+                        .padding(.top)
+                        .padding(.horizontal)
+
                     }
-                    .padding(.top)
-                    .padding(.horizontal)
-
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
-            }
-            .refreshable { await viewModel.forceRefreshActivity() }
-            .onTapGesture {
-                notesFieldIsFocused = false
+                .onTapGesture {
+                    notesFieldIsFocused = false
+                }
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "flag.checkered.2.crossed")
+                                .font(.system(size: 40))
+                                .foregroundColor(.yellow)
+                            Text(viewModel.activity.name)
+                                .font(.title2).bold()
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.primary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top)
+
+                        headerView
+                            .padding(.horizontal)
+                        rpeSection
+                            .padding(.horizontal)
+                        tagSection
+                        trailKPIsSection
+                            .padding(.horizontal)
+                        RunningDynamicsView(
+                            verticalOscillationKPI: viewModel.verticalOscillationKPI,
+                            groundContactTimeKPI: viewModel.groundContactTimeKPI,
+                            strideLengthKPI: viewModel.strideLengthKPI,
+                            verticalRatioKPI: viewModel.verticalRatioKPI
+                        ) { kpiInfo in
+                            withAnimation {
+                                selectedKpiInfo = kpiInfo
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        radarChartSection
+                        
+                        advancedAnalysisSection
+                            .padding(.horizontal)
+                        segmentsSection
+                            .padding(.horizontal)
+                        interactiveChartSection
+                            .padding(.horizontal)
+                        notesSection
+                            .padding(.horizontal)
+                        aiCoachSection
+                            .padding(.horizontal)
+                        
+                        // Botón para convertir en carrera
+//                        if !viewModel.isAlreadyRaceOfProcess && viewModel.tag != .race {
+//                            Button(action: {
+//                                viewModel.prepareToAssociateRace()
+//                            }) {
+//                                Label("Convertir en Carrera", systemImage: "flag.checkered.2.crossed")
+//                                    .font(.headline)
+//                                    .foregroundColor(.white)
+//                                    .padding()
+//                                    .frame(maxWidth: .infinity)
+//                                    .background(Color.green)
+//                                    .cornerRadius(12)
+//                            }
+//                            .padding(.top)
+//                            .padding(.horizontal)
+//                        }
+
+                        // Botón para compartir análisis
+                        Button(action: {
+                            let analysisText = viewModel.generateAnalysisString()
+                            share(items: [analysisText])
+                        }) {
+                            Label(NSLocalizedString("Share Analysis", comment: "Share Analysis"), systemImage: "text.quote")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color("StravaOrange"))
+                                .cornerRadius(12)
+                        }
+                        .padding(.top)
+                        .padding(.horizontal)
+
+                    }
+                    .padding(.vertical)
+                }
+                .refreshable { await viewModel.forceRefreshActivity() }
+                .onTapGesture {
+                    notesFieldIsFocused = false
+                }
             }
         }
         .navigationTitle(viewModel.activity.name)
@@ -377,13 +488,13 @@ struct ActivityDetailView: View {
                         Image(systemName: "chevron.left")
                         Text(NSLocalizedString("Back", comment: "Back button"))
                     }
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color("StravaOrange"))
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { viewModel.shareGPX() }) {
                     Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color("StravaOrange"))
                 }
                 .disabled(viewModel.isGeneratingGPX)
             }
@@ -440,6 +551,7 @@ struct ActivityDetailView: View {
             }
             Button(NSLocalizedString("Cancel", comment: "Cancel button"), role: .cancel) {}
         }
+        .tint(Color("StravaOrange"))
     }
     
     private func share(items: [Any]) {
@@ -603,3 +715,4 @@ private struct SegmentRowView: View {
     
         func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
     }
+

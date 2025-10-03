@@ -25,6 +25,7 @@ struct ActivityRowView: View {
                     Text(activity.name)
                         .font(.headline)
                         .fontWeight(.semibold)
+                        .foregroundColor(.white)
                 }
                 
                 Text(dateFormatter.string(from: activity.date))
@@ -35,10 +36,10 @@ struct ActivityRowView: View {
                     // Distance
                     HStack(spacing: 4) {
                         Image(systemName: "location.fill")
-                            .foregroundColor(.red)
+                            .foregroundColor(Color("StravaOrange"))
                         Text(Formatters.formatDistance(activity.distance))
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundColor(Color("StravaOrange"))
                     }
                     
                     // Elevation

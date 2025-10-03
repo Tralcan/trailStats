@@ -731,12 +731,12 @@ class ActivityDetailViewModel: ObservableObject {
         var points: [RadarChartDataPoint] = []
 
         let kpis: [(kpi: KPIInfo?, recentValues: [Double], label: String, color: Color)] = [
-            (vamKPI, recentMetrics.compactMap { $0.verticalSpeedVAM }, "VAM", .orange),
-            (decouplingKPI, recentMetrics.compactMap { $0.cardiacDecoupling }, "Desacop.", .yellow),
-            (normalizedPowerKPI, recentMetrics.compactMap { $0.normalizedPower }, "NP", .green),
-            (gapKPI, recentMetrics.compactMap { $0.gradeAdjustedPace }, "GAP", .cyan),
-            (efficiencyIndexKPI, recentMetrics.compactMap { $0.efficiencyIndex }, "Eficiencia", .mint),
-            (verticalRatioKPI, recentActivities.compactMap { $0.verticalRatio }, "Ratio Vert.", .purple)
+            (vamKPI, recentMetrics.compactMap { $0.verticalSpeedVAM }, NSLocalizedString("radar.vam.label", comment: "VAM radar label"), .orange),
+            (decouplingKPI, recentMetrics.compactMap { $0.cardiacDecoupling }, NSLocalizedString("radar.decoupling.label", comment: "Decoupling radar label"), .yellow),
+            (normalizedPowerKPI, recentMetrics.compactMap { $0.normalizedPower }, NSLocalizedString("radar.np.label", comment: "Normalized Power radar label"), .green),
+            (gapKPI, recentMetrics.compactMap { $0.gradeAdjustedPace }, NSLocalizedString("radar.gap.label", comment: "GAP radar label"), .cyan),
+            (efficiencyIndexKPI, recentMetrics.compactMap { $0.efficiencyIndex }, NSLocalizedString("radar.efficiency.label", comment: "Efficiency radar label"), .mint),
+            (verticalRatioKPI, recentActivities.compactMap { $0.verticalRatio }, NSLocalizedString("radar.verticalRatio.label", comment: "Vertical Ratio radar label"), .purple)
         ]
 
         for (kpi, recentValues, label, color) in kpis {

@@ -17,7 +17,7 @@ struct ProcessProgressView: View {
 
                     // Línea de progreso (relleno)
                     Capsule()
-                        .fill(Color.accentColor) // O el color que prefieras para el progreso
+                        .fill(Color("StravaOrange"))
                         .frame(width: geometry.size.width * CGFloat(progress), height: 10)
 
                     // Icono de persona

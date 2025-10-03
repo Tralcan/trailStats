@@ -93,14 +93,14 @@ struct AdvancedSearchView: View {
                     Button(NSLocalizedString("Cancel", comment: "")) {
                         dismiss()
                     }
-                    .foregroundColor(Color(red: 1.0, green: 0.55, blue: 0.0))
+                    .foregroundColor(Color("StravaOrange"))
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button(NSLocalizedString("Search", comment: "")) {
                         viewModel.performSearch()
                         dismiss()
                     }
-                    .foregroundColor(Color(red: 1.0, green: 0.55, blue: 0.0))
+                    .foregroundColor(Color("StravaOrange"))
                 }
             }
         }

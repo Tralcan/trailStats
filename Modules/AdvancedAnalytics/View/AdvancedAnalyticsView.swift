@@ -4,7 +4,8 @@ import Charts
 struct AdvancedAnalyticsView: View {
     @StateObject private var viewModel = ProgressAnalyticsViewModel()
     @State private var selectedKpiInfo: KPIInfo? = nil
-    
+    @State private var showTitle = true
+
     enum TimePeriod: String, CaseIterable, Identifiable {
         case last7 = "7 Days"
         case last15 = "15 Days"
@@ -42,6 +43,23 @@ struct AdvancedAnalyticsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         
+                        if showTitle {
+                            VStack(alignment: .leading) {
+                                HStack(spacing: 0) {
+                                    Text(NSLocalizedString("Progress Analysis Part 1", comment: ""))
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+                                    Text(NSLocalizedString("Progress Analysis Part 2", comment: ""))
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(Color("StravaOrange"))
+                                }
+                                .padding(.top, 45)
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom)
+                        }
+
                         Picker(NSLocalizedString("Period", comment: "Period picker label"), selection: $selectedPeriod) {
                             ForEach(TimePeriod.allCases) { period in
                                 Text(period.localizedName).tag(period)
@@ -89,8 +107,18 @@ struct AdvancedAnalyticsView: View {
                         }
                     }
                     .padding(.vertical)
+                    .background(GeometryReader {
+                        Color.clear.preference(key: ViewOffsetKey.self, value: -$0.frame(in: .named("scroll")).origin.y)
+                    })
+                    .onPreferenceChange(ViewOffsetKey.self) { offset in
+                        withAnimation {
+                            showTitle = offset < 40
+                        }
+                    }
                 }
-                .navigationTitle(NSLocalizedString("Progress Analysis", comment: "Progress Analysis view title"))
+                .coordinateSpace(name: "scroll")
+                .navigationTitle(showTitle ? "" : NSLocalizedString("Progress Analysis", comment: ""))
+                .navigationBarTitleDisplayMode(.inline)
                 .onAppear {
                     viewModel.recalculateAnalyticsIfNeeded()
                 }
@@ -193,8 +221,6 @@ struct AdvancedAnalyticsView: View {
         .frame(maxWidth: .infinity)
     }
 }
-
-
 
 #Preview {
     AdvancedAnalyticsView()

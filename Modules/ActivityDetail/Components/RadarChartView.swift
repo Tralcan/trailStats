@@ -138,14 +138,14 @@ struct RadarChartView: View {
                     .fill(currentColor.opacity(0.2))
                     .stroke(currentColor, lineWidth: 2)
                     .frame(width: 15, height: 15)
-                Text("Actividad Actual").font(.caption)
+                Text(NSLocalizedString("Current Activity", comment: "Current Activity")).font(.caption)
             }
             HStack {
                 Rectangle()
                     .fill(averageColor.opacity(0.2))
                     .stroke(averageColor, lineWidth: 2)
                     .frame(width: 15, height: 15)
-                Text("Promedio").font(.caption)
+                Text(NSLocalizedString("Average", comment: "Average")).font(.caption)
             }
         }
     }

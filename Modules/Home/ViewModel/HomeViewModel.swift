@@ -34,9 +34,11 @@ class HomeViewModel: ObservableObject {
     @Published var advancedSearchDuration: TimeInterval? = nil
     @Published var advancedSearchTrainingTag: ActivityTag? = nil
     @Published private(set) var cachedActivityIds = Set<Int>()
+    @Published var athleteName: String?
     
     private let stravaService = StravaService()
     private let cacheManager = CacheManager()
+    private let userDefaults = UserDefaults.standard
     private var currentPage = 1
     @Published var canLoadMoreActivities = true
     
@@ -107,6 +109,7 @@ class HomeViewModel: ObservableObject {
             } else {
                 fetchActivities()
             }
+            fetchAthleteName()
         }
     }
     
@@ -126,6 +129,7 @@ class HomeViewModel: ObservableObject {
                     print("Successfully authenticated with Strava.")
                     self?.isAuthenticated = true
                     self?.fetchActivities()
+                    self?.fetchAthleteName()
                 case .failure(let error):
                     print("Strava authentication failed: \(error.localizedDescription)")
                     self?.isAuthenticated = false
@@ -139,6 +143,27 @@ class HomeViewModel: ObservableObject {
         cacheManager.clearAllCaches()
         isAuthenticated = false
         activities = [] // Clear activities on logout
+        athleteName = nil
+        userDefaults.removeObject(forKey: "athleteFirstName")
+    }
+
+    func fetchAthleteName() {
+        if let storedName = userDefaults.string(forKey: "athleteFirstName") {
+            self.athleteName = storedName
+            return
+        }
+
+        stravaService.getAthlete { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let athlete):
+                    self?.athleteName = athlete.firstname
+                    self?.userDefaults.set(athlete.firstname, forKey: "athleteFirstName")
+                case .failure(let error):
+                    print("Failed to fetch athlete name: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func shouldLoadMoreActivities(activity: Activity) -> Bool {
