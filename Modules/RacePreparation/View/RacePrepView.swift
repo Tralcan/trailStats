@@ -6,27 +6,24 @@ struct RacePrepView: View {
 
     var body: some View {
         NavigationView {
-            VStack {
-                HStack(spacing: 0) {
-                    Text(NSLocalizedString("Completed Races Part 1", comment: "Primera parte del título principal de carreras completadas"))
-                        .foregroundColor(.primary)
-                    Text(NSLocalizedString("Completed Races Part 2", comment: "Segunda parte del título principal de carreras completadas"))
-                        .foregroundColor(Color("StravaOrange"))
-                }
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 60)
-                .padding(.bottom, 0)
-                .padding(.horizontal)
-
-                if viewModel.isLoading {
-                    ProgressView(NSLocalizedString("Loading races...", comment: "Estado: cargando lista de carreras"))
-                } else if viewModel.raceActivities.isEmpty {
-                    Text(NSLocalizedString("No races found", comment: "Mensaje de lista vacía de carreras"))
-                        .foregroundColor(.secondary)
-                } else {
-                    List {
+            List {
+                Section(header:
+                    VStack {
+                        Spacer().frame(height: 55)
+                        HStack(spacing: 0) {
+                            Text(NSLocalizedString("Completed Races Part 1", comment: ""))
+                                .foregroundColor(.primary)
+                            Text(NSLocalizedString("Completed Races Part 2", comment: ""))
+                                .foregroundColor(Color("StravaOrange"))
+                        }
+                    }
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.bottom)
+                    .textCase(nil) // Prevents the header from being uppercased
+                )
+                
+                 {
                         ForEach(viewModel.raceActivities) { activity in
                             HStack {
                                 VStack(alignment: .leading, spacing: 8) {
@@ -95,4 +92,4 @@ struct RacePrepView: View {
             }
         }
     }
-}
+

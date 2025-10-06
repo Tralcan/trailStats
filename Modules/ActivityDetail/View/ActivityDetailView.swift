@@ -391,15 +391,9 @@ struct ActivityDetailView: View {
                 }
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "flag.checkered.2.crossed")
-                                .font(.system(size: 40))
-                                .foregroundColor(.yellow)
-                            Text(viewModel.activity.name)
-                                .font(.title2).bold()
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 5) {
+                        VStack(spacing: 1) {
+                            
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.top)
