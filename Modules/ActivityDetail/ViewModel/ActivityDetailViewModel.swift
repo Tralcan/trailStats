@@ -300,6 +300,21 @@ class ActivityDetailViewModel: ObservableObject {
                 processedMetrics = ActivityAnalyticsCalculator.calculateAllTrailKPIs(activity: activity, powerData: powerData, heartRateData: heartRateData, paceData: paceData, distanceData: distanceData, altitudeData: altitudeData, cadenceData: cadenceData)
                 if let metrics = processedMetrics {
                     cacheManager.saveProcessedMetrics(activityId: activity.id, metrics: metrics)
+
+                    // Create and save the summary for the main list and widget
+                    let summary = ActivitySummary(
+                        activityId: activity.id,
+                        date: activity.date,
+                        distance: activity.distance,
+                        elevation: activity.elevationGain,
+                        duration: activity.duration,
+                        averageHeartRate: activity.averageHeartRate,
+                        averagePower: activity.averagePower,
+                        averagePace: metrics.gradeAdjustedPace, // Using GAP as the main pace
+                        averageCadence: activity.averageCadence,
+                        averageStrideLength: activity.strideLength
+                    )
+                    cacheManager.saveSummary(activityId: activity.id, summary: summary)
                 }
             }
 

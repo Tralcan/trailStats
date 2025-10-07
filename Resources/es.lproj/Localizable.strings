@@ -239,3 +239,13 @@
 "radar.gap.label" = "GAP";
 "radar.verticalRatio.label" = "Ratio Vert.";
 "no_races_found_message" = "No se encontraron carreras.";
+
+// MARK: - Widget
+"widget.title" = "Última Actividad";
+"widget.description" = "Muestra un resumen de tu última carrera.";
+"widget.no_activity" = "No hay actividades recientes.";
+"widget.unit.distance.metric" = "km";
+"widget.unit.distance.imperial" = "mi";
+"widget.unit.elevation.metric" = "m";
+"widget.unit.elevation.imperial" = "ft";
+

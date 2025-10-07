@@ -244,6 +244,7 @@ class CacheManager {
             let data = try encoder.encode(summary)
             try data.write(to: fileURL, options: .atomic)
             print("Saved summary for activity \(activityId)")
+            self.saveActivityForWidget(summary)
         } catch {
             print("Error saving summary: \(error.localizedDescription)")
         }
@@ -653,5 +654,54 @@ class CacheManager {
         var currentProcesses = loadTrainingProcesses()
         currentProcesses.removeAll { $0.id == process.id }
         saveTrainingProcesses(currentProcesses)
+    }
+    
+    // MARK: - Widget Activity Cache
+
+    private var widgetActivityFileURL: URL? {
+        let appGroupId = "group.com.danguita.trailStats" // Usa tu App Group real aquí
+        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+            print("[CacheManager] ERROR: No se pudo obtener URL del App Group (\(appGroupId))")
+            return nil
+        }
+        let fileURL = groupURL.appendingPathComponent("latest_widget_activity.json")
+        print("[CacheManager] Usando App Group para widgetActivityFileURL: \(fileURL.path)")
+        return fileURL
+    }
+
+    /// Guarda la última actividad para el widget (ActivitySummary)
+    func saveActivityForWidget(_ summary: ActivitySummary) {
+        print("[CacheManager] Intentando guardar última actividad para widget: \(summary)")
+        guard let url = widgetActivityFileURL else { return }
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(summary)
+            try data.write(to: url, options: .atomic)
+            print("[CacheManager] Guardado latest_widget_activity.json en: \(url.path)")
+            if let jsonString = String(data: data, encoding: .utf8) { print("[CacheManager] Contenido guardado: \(jsonString)") }
+        } catch {
+            print("Error saving latest widget activity: \(error.localizedDescription)")
+        }
+    }
+
+    /// Carga la última actividad guardada para el widget
+    func loadActivityForWidget() -> ActivitySummary? {
+        print("[CacheManager] Intentando cargar última actividad del widget...")
+        guard let url = widgetActivityFileURL, FileManager.default.fileExists(atPath: url.path) else {
+            print("No cached latest widget activity found.")
+            return nil
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            print("[CacheManager] Archivo encontrado en: \(url.path)")
+            if let jsonString = String(data: data, encoding: .utf8) { print("[CacheManager] Contenido cargado: \(jsonString)") }
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(ActivitySummary.self, from: data)
+        } catch {
+            print("[CacheManager] Error cargando y decodificando latest_widget_activity.json: \(error.localizedDescription)")
+            return nil
+        }
     }
 }

@@ -106,7 +106,7 @@
 "kpi.verticalOscillation.title" = "Vertical Oscillation";
 "kpi.verticalOscillation.description" = "Measures the vertical 'bounce' of your torso with each step, in centimeters. Lower oscillation usually indicates a more efficient run, as less energy is wasted on upward and downward movement.";
 "kpi.groundContactTime.title" = "Ground Contact Time (GCT)";
-"kpi.groundContactTime.description" = "The time your foot spends in contact with the ground with each step, measured in milliseconds. Shorter contact times are often associated with higher efficiency and a faster cadence.";
+"kpi.gct.description" = "The time your foot spends in contact with the ground with each step, measured in milliseconds. Shorter contact times are often associated with higher efficiency and a faster cadence.";
 "kpi.strideLength.title" = "Stride Length";
 "kpi.strideLength.description" = "The distance you cover from one step to the next, measured in meters. It varies with pace, grade, and fatigue.";
 "kpi.verticalRatio.title" = "Vertical Ratio";
@@ -237,5 +237,14 @@
 "radar.vam.label" = "VAM";
 "radar.np.label" = "NP";
 "radar.gap.label" = "GAP";
-radar.verticalRatio.label = "V.Ratio";
+"radar.verticalRatio.label" = "V.Ratio";
 "no_races_found_message" = "No races found.";
+
+// MARK: - Widget
+"widget.title" = "Latest Activity";
+"widget.description" = "Displays a summary of your last run.";
+"widget.no_activity" = "No recent activity.";
+"widget.unit.distance.metric" = "km";
+"widget.unit.distance.imperial" = "mi";
+"widget.unit.elevation.metric" = "m";
+"widget.unit.elevation.imperial" = "ft";;

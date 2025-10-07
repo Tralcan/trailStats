@@ -138,7 +138,7 @@ struct HomeView: View {
         VStack(spacing: 20) {
             Spacer()
             
-            Image(systemName: "figure.trail.running")
+            Image(systemName: "figure.run")
                 .font(.system(size: 80))
                 .foregroundColor(.accentColor)
             

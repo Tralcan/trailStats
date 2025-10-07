@@ -8,12 +8,22 @@ struct PersistenceController {
     static let shared = PersistenceController()
 
     let container: NSPersistentContainer
+    
+    static let appGroupIdentifier = "group.com.danguita.trailStats"
 
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "trailStats")
+
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
+        } else if let storeURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: PersistenceController.appGroupIdentifier)?.appendingPathComponent("trailStats.sqlite") {
+            let storeDescription = NSPersistentStoreDescription(url: storeURL)
+            container.persistentStoreDescriptions = [storeDescription]
+            print("Core Data Store URL (App Group): \(storeURL.absoluteString)") // DEBUG PRINT
+        } else {
+            print("Core Data Store URL (Default - No App Group or Error): \(container.persistentStoreDescriptions.first?.url?.absoluteString ?? "N/A")") // DEBUG PRINT
         }
+
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
                 // This is a critical error. In a real app, you would handle this appropriately.

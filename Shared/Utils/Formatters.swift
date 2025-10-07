@@ -39,6 +39,16 @@ public extension Double {
     }
 }
 
+// Extensión para formatear la duración de TimeInterval a un formato legible (HH:MM:SS).
+public extension TimeInterval {
+    func formattedAsHMS() -> String {
+        let hours = Int(self) / 3600
+        let minutes = Int(self) / 60 % 60
+        let seconds = Int(self) % 60
+        return String(format: "%02i:%02i:%02i", hours, minutes, seconds)
+    }
+}
+
 // Extensión para calcular el promedio de una colección de Doubles de forma segura.
 public extension Collection where Element == Double {
     func averageOrNil() -> Double? {
