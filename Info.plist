@@ -18,8 +18,8 @@
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>TrailStats necesita acceso a tus datos de HealthKit para analizar métricas avanzadas de carrera como la oscilación vertical y el tiempo de contacto con el suelo, y así ofrecerte un análisis de rendimiento más completo.</string>
+	<string>TrailStats needs access to your HealthKit data to analyze advanced running metrics like vertical oscillation and ground contact time, providing you with a more complete performance analysis.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>TrailStats necesita permiso para guardar los resúmenes de tus entrenamientos, como la distancia, el tiempo y las rutas, en la app Salud. Esto te permite mantener un registro centralizado de toda tu actividad física y contribuye a los anillos de Actividad.</string>
+	<string>TrailStats needs permission to save your workout summaries, such as distance, time, and routes, to the Health app. This allows you to maintain a centralized record of all your physical activity and contributes to your Activity rings.</string>
 </dict>
 </plist>

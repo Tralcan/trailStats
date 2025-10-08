@@ -1,0 +1,4 @@
+"NSHealthShareUsageDescription" = "TrailStats needs access to your HealthKit data to analyze advanced running metrics like vertical oscillation and ground contact time, providing you with a more complete performance analysis.";
+"NSHealthUpdateUsageDescription" = "TrailStats needs permission to save your workout summaries, such as distance, time, and routes, to the Health app. This allows you to maintain a centralized record of all your physical activity and contributes to your Activity rings.";
+"CFBundleDisplayName" = "trailStats";
+"CFBundleName" = "trailStats";

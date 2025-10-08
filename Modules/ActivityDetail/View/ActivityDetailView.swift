@@ -543,6 +543,7 @@ struct ActivityDetailView: View {
             Button(NSLocalizedString("Associate to Process", comment: "Associate to Process")) {
                 viewModel.prepareToAssociateRace()
             }
+            Button("No") {}
             Button(NSLocalizedString("Cancel", comment: "Cancel button"), role: .cancel) {}
         }
         .tint(Color("StravaOrange"))
