@@ -511,11 +511,12 @@ class CacheManager {
     // MARK: - Process Gemini Coach Cache
 
     private var processCoachingDirectoryURL: URL? {
-        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("Error: Could not find documents directory.")
+        let appGroupId = "group.com.danguita.trailStats"
+        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+            print("[CacheManager] ERROR: No se pudo obtener URL del App Group (\(appGroupId)) para processCoachingDirectoryURL")
             return nil
         }
-        let processCoachingDir = documentsDirectory.appendingPathComponent("processCoaching")
+        let processCoachingDir = groupURL.appendingPathComponent("processCoaching")
         if !FileManager.default.fileExists(atPath: processCoachingDir.path) {
             do {
                 try FileManager.default.createDirectory(at: processCoachingDir, withIntermediateDirectories: true, attributes: nil)
@@ -613,14 +614,50 @@ class CacheManager {
         }
     }
 
+    // MARK: - Widget Process Cache
+
+    private var processWidgetFileURL: URL? {
+        let appGroupId = "group.com.danguita.trailStats"
+        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+            print("[CacheManager] ERROR: No se pudo obtener URL del App Group (\(appGroupId)) para processWidgetFileURL")
+            return nil
+        }
+        return groupURL.appendingPathComponent("active_process_widget.json")
+    }
+
+    func saveProcessForWidget(_ data: ProcessWidgetData) {
+        guard let url = processWidgetFileURL else { return }
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(data)
+            try data.write(to: url, options: .atomic)
+            print("[CacheManager] Guardado active_process_widget.json en: \(url.path)")
+        } catch {
+            print("Error saving active process widget data: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteProcessWidgetData() {
+        guard let url = processWidgetFileURL, FileManager.default.fileExists(atPath: url.path) else {
+            return
+        }
+        do {
+            try FileManager.default.removeItem(at: url)
+            print("[CacheManager] Borrado active_process_widget.json.")
+        } catch {
+            print("Error deleting active process widget data: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Training Process Cache
 
     private var trainingProcessesURL: URL? {
-        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("Error: Could not find documents directory.")
+        let appGroupId = "group.com.danguita.trailStats"
+        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) else {
+            print("[CacheManager] ERROR: No se pudo obtener URL del App Group (\(appGroupId)) para trainingProcessesURL")
             return nil
         }
-        return documentsDirectory.appendingPathComponent("training_processes.json")
+        return groupURL.appendingPathComponent("training_processes.json")
     }
 
     func saveTrainingProcesses(_ processes: [TrainingProcess]) {

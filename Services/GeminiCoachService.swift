@@ -4,7 +4,7 @@ struct GeminiCoachService {
     // WARNING: Do not hardcode API keys in production code.
     // This should be stored securely, e.g., in a configuration file excluded from git.
     static let apiKey = "AIzaSyAivQS0y_J_Z87mktDabiVbPQo9z0T-HGM"
-    static let endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\(apiKey)"
+    static let endpoint = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=\(apiKey)"
 
     static func fetchObservation(kpis: [String: String], completion: @escaping (Result<String, Error>) -> Void) {
         // 1. Get device language

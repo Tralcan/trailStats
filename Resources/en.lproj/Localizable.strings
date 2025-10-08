@@ -247,4 +247,10 @@
 "widget.unit.distance.metric" = "km";
 "widget.unit.distance.imperial" = "mi";
 "widget.unit.elevation.metric" = "m";
-"widget.unit.elevation.imperial" = "ft";;
+"widget.unit.elevation.imperial" = "ft";
+
+// MARK: - Process Widget
+"process_widget.title" = "Active Process";
+"process_widget.description" = "Displays progress for your active training process.";
+"process_widget.no_process" = "No active process.";
+"process_widget.days_remaining" = "Days Remaining";

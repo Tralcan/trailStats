@@ -50,31 +50,44 @@ struct trailStatsWidgetEntryView : View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "figure.run.circle.fill")
-                    .foregroundColor(Color("StravaOrange"))
-                Text(NSLocalizedString("widget.title", comment: ""))
+                    .foregroundColor(.primary)
+                Text("widget.title")
                     .font(.headline)
                     .bold()
             }
             
             if let activity = entry.activity {
                 let distanceValue = isMetric ? activity.distance / 1000 : activity.distance / 1609.34
-                let distanceUnit = isMetric ? NSLocalizedString("widget.unit.distance.metric", comment: "") : NSLocalizedString("widget.unit.distance.imperial", comment: "")
+                let distanceUnit: LocalizedStringKey = isMetric ? "widget.unit.distance.metric" : "widget.unit.distance.imperial"
                 
                 let elevationValue = isMetric ? activity.elevation : activity.elevation * 3.28084
-                let elevationUnit = isMetric ? NSLocalizedString("widget.unit.elevation.metric", comment: "") : NSLocalizedString("widget.unit.elevation.imperial", comment: "")
+                let elevationUnit: LocalizedStringKey = isMetric ? "widget.unit.elevation.metric" : "widget.unit.elevation.imperial"
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Label(String(format: "%.2f \(distanceUnit)", distanceValue), systemImage: "map.fill")
-                    Label(String(format: "%.0f \(elevationUnit)", elevationValue), systemImage: "arrow.up.right.circle.fill")
-                    Label(activity.duration.formattedAsHMS(), systemImage: "clock.fill")
+                    HStack {
+                        Image(systemName: "map.fill")
+                            .foregroundColor(Color("StravaOrange"))
+                        Text(String(format: "%.2f ", distanceValue))
+                        + Text(distanceUnit)
+                    }
+                    HStack {
+                        Image(systemName: "triangle.fill")
+                            .foregroundColor(.green)
+                        Text(String(format: "%.0f ", elevationValue))
+                        + Text(elevationUnit)
+                    }
+                    HStack {
+                        Image(systemName: "clock.fill")
+                            .foregroundColor(.blue)
+                        Text(activity.duration.formattedAsHMS())
+                    }
                 }
                 .font(.subheadline)
             } else {
-                Text(NSLocalizedString("widget.no_activity", comment: ""))
+                Text("widget.no_activity")
                     .font(.subheadline)
             }
         }
-        .padding()
         .containerBackground(for: .widget) { Color.clear }
     }
 }
@@ -87,8 +100,8 @@ struct trailStatsWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             trailStatsWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName(NSLocalizedString("widget.title", comment: ""))
-        .description(NSLocalizedString("widget.description", comment: ""))
+        .configurationDisplayName("widget.title")
+        .description("widget.description")
         .supportedFamilies([.systemSmall])
     }
 }

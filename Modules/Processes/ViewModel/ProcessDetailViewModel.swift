@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 @MainActor
 class ProcessDetailViewModel: ObservableObject {
@@ -69,6 +70,7 @@ class ProcessDetailViewModel: ObservableObject {
                 switch result {
                 case .success(let response):
                     self?.raceProjection = response
+                    self?.saveDataForWidget(with: response)
                 case .failure(let error):
                     self?.estimationError = "Error al obtener la estimación: \(error.localizedDescription)"
                 }
@@ -133,5 +135,45 @@ class ProcessDetailViewModel: ObservableObject {
             allProcesses[index] = process
             cacheManager.saveTrainingProcesses(allProcesses)
         }
+
+        if !process.isActive {
+            cacheManager.deleteProcessWidgetData()
+            WidgetCenter.shared.reloadTimelines(ofKind: "ProcessWidget")
+        }
+    }
+
+    private func saveDataForWidget(with projection: RaceProjection) {
+        guard process.isActive, let distance = process.raceDistance, let elevation = process.raceElevation else { return }
+
+        let isMetric = Locale.current.usesMetricSystem
+        let daysRemaining = calculateDaysRemaining(until: process.endDate)
+        
+        let distanceValue = isMetric ? distance / 1000 : distance / 1609.34
+        let distanceUnit = isMetric ? NSLocalizedString("widget.unit.distance.metric", comment: "") : NSLocalizedString("widget.unit.distance.imperial", comment: "")
+        
+        let elevationValue = isMetric ? elevation : elevation * 3.28084
+        let elevationUnit = isMetric ? NSLocalizedString("widget.unit.elevation.metric", comment: "") : NSLocalizedString("widget.unit.elevation.imperial", comment: "")
+
+        let widgetData = ProcessWidgetData(
+            processName: process.name,
+            daysRemaining: daysRemaining,
+            daysRemainingText: NSLocalizedString("process_widget.days_remaining", comment: ""),
+            distanceValue: distanceValue,
+            distanceUnit: distanceUnit,
+            elevationValue: elevationValue,
+            elevationUnit: elevationUnit,
+            estimatedTime: projection.tiempo
+        )
+
+        cacheManager.saveProcessForWidget(widgetData)
+        WidgetCenter.shared.reloadTimelines(ofKind: "ProcessWidget")
+    }
+
+    private func calculateDaysRemaining(until endDate: Date) -> Int {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let startOfEndDate = calendar.startOfDay(for: endDate)
+        let components = calendar.dateComponents([.day], from: startOfToday, to: startOfEndDate)
+        return components.day ?? 0
     }
 }

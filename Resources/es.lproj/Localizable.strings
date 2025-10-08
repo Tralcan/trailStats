@@ -249,3 +249,9 @@
 "widget.unit.elevation.metric" = "m";
 "widget.unit.elevation.imperial" = "ft";
 
+// MARK: - Process Widget
+"process_widget.title" = "Proceso Activo";
+"process_widget.description" = "Muestra el progreso de tu proceso de entrenamiento activo.";
+"process_widget.no_process" = "No hay un proceso activo.";
+"process_widget.days_remaining" = "Días Restantes";
+
