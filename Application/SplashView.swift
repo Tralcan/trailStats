@@ -15,7 +15,7 @@ struct SplashView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Image("Power")
+                        Image("")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 100)

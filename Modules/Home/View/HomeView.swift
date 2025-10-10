@@ -155,21 +155,19 @@ struct HomeView: View {
             
             Spacer()
             
-            VStack(spacing: 10) {
-                Button(action: viewModel.connectToStrava) {
-                    Image("boton")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                }
-                
+            VStack(spacing: 15) {
                 Button(action: { isShowingHealthSetup = true }) {
-                    Image("boton2")
+                    Image("boton3")
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(.horizontal)
+                }
+
+                Button(action: viewModel.connectToStrava) {
+                    Text(NSLocalizedString("Import_from_Strava", comment: "Connect to STRAVA"))
+                        .font(.footnote)
+                        .foregroundColor(Color("StravaOrange"))
                 }
             }
         }

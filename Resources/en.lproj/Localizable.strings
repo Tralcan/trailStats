@@ -5,7 +5,9 @@
 "Cancel" = "Cancel";
 "Advanced Search" = "Advanced Search";
 "Options" = "Options";
-"Connect to Strava to automatically sync your trail and mountain runs." = "Connect to Strava or Apple Health to automatically sync your trail and mountain runs from your preferred source.";
+"Import_from_Strava" = "Import Trail from Strava";
+"Import_from_Apple_Health" = "Import from Apple Health";
+"Connect to Strava to automatically sync your trail and mountain runs." = "Connect to Apple Health or Strava to automatically import your trail and mountain runs from your preferred source.";
 "Welcome to trailStats" = "Welcome to Trail Stats";
 "Search Criteria" = "Search Criteria";
 "Name contains" = "Name contains";
@@ -263,5 +265,5 @@
 "Running" = "Running";
 "Hike" = "Hike";
 "Continue" = "Continue";
-"Setup" = "Setup Apple Heath";
+"Setup" = "Setup Apple Health";
 "Cancel" = "Cancel";
