@@ -5,8 +5,8 @@
 "Cancel" = "Cancelar";
 "Advanced Search" = "Búsqueda Avanzada";
 "Options" = "Opciones";
-"Connect to Strava to automatically sync your trail and mountain runs." = "Conéctate a Strava para sincronizar automáticamente tus carreras de trail y montaña.";
-"Welcome to trailStats" = "Bienvenido a trailStats";
+"Connect to Strava to automatically sync your trail and mountain runs." = "Conéctate a Strava o Apple Health para sincronizar automáticamente tus carreras de montaña y trail desde tu fuente de datos preferida.";
+"Welcome to trailStats" = "Bienvenido a Trail Stats";
 "Search Criteria" = "Criterios de Búsqueda";
 "Name contains" = "El nombre contiene";
 "Filter by Date" = "Filtrar por Fecha";
@@ -255,3 +255,13 @@
 "process_widget.no_process" = "No hay un proceso activo.";
 "process_widget.days_remaining" = "Días Restantes";
 
+// Conexión Apple Heath
+"Welcome!" = "¡Bienvenido!";
+"Your Name" = "Tu Nombre";
+"Activity Preference" = "Preferencia de Actividad";
+"Preferred Activity for Trail" = "Actividad preferida para Trail";
+"Running" = "Correr";
+"Hike" = "Senderismo";
+"Continue" = "Conectar";
+"Setup" = "Conexión Apple Heath";
+"Cancel" = "Cancelar";

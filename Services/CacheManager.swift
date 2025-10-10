@@ -400,27 +400,73 @@ class CacheManager {
         }
     }
 
-    /// Deletes all local caches, including activities, activity streams, and summaries.
+    /// Deletes all local caches, including activities, activity streams, summaries, and all feature-specific data.
     func clearAllCaches() {
-        clearCache() // Clear activities cache
+        let fileManager = FileManager.default
 
-        // Clear activity streams cache
-        if let streamsURL = streamsDirectoryURL, FileManager.default.fileExists(atPath: streamsURL.path) {
+        // 1. Clear main activities cache (activities.json)
+        clearCache()
+
+        // 2. Clear activity streams directory
+        if let streamsURL = streamsDirectoryURL, fileManager.fileExists(atPath: streamsURL.path) {
             do {
-                try FileManager.default.removeItem(at: streamsURL)
+                try fileManager.removeItem(at: streamsURL)
                 print("Successfully cleared all activity streams cache.")
             } catch {
                 print("Error clearing activity streams cache: \(error.localizedDescription)")
             }
         }
 
-        // Clear activity summaries cache (metrics, AI coach, charts, summaries)
-        if let summariesURL = summariesDirectoryURL, FileManager.default.fileExists(atPath: summariesURL.path) {
+        // 3. Clear activity summaries directory (metrics, AI coach, charts, etc.)
+        if let summariesURL = summariesDirectoryURL, fileManager.fileExists(atPath: summariesURL.path) {
             do {
-                try FileManager.default.removeItem(at: summariesURL)
+                try fileManager.removeItem(at: summariesURL)
                 print("Successfully cleared all activity summaries cache.")
             } catch {
                 print("Error clearing activity summaries cache: \(error.localizedDescription)")
+            }
+        }
+
+        // 4. Clear race coaching directory
+        if let raceCoachingURL = raceCoachingDirectoryURL, fileManager.fileExists(atPath: raceCoachingURL.path) {
+            do {
+                try fileManager.removeItem(at: raceCoachingURL)
+                print("Successfully cleared race coaching cache.")
+            } catch {
+                print("Error clearing race coaching cache: \(error.localizedDescription)")
+            }
+        }
+
+        // 5. Clear process coaching directory (App Group)
+        if let processCoachingURL = processCoachingDirectoryURL, fileManager.fileExists(atPath: processCoachingURL.path) {
+            do {
+                try fileManager.removeItem(at: processCoachingURL)
+                print("Successfully cleared process coaching cache.")
+            } catch {
+                print("Error clearing process coaching cache: \(error.localizedDescription)")
+            }
+        }
+
+        // 6. Clear training processes list file (App Group)
+        if let trainingProcessesURL = trainingProcessesURL, fileManager.fileExists(atPath: trainingProcessesURL.path) {
+            do {
+                try fileManager.removeItem(at: trainingProcessesURL)
+                print("Successfully cleared training processes list cache.")
+            } catch {
+                print("Error clearing training processes list cache: \(error.localizedDescription)")
+            }
+        }
+
+        // 7. Clear active process widget data (App Group)
+        deleteProcessWidgetData() // Uses its own file URL and deletion logic
+        
+        // 8. Clear latest activity for widget (App Group)
+        if let widgetActivityURL = widgetActivityFileURL, fileManager.fileExists(atPath: widgetActivityURL.path) {
+            do {
+                try fileManager.removeItem(at: widgetActivityURL)
+                print("Successfully cleared latest widget activity cache.")
+            } catch {
+                print("Error clearing latest widget activity cache: \(error.localizedDescription)")
             }
         }
     }

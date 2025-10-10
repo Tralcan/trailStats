@@ -33,7 +33,7 @@ struct IntensityChartView: View {
         Chart(weeklyData) { week in
             WeeklyBarMarks(week: week)
         }
-        .chartForegroundStyleScale(domain: zoneDomains, range: zoneColors.map { $0.opacity(0.4) })
+        .chartForegroundStyleScale(domain: zoneDomains, range: zoneColors.map { $0.opacity(0.5) })
         .chartXAxis {
             AxisMarks(values: .automatic) {
                 AxisValueLabel(centered: false)
@@ -56,9 +56,9 @@ struct IntensityChartView: View {
                             if uniqueXValues.count > 1 {
                                 let firstPos = proxy.position(forX: uniqueXValues[0]) ?? 0
                                 let secondPos = proxy.position(forX: uniqueXValues[1]) ?? 0
-                                return abs(secondPos - firstPos) * 0.8
+                                return abs(secondPos - firstPos) * 0.7
                             } else {
-                                return plotFrame.width * 0.8
+                                return plotFrame.width * 0.7
                             }
                         }()
 

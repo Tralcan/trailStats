@@ -43,6 +43,7 @@ struct HomeView: View {
     }
     
     @State private var isShowingAdvancedSearch = false
+    @State private var isShowingHealthSetup = false
     @State private var showTitle = true
 
     private var activityList: some View {
@@ -154,15 +155,30 @@ struct HomeView: View {
             
             Spacer()
             
-            Button(action: viewModel.connectToStrava) {
-                Image("boton")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .padding()
+            VStack(spacing: 10) {
+                Button(action: viewModel.connectToStrava) {
+                    Image("boton")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
+                
+                Button(action: { isShowingHealthSetup = true }) {
+                    Image("boton2")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
             }
         }
         .padding()
+        .sheet(isPresented: $isShowingHealthSetup) {
+            UserInfoView(viewModel: UserInfoViewModel(onComplete: {
+                viewModel.completeHealthKitOnboarding()
+            }))
+        }
     }
 }
 

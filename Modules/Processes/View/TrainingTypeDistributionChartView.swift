@@ -92,7 +92,7 @@ struct TrainingTypeDistributionChartView: View {
                         ZStack {
                             // Bar
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(color(for: item.tag).opacity(0.2))
+                                .fill(color(for: item.tag).opacity(0.5))
                             RoundedRectangle(cornerRadius: 4)
                                 .stroke(color(for: item.tag), lineWidth: 2)
                         }

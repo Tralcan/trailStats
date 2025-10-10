@@ -61,7 +61,7 @@ struct WeeklyDistanceChartView: View {
 
                             ZStack {
                                 RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.red.opacity(0.2))
+                                    .fill(Color.red.opacity(0.8))
                                 RoundedRectangle(cornerRadius: 6)
                                     .stroke(Color.red, lineWidth: 1)
                             }

@@ -5,8 +5,8 @@
 "Cancel" = "Cancel";
 "Advanced Search" = "Advanced Search";
 "Options" = "Options";
-"Connect to Strava to automatically sync your trail and mountain runs." = "Connect to Strava to automatically sync your trail and mountain runs.";
-"Welcome to trailStats" = "Welcome to trailStats";
+"Connect to Strava to automatically sync your trail and mountain runs." = "Connect to Strava or Apple Health to automatically sync your trail and mountain runs from your preferred source.";
+"Welcome to trailStats" = "Welcome to Trail Stats";
 "Search Criteria" = "Search Criteria";
 "Name contains" = "Name contains";
 "Filter by Date" = "Filter by Date";
@@ -254,3 +254,14 @@
 "process_widget.description" = "Displays progress for your active training process.";
 "process_widget.no_process" = "No active process.";
 "process_widget.days_remaining" = "Days Remaining";
+
+// Conexión Apple Heath
+"Welcome!" = "Welcome!";
+"Your Name" = "Your Name";
+"Activity Preference" = "Activity Preference";
+"Preferred Activity for Trail" = "Preferred Activity for Trail";
+"Running" = "Running";
+"Hike" = "Hike";
+"Continue" = "Continue";
+"Setup" = "Setup Apple Heath";
+"Cancel" = "Cancel";

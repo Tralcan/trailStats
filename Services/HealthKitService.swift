@@ -1,6 +1,47 @@
-
 import Foundation
 import HealthKit
+import CoreLocation
+
+// MARK: - Activity Initializer Extension
+// Extends the Activity model to allow initialization from a HealthKit HKWorkout object.
+// This is necessary because the base Activity struct only has a Codable initializer for Strava data.
+extension Activity {
+    init(from workout: HKWorkout, sportType: String) {
+        self.id = workout.uuid.hashValue
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .short
+        let dateString = dateFormatter.string(from: workout.startDate)
+        self.name = "\(sportType) - \(dateString)"
+        
+        self.sportType = sportType
+        self.date = workout.startDate
+        self.distance = workout.totalDistance?.doubleValue(for: .meter()) ?? 0.0
+        self.duration = workout.duration
+        
+        // HKWorkout.totalElevationGained is not available on all supported iOS versions.
+        // We default to 0.0 as the Activity model requires a non-optional Double.
+        self.elevationGain = 0.0
+        
+        // These properties are not directly available on HKWorkout and require separate, more complex queries.
+        // They are set to nil to ensure the basic activity can be created.
+        self.averageHeartRate = nil
+        self.averageCadence = nil
+        self.averagePower = nil
+        self.gradeAdjustedPace = nil
+        self.verticalOscillation = nil
+        self.groundContactTime = nil
+        self.strideLength = nil
+        self.verticalRatio = nil
+        self.rpe = nil
+        self.notes = nil
+        self.tag = nil
+        self.startCoordinate = nil
+        self.polyline = nil
+    }
+}
+
 
 // MARK: - Data Models
 struct RunningDynamics {
@@ -58,9 +99,9 @@ class HealthKitService {
         ]
         
         healthStore.requestAuthorization(toShare: nil, read: typesToRead) { (success, error) in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async(execute: {
                 completion(success, error)
-            }
+            })
         }
     }
     
@@ -102,6 +143,44 @@ class HealthKitService {
         }
     }
 
+    func fetchWorkouts(activityType: String, completion: @escaping (Result<[Activity], Error>) -> Void) {
+        let workoutType = HKObjectType.workoutType()
+        
+        var hkActivityType: HKWorkoutActivityType
+        switch activityType {
+        case "Running":
+            hkActivityType = .running
+        case "Hike":
+            hkActivityType = .hiking
+        default:
+            completion(.failure(HealthKitError.dataTypeNotAvailable))
+            return
+        }
+
+        let predicate = HKQuery.predicateForWorkouts(with: hkActivityType)
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+
+        let query = HKSampleQuery(sampleType: workoutType, predicate: predicate, limit: 50, sortDescriptors: [sortDescriptor]) { (query, samples, error) in
+            let workItem = DispatchWorkItem {
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+
+                guard let workouts = samples as? [HKWorkout] else {
+                    completion(.success([]))
+                    return
+                }
+
+                let activities = workouts.map { workout -> Activity in
+                    return Activity(from: workout, sportType: activityType)
+                }
+                completion(.success(activities))
+            }
+            DispatchQueue.main.async(execute: workItem)
+        }
+        healthStore.execute(query)
+    }
 
     
     func fetchRunningDynamics(for activity: Activity, completion: @escaping (Result<RunningDynamics, Error>) -> Void) {
@@ -182,7 +261,7 @@ class HealthKitService {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: workoutType, predicate: compoundPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { (query, samples, error) in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async(execute: {
                 if let error = error {
                     completion(.failure(error))
                     return
@@ -203,7 +282,7 @@ class HealthKitService {
                 } else {
                     completion(.failure(HealthKitError.workoutNotFound))
                 }
-            }
+            })
         }
         
         healthStore.execute(query)
@@ -219,7 +298,7 @@ class HealthKitService {
         let workoutPredicate = HKQuery.predicateForObjects(from: workout)
         
         let query = HKStatisticsQuery(quantityType: quantityType, quantitySamplePredicate: workoutPredicate, options: .discreteAverage) { (_, result, error) in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async(execute: {
                 if let error = error {
                     completion(.failure(error))
                     return
@@ -232,7 +311,7 @@ class HealthKitService {
                 }
                 
                 completion(.success(average.doubleValue(for: unit)))
-            }
+            })
         }
         
         healthStore.execute(query)
@@ -247,7 +326,7 @@ class HealthKitService {
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: quantityType, predicate: nil, limit: 1, sortDescriptors: [sortDescriptor]) { (_, samples, error) in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async(execute: {
                 if let error = error {
                     completion(.failure(error))
                     return
@@ -259,7 +338,7 @@ class HealthKitService {
                 }
                 
                 completion(.success(sample.quantity.doubleValue(for: unit)))
-            }
+            })
         }
         
         healthStore.execute(query)

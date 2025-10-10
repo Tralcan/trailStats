@@ -4,23 +4,10 @@ import Foundation
 /// Manages both the authentication state and the list of activities.
 @MainActor
 class HomeViewModel: ObservableObject {
-    // Deletes all app caches (activities, streams, summaries, metrics, images, AI coach, etc) and reloads from Strava
     func clearCachesAndReload() {
-        cacheManager.clearAllCaches() // Borra actividades y streams
-        // Borra summaries y archivos relacionados
-        if let summariesURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("activitySummaries"),
-           FileManager.default.fileExists(atPath: summariesURL.path) {
-            do {
-                try FileManager.default.removeItem(at: summariesURL)
-                print("Successfully cleared all activity summaries cache.")
-            } catch {
-                print("Error clearing activity summaries cache: \(error.localizedDescription)")
-            }
-        }
-        activities = []
-        currentPage = 1
-        canLoadMoreActivities = true
-        fetchActivities()
+        cacheManager.clearAllCaches()
+        activities = [] // Immediately clear UI
+        refreshActivities() // Reloads from the correct source (Strava or HealthKit)
     }
     
     @Published var isAuthenticated: Bool
@@ -37,6 +24,7 @@ class HomeViewModel: ObservableObject {
     @Published var athleteName: String?
     
     private let stravaService = StravaService()
+    private let healthKitService = HealthKitService()
     private let cacheManager = CacheManager()
     private let userDefaults = UserDefaults.standard
     private var currentPage = 1
@@ -100,16 +88,41 @@ class HomeViewModel: ObservableObject {
     }
     
     init() {
-        _isAuthenticated = Published(initialValue: stravaService.isAuthenticated())
+        let isStravaAuthenticated = stravaService.isAuthenticated()
+        let isHealthKitUser = userDefaults.string(forKey: "userName") != nil
+        
+        _isAuthenticated = Published(initialValue: isStravaAuthenticated || isHealthKitUser)
+        
         if isAuthenticated {
-            if let cachedActivities = cacheManager.loadActivities(), !cachedActivities.isEmpty {
-                self.activities = cachedActivities.sorted { $0.date > $1.date }
-                self.currentPage = 1
-                refreshCacheStatus() // Verificar estado del caché al iniciar
-            } else {
-                fetchActivities()
-            }
             fetchAthleteName()
+            if isStravaAuthenticated {
+                if let cachedActivities = cacheManager.loadActivities(), !cachedActivities.isEmpty {
+                    self.activities = cachedActivities.sorted { $0.date > $1.date }
+                    self.currentPage = 1
+                    refreshCacheStatus()
+                } else {
+                    fetchActivities()
+                }
+            } else if isHealthKitUser {
+                fetchHealthKitActivities()
+            }
+        }
+    }
+    
+    private func fetchHealthKitActivities() {
+        guard let activityType = userDefaults.string(forKey: "preferredActivity") else { return }
+        isLoading = true
+        healthKitService.fetchWorkouts(activityType: activityType) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                switch result {
+                case .success(let activities):
+                    self?.activities = activities
+                    // Caching for HealthKit activities can be added here if needed
+                case .failure(let error):
+                    print("Failed to fetch HealthKit workouts: \(error.localizedDescription)")
+                }
+            }
         }
     }
     
@@ -138,6 +151,12 @@ class HomeViewModel: ObservableObject {
         }
     }
     
+    func completeHealthKitOnboarding() {
+        self.isAuthenticated = true
+        self.fetchAthleteName()
+        fetchHealthKitActivities()
+    }
+    
     func logout() {
         stravaService.logout()
         cacheManager.clearAllCaches()
@@ -145,10 +164,16 @@ class HomeViewModel: ObservableObject {
         activities = [] // Clear activities on logout
         athleteName = nil
         userDefaults.removeObject(forKey: "athleteFirstName")
+        userDefaults.removeObject(forKey: "userName") // Also remove HealthKit name
+        userDefaults.removeObject(forKey: "preferredActivity")
     }
 
     func fetchAthleteName() {
-        if let storedName = userDefaults.string(forKey: "athleteFirstName") {
+        if let storedName = userDefaults.string(forKey: "userName") { // Check for HealthKit name
+            self.athleteName = storedName
+            return
+        }
+        if let storedName = userDefaults.string(forKey: "athleteFirstName") { // Check for Strava name
             self.athleteName = storedName
             return
         }
@@ -169,17 +194,23 @@ class HomeViewModel: ObservableObject {
     func shouldLoadMoreActivities(activity: Activity) -> Bool {
         let isLastActivity = activity.id == filteredActivities.last?.id
         let isSearchActive = !searchText.isEmpty || !advancedSearchName.isEmpty || advancedSearchDate != nil || advancedSearchDistance != nil || advancedSearchElevation != nil || advancedSearchDuration != nil || advancedSearchTrainingTag != nil
-        return isLastActivity && !isSearchActive && canLoadMoreActivities
+        // Disable pagination for HealthKit for now
+        let isStravaAuthenticated = stravaService.isAuthenticated()
+        return isLastActivity && !isSearchActive && canLoadMoreActivities && isStravaAuthenticated
     }
     
     func refreshActivities() {
-        currentPage = 1
-        canLoadMoreActivities = true
-        fetchActivities() // Solo busca la primera página para nuevas actividades
+        if stravaService.isAuthenticated() {
+            currentPage = 1
+            canLoadMoreActivities = true
+            fetchActivities() // Solo busca la primera página para nuevas actividades
+        } else {
+            fetchHealthKitActivities()
+        }
     }
     
     func fetchActivities() {
-        guard !isLoading, canLoadMoreActivities else { return }
+        guard !isLoading, canLoadMoreActivities, stravaService.isAuthenticated() else { return }
         isLoading = true
         stravaService.getActivities(page: currentPage, perPage: 50) { [weak self] result in
             DispatchQueue.main.async {
