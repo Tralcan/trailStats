@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 /// Manages caching of activities to the device's local storage.
 class CacheManager {
@@ -678,6 +679,7 @@ class CacheManager {
             let data = try encoder.encode(data)
             try data.write(to: url, options: .atomic)
             print("[CacheManager] Guardado active_process_widget.json en: \(url.path)")
+            WidgetCenter.shared.reloadTimelines(ofKind: "ProcessWidget")
         } catch {
             print("Error saving active process widget data: \(error.localizedDescription)")
         }
@@ -690,6 +692,7 @@ class CacheManager {
         do {
             try FileManager.default.removeItem(at: url)
             print("[CacheManager] Borrado active_process_widget.json.")
+            WidgetCenter.shared.reloadTimelines(ofKind: "ProcessWidget")
         } catch {
             print("Error deleting active process widget data: \(error.localizedDescription)")
         }
@@ -763,6 +766,9 @@ class CacheManager {
             try data.write(to: url, options: .atomic)
             print("[CacheManager] Guardado latest_widget_activity.json en: \(url.path)")
             if let jsonString = String(data: data, encoding: .utf8) { print("[CacheManager] Contenido guardado: \(jsonString)") }
+            
+            // Notificar al widget que se actualice
+            WidgetCenter.shared.reloadTimelines(ofKind: "trailStatsWidget")
         } catch {
             print("Error saving latest widget activity: \(error.localizedDescription)")
         }
