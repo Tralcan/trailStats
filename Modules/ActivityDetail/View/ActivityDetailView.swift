@@ -320,12 +320,12 @@ struct ActivityDetailView: View {
 
                         headerView
                             .padding(.horizontal)
-                        rpeSection
+rpeSection
                             .padding(.horizontal)
-                        tagSection
-                        trailKPIsSection
+tagSection
+trailKPIsSection
                             .padding(.horizontal)
-                        RunningDynamicsView(
+RunningDynamicsView(
                             verticalOscillationKPI: viewModel.verticalOscillationKPI,
                             groundContactTimeKPI: viewModel.groundContactTimeKPI,
                             strideLengthKPI: viewModel.strideLengthKPI,
@@ -341,13 +341,13 @@ struct ActivityDetailView: View {
                         
                         advancedAnalysisSection
                             .padding(.horizontal)
-                        segmentsSection
+segmentsSection
                             .padding(.horizontal)
-                        interactiveChartSection
+interactiveChartSection
                             .padding(.horizontal)
-                        notesSection
+notesSection
                             .padding(.horizontal)
-                        aiCoachSection
+aiCoachSection
                             .padding(.horizontal)
                         
                         // Botón para convertir en carrera
@@ -388,11 +388,18 @@ struct ActivityDetailView: View {
                                 Text(NSLocalizedString("Device", comment: "Device"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                                if let logo = logoForDevice(deviceName) {
+                                    Image(logo)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(height: 15)
+                                }
                                 Text(deviceName)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                             .padding(.horizontal)
+                            .padding(.top)
                         }
 
                     }
@@ -412,12 +419,12 @@ struct ActivityDetailView: View {
 
                         headerView
                             .padding(.horizontal)
-                        rpeSection
+rpeSection
                             .padding(.horizontal)
-                        tagSection
-                        trailKPIsSection
+tagSection
+trailKPIsSection
                             .padding(.horizontal)
-                        RunningDynamicsView(
+RunningDynamicsView(
                             verticalOscillationKPI: viewModel.verticalOscillationKPI,
                             groundContactTimeKPI: viewModel.groundContactTimeKPI,
                             strideLengthKPI: viewModel.strideLengthKPI,
@@ -433,13 +440,13 @@ struct ActivityDetailView: View {
                         
                         advancedAnalysisSection
                             .padding(.horizontal)
-                        segmentsSection
+segmentsSection
                             .padding(.horizontal)
-                        interactiveChartSection
+interactiveChartSection
                             .padding(.horizontal)
-                        notesSection
+notesSection
                             .padding(.horizontal)
-                        aiCoachSection
+aiCoachSection
                             .padding(.horizontal)
                         
                         // Botón para convertir en carrera
@@ -477,14 +484,21 @@ struct ActivityDetailView: View {
 
                         if let deviceName = viewModel.activity.deviceName {
                             HStack {
-                                Text("Device:")
+                                Text(NSLocalizedString("Device", comment: "Device"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                                if let logo = logoForDevice(deviceName) {
+                                    Image(logo)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(height: 15)
+                                }
                                 Text(deviceName)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                             .padding(.horizontal)
+                            .padding(.top)
                         }
 
                     }
@@ -573,6 +587,16 @@ struct ActivityDetailView: View {
         .tint(Color("StravaOrange"))
     }
     
+    private func logoForDevice(_ deviceName: String) -> String? {
+        if deviceName.lowercased().contains("garmin") {
+            return "garmin"
+        }
+        if deviceName.lowercased().contains("apple") {
+            return "apple"
+        }
+        return nil
+    }
+
     private func share(items: [Any]) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               var topViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController else { return }
@@ -734,4 +758,3 @@ private struct SegmentRowView: View {
     
         func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
     }
-

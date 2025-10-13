@@ -146,6 +146,21 @@ class ActivityDetailViewModel: ObservableObject {
     // MARK: - Public Methods
     func loadActivityDetails() async {
         checkIfActivityIsRace()
+
+        // Fetch full activity details from Strava
+        stravaService.getActivity(activityId: self.activity.id) { [weak self] result in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let detailedActivity):
+                    self.activity = detailedActivity
+                    self.saveActivity()
+                case .failure(let error):
+                    print("Error fetching activity details: \(error.localizedDescription)")
+                }
+            }
+        }
+
         // Try to load the detailed activity from cache first.
         if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id) {
             self.activity = cachedActivity

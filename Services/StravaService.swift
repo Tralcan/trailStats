@@ -21,6 +21,7 @@ struct StravaErrorDetail: Decodable {
 
 enum StravaAPIDefinition {
     case getActivities(page: Int, perPage: Int)
+    case getActivity(activityId: Int)
     case getActivityStreams(activityId: Int)
     case refreshToken
     case getAthlete
@@ -37,6 +38,8 @@ enum StravaAPIDefinition {
                 URLQueryItem(name: "page", value: "\(page)"),
                 URLQueryItem(name: "per_page", value: "\(perPage)")
             ]
+        case .getActivity(let activityId):
+            components.path = "/api/v3/activities/\(activityId)"
         case .getActivityStreams(let activityId):
             components.path = "/api/v3/activities/\(activityId)/streams"
             // Aseguramos que 'latlng' esté incluido explícitamente en los keys
@@ -193,6 +196,53 @@ class StravaService: NSObject, ASWebAuthenticationPresentationContextProviding {
 
             case .failure(let error):
                 // Token refresh failed, propagate the error
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func getActivity(activityId: Int, completion: @escaping (Result<Activity, Error>) -> Void) {
+        refreshTokenIfNeeded { [weak self] refreshResult in
+            guard let self = self else { return }
+
+            switch refreshResult {
+            case .success:
+                guard let url = StravaAPIDefinition.getActivity(activityId: activityId).url else {
+                    completion(.failure(StravaAuthError.invalidAPIRequestURL))
+                    return
+                }
+
+                guard let accessTokenData = KeychainHelper.read(service: "strava", account: "accessToken"), let accessToken = String(data: accessTokenData, encoding: .utf8) else {
+                    completion(.failure(StravaAuthError.missingAccessToken))
+                    return
+                }
+
+                var request = URLRequest(url: url)
+                request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    if let error = error {
+                        completion(.failure(error))
+                        return
+                    }
+
+                    guard let data = data else {
+                        completion(.failure(StravaAuthError.noDataInAPIResponse))
+                        return
+                    }
+
+                    do {
+                        let decoder = JSONDecoder()
+                        decoder.dateDecodingStrategy = .iso8601
+                        let activity = try decoder.decode(Activity.self, from: data)
+                        completion(.success(activity))
+                    } catch {
+                        print("Decoding error: \(error)")
+                        completion(.failure(error))
+                    }
+                }.resume()
+
+            case .failure(let error):
                 completion(.failure(error))
             }
         }

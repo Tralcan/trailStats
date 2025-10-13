@@ -111,19 +111,37 @@ struct HomeView: View {
             }
             .coordinateSpace(name: "scroll")
             
-            HStack {
-                TextField(NSLocalizedString("Search activities", comment: ""), text: $viewModel.searchText)
-                    .textFieldStyle(.plain)
-                
+            HStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.white.opacity(0.8))
+                    TextField(NSLocalizedString("Search activities", comment: ""), text: $viewModel.searchText)
+                        .foregroundColor(.white)
+                }
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .background(.ultraThinMaterial)
+                .cornerRadius(24)
+                .opacity(0.85)
+                .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 2)
+
                 Button(action: {
                     isShowingAdvancedSearch = true
                 }) {
                     Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            Circle()
+                                .fill(.thinMaterial)
+                                .opacity(0.82)
+                        )
+                        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 2)
                 }
             }
-            .padding()
-            .background(.ultraThinMaterial, in: Capsule())
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.bottom, 10)
         }
         .listStyle(.plain)
         .refreshable {
