@@ -91,7 +91,7 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 12)
 
-                    if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchElevation == nil && viewModel.advancedSearchDuration == nil {
+                    if viewModel.isLoading && viewModel.searchText.isEmpty && viewModel.advancedSearchName.isEmpty && viewModel.advancedSearchDate == nil && viewModel.advancedSearchDistance == nil && viewModel.advancedSearchDuration == nil {
                         ProgressView()
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
@@ -178,14 +178,18 @@ struct HomeView: View {
                     Image("boton3")
                         .resizable()
                         .scaledToFit()
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal)
+                        .frame(width: 300)
                 }
-
+                Text(NSLocalizedString("OR", comment: "or"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
                 Button(action: viewModel.connectToStrava) {
-                    Text(NSLocalizedString("Import_from_Strava", comment: "Connect to STRAVA"))
-                        .font(.footnote)
-                        .foregroundColor(Color("StravaOrange"))
+                    Image("boton")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180)
                 }
             }
         }
