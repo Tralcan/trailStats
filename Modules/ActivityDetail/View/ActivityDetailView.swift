@@ -383,6 +383,18 @@ struct ActivityDetailView: View {
                         .padding(.top)
                         .padding(.horizontal)
 
+                        if let deviceName = viewModel.activity.deviceName {
+                            HStack {
+                                Text(NSLocalizedString("Device", comment: "Device"))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(deviceName)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal)
+                        }
+
                     }
                     .padding(.vertical)
                 }
@@ -462,6 +474,18 @@ struct ActivityDetailView: View {
                         }
                         .padding(.top)
                         .padding(.horizontal)
+
+                        if let deviceName = viewModel.activity.deviceName {
+                            HStack {
+                                Text("Device:")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(deviceName)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal)
+                        }
 
                     }
                     .padding(.vertical)

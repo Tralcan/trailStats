@@ -33,6 +33,7 @@ struct Activity: Identifiable, Codable {
     // Location Data
     var startCoordinate: CLLocationCoordinate2D?
     var polyline: String? // Encoded polyline for map view
+    var deviceName: String?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -48,6 +49,7 @@ struct Activity: Identifiable, Codable {
         case averagePower = "average_watts"
         case startCoordinate = "start_latlng"
         case polyline = "map"
+        case deviceName = "device_name"
         case gradeAdjustedPace = "grade_adjusted_pace"
         // HealthKit properties
         case verticalOscillation
@@ -76,6 +78,7 @@ struct Activity: Identifiable, Codable {
         averageCadence = try container.decodeIfPresent(Double.self, forKey: .averageCadence)
         averagePower = try container.decodeIfPresent(Double.self, forKey: .averagePower)
         gradeAdjustedPace = try container.decodeIfPresent(Double.self, forKey: .gradeAdjustedPace)
+        deviceName = try container.decodeIfPresent(String.self, forKey: .deviceName)
         
         // HealthKit properties (for cache decoding)
         verticalOscillation = try container.decodeIfPresent(Double.self, forKey: .verticalOscillation)
@@ -112,6 +115,7 @@ struct Activity: Identifiable, Codable {
         try container.encodeIfPresent(averageCadence, forKey: .averageCadence)
         try container.encodeIfPresent(averagePower, forKey: .averagePower)
         try container.encodeIfPresent(gradeAdjustedPace, forKey: .gradeAdjustedPace)
+        try container.encodeIfPresent(deviceName, forKey: .deviceName)
         
         // HealthKit properties (for cache encoding)
         try container.encodeIfPresent(verticalOscillation, forKey: .verticalOscillation)
