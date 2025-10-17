@@ -147,54 +147,59 @@ class ActivityDetailViewModel: ObservableObject {
     func loadActivityDetails() async {
         checkIfActivityIsRace()
 
-        // Step 1: Fetch fresh data from Strava
-        let stravaResult = await fetchStravaActivity(activityId: self.activity.id)
+        // Step 1: Load cached data FIRST to display it instantly.
+        let metricsLoadedFromCache = loadCachedSummaries()
+        if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id) {
+            self.activity = cachedActivity
+            self.rpe = cachedActivity.rpe ?? 5.0
+            self.notes = cachedActivity.notes ?? ""
+            self.tag = cachedActivity.tag
+        }
 
-        // Step 2: Load cached data
-        let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id)
+        // Step 2: Fetch fresh data from Strava in the background.
+        let stravaResult = await fetchStravaActivity(activityId: self.activity.id)
 
         var finalActivity: Activity
 
         if let stravaActivity = try? stravaResult.get() {
-            // Step 3: Merge data, prioritizing cached user inputs
+            // Step 3: Merge data, prioritizing cached user inputs.
             finalActivity = stravaActivity
-            if let cached = cachedActivity {
+            if let cached = cacheManager.loadActivityDetail(activityId: self.activity.id) {
                 finalActivity.rpe = cached.rpe
                 finalActivity.notes = cached.notes
                 finalActivity.tag = cached.tag
                 
                 // If cache has dynamics, use them to avoid fetching again
-                finalActivity.verticalOscillation = cached.verticalOscillation
-                finalActivity.groundContactTime = cached.groundContactTime
-                finalActivity.strideLength = cached.strideLength
-                finalActivity.verticalRatio = cached.verticalRatio
+                finalActivity.verticalOscillation = finalActivity.verticalOscillation ?? cached.verticalOscillation
+                finalActivity.groundContactTime = finalActivity.groundContactTime ?? cached.groundContactTime
+                finalActivity.strideLength = finalActivity.strideLength ?? cached.strideLength
+                finalActivity.verticalRatio = finalActivity.verticalRatio ?? cached.verticalRatio
             }
-        } else if let cached = cachedActivity {
-            // If Strava fails, fall back to the cached version
+        } else if let cached = cacheManager.loadActivityDetail(activityId: self.activity.id) {
+            // If Strava fails, fall back to the cached version.
             finalActivity = cached
         } else {
-            // If both fail, we stick with the initial summary activity and show an error
+            // If both fail, we stick with the initial summary activity and show an error.
             errorMessage = "Failed to load activity details from both network and cache."
             return
         }
 
-        // Update the UI with the merged activity
+        // Update the UI with the merged activity.
         self.activity = finalActivity
         self.rpe = finalActivity.rpe ?? 5.0
         self.notes = finalActivity.notes ?? ""
         self.tag = finalActivity.tag
 
-        // Step 4: Enrich with HealthKit data only if necessary
+        // Step 4: Enrich with HealthKit data only if necessary.
         if finalActivity.verticalOscillation == nil {
             await fetchAndEnrichWithHealthKit()
         }
         
-        // Step 5: Save the fully merged and enriched activity
+        // Step 5: Save the fully merged and enriched activity.
         saveActivity()
 
-        // Step 6: Load all other data for the view
-        loadCachedSummaries()
-        await loadAndProcessStreams()
+        // Step 6: Load streams and recalculate KPIs only if they weren't in cache.
+        await loadAndProcessStreams(recalculateKPIs: !metricsLoadedFromCache)
     }
 
     private func fetchStravaActivity(activityId: Int) async -> Result<Activity, Error> {
@@ -286,15 +291,15 @@ class ActivityDetailViewModel: ObservableObject {
     }
     
     // MARK: - Data Loading and Processing
-    private func loadAndProcessStreams() async {
+    private func loadAndProcessStreams(recalculateKPIs: Bool) async {
         if let cachedStreams = self.cacheManager.loadActivityStreams(activityId: self.activity.id) {
-            await self.processAndCalculateGraphData(streamsDictionary: cachedStreams)
+            await self.processAndCalculateGraphData(streamsDictionary: cachedStreams, recalculateKPIs: recalculateKPIs)
             return
         }
         
         do {
             let streams = try await getStreamsFromNetwork(activityId: activity.id)
-            await processAndCalculateGraphData(streamsDictionary: streams)
+            await processAndCalculateGraphData(streamsDictionary: streams, recalculateKPIs: recalculateKPIs)
         } catch {
             await updateError(message: "Failed to fetch activity streams: \(error.localizedDescription)")
         }
@@ -313,7 +318,7 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
     
-    private func processAndCalculateGraphData(streamsDictionary: [String: Stream]) async {
+    private func processAndCalculateGraphData(streamsDictionary: [String: Stream], recalculateKPIs: Bool) async {
         Task.detached(priority: .userInitiated) {
             let cacheManager = CacheManager()
             await cacheManager.saveActivityStreams(activityId: self.activity.id, streams: streamsDictionary)
@@ -335,10 +340,8 @@ class ActivityDetailViewModel: ObservableObject {
             let paceData = ActivityAnalyticsCalculator.calculatePace(distanceData: distanceData)
             let strideLengthData = ActivityAnalyticsCalculator.calculateStrideLength(distanceData: distanceData, cadenceData: cadenceData)
 
-            let shouldCalculateTrailKPIs = await MainActor.run { self.heartRateZoneDistribution == nil || self.performanceByGrade.isEmpty }
-            
             var processedMetrics: ActivityProcessedMetrics?
-            if shouldCalculateTrailKPIs {
+            if recalculateKPIs {
                 let activity = await self.activity // Safely access actor-isolated property
                 processedMetrics = ActivityAnalyticsCalculator.calculateAllTrailKPIs(activity: activity, powerData: powerData, heartRateData: heartRateData, paceData: paceData, distanceData: distanceData, altitudeData: altitudeData, cadenceData: cadenceData)
                 if let metrics = processedMetrics {
@@ -373,58 +376,64 @@ class ActivityDetailViewModel: ObservableObject {
         }
     }
     
-    private func loadCachedSummaries() {
+    private func loadCachedSummaries() -> Bool {
         if let cachedText = cacheManager.loadAICoachText(activityId: activity.id) {
             self.aiCoachObservation = cachedText
             self.aiCoachLoading = false
         }
-        if let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) {
-            let vamValue = cachedMetrics.verticalSpeedVAM
-            let descentVamValue = cachedMetrics.descentVerticalSpeed
-            let isMetric = Formatters.isMetric
-
-            self.vamKPI = KPIInfo(
-                title: NSLocalizedString("kpi.vam.title", comment: "VAM title"),
-                description: NSLocalizedString("kpi.vam.description", comment: "VAM description"),
-                value: isMetric ? vamValue : vamValue.map { $0 * 3.28084 },
-                higherIsBetter: true
-            )
-            self.decouplingKPI = KPIInfo(
-                title: NSLocalizedString("kpi.decoupling.title", comment: "Decoupling title"),
-                description: NSLocalizedString("kpi.decoupling.description", comment: "Decoupling description"),
-                value: cachedMetrics.cardiacDecoupling,
-                higherIsBetter: false
-            )
-            self.descentVamKPI = KPIInfo(
-                title: NSLocalizedString("kpi.descentVam.title", comment: "Descent VAM title"),
-                description: NSLocalizedString("kpi.descentVam.description", comment: "Descent VAM description"),
-                value: isMetric ? descentVamValue : descentVamValue.map { $0 * 3.28084 },
-                higherIsBetter: true
-            )
-            self.normalizedPowerKPI = KPIInfo(
-                title: NSLocalizedString("kpi.normalizedPower.title", comment: "Normalized Power title"),
-                description: NSLocalizedString("kpi.normalizedPower.description", comment: "Normalized Power description"),
-                value: cachedMetrics.normalizedPower,
-                higherIsBetter: true
-            )
-            self.gapKPI = KPIInfo(
-                title: NSLocalizedString("kpi.gap.title", comment: "GAP title"),
-                description: NSLocalizedString("kpi.gap.description", comment: "GAP description"),
-                value: cachedMetrics.gradeAdjustedPace,
-                higherIsBetter: false
-            )
-            self.efficiencyIndexKPI = KPIInfo(
-                title: NSLocalizedString("kpi.efficiencyIndex.title", comment: "Efficiency Index title"),
-                description: NSLocalizedString("kpi.efficiencyIndex.description", comment: "Efficiency Index description"),
-                value: cachedMetrics.efficiencyIndex,
-                higherIsBetter: true
-            )
-            
-            self.climbSegments = cachedMetrics.climbSegments
-            self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
-            self.performanceByGrade = cachedMetrics.performanceByGrade
+        
+        guard let cachedMetrics = cacheManager.loadProcessedMetrics(activityId: activity.id) else {
+            calculateKPITrends() // Calculate trends even with no metrics to show empty states
+            return false
         }
+
+        let vamValue = cachedMetrics.verticalSpeedVAM
+        let descentVamValue = cachedMetrics.descentVerticalSpeed
+        let isMetric = Formatters.isMetric
+
+        self.vamKPI = KPIInfo(
+            title: NSLocalizedString("kpi.vam.title", comment: "VAM title"),
+            description: NSLocalizedString("kpi.vam.description", comment: "VAM description"),
+            value: isMetric ? vamValue : vamValue.map { $0 * 3.28084 },
+            higherIsBetter: true
+        )
+        self.decouplingKPI = KPIInfo(
+            title: NSLocalizedString("kpi.decoupling.title", comment: "Decoupling title"),
+            description: NSLocalizedString("kpi.decoupling.description", comment: "Decoupling description"),
+            value: cachedMetrics.cardiacDecoupling,
+            higherIsBetter: false
+        )
+        self.descentVamKPI = KPIInfo(
+            title: NSLocalizedString("kpi.descentVam.title", comment: "Descent VAM title"),
+            description: NSLocalizedString("kpi.descentVam.description", comment: "Descent VAM description"),
+            value: isMetric ? descentVamValue : descentVamValue.map { $0 * 3.28084 },
+            higherIsBetter: true
+        )
+        self.normalizedPowerKPI = KPIInfo(
+            title: NSLocalizedString("kpi.normalizedPower.title", comment: "Normalized Power title"),
+            description: NSLocalizedString("kpi.normalizedPower.description", comment: "Normalized Power description"),
+            value: cachedMetrics.normalizedPower,
+            higherIsBetter: true
+        )
+        self.gapKPI = KPIInfo(
+            title: NSLocalizedString("kpi.gap.title", comment: "GAP title"),
+            description: NSLocalizedString("kpi.gap.description", comment: "GAP description"),
+            value: cachedMetrics.gradeAdjustedPace,
+            higherIsBetter: false
+        )
+        self.efficiencyIndexKPI = KPIInfo(
+            title: NSLocalizedString("kpi.efficiencyIndex.title", comment: "Efficiency Index title"),
+            description: NSLocalizedString("kpi.efficiencyIndex.description", comment: "Efficiency Index description"),
+            value: cachedMetrics.efficiencyIndex,
+            higherIsBetter: true
+        )
+        
+        self.climbSegments = cachedMetrics.climbSegments
+        self.heartRateZoneDistribution = cachedMetrics.heartRateZoneDistribution
+        self.performanceByGrade = cachedMetrics.performanceByGrade
+        
         calculateKPITrends()
+        return true
     }
     
     // MARK: - UI Update Helpers
