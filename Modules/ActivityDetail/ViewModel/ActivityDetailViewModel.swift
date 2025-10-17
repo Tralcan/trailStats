@@ -147,35 +147,62 @@ class ActivityDetailViewModel: ObservableObject {
     func loadActivityDetails() async {
         checkIfActivityIsRace()
 
-        // Fetch full activity details from Strava
-        stravaService.getActivity(activityId: self.activity.id) { [weak self] result in
-            guard let self = self else { return }
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let detailedActivity):
-                    self.activity = detailedActivity
-                    self.saveActivity()
-                case .failure(let error):
-                    print("Error fetching activity details: \(error.localizedDescription)")
-                }
+        // Step 1: Fetch fresh data from Strava
+        let stravaResult = await fetchStravaActivity(activityId: self.activity.id)
+
+        // Step 2: Load cached data
+        let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id)
+
+        var finalActivity: Activity
+
+        if let stravaActivity = try? stravaResult.get() {
+            // Step 3: Merge data, prioritizing cached user inputs
+            finalActivity = stravaActivity
+            if let cached = cachedActivity {
+                finalActivity.rpe = cached.rpe
+                finalActivity.notes = cached.notes
+                finalActivity.tag = cached.tag
+                
+                // If cache has dynamics, use them to avoid fetching again
+                finalActivity.verticalOscillation = cached.verticalOscillation
+                finalActivity.groundContactTime = cached.groundContactTime
+                finalActivity.strideLength = cached.strideLength
+                finalActivity.verticalRatio = cached.verticalRatio
             }
+        } else if let cached = cachedActivity {
+            // If Strava fails, fall back to the cached version
+            finalActivity = cached
+        } else {
+            // If both fail, we stick with the initial summary activity and show an error
+            errorMessage = "Failed to load activity details from both network and cache."
+            return
         }
 
-        // Try to load the detailed activity from cache first.
-        if let cachedActivity = cacheManager.loadActivityDetail(activityId: self.activity.id) {
-            self.activity = cachedActivity
-            self.rpe = cachedActivity.rpe ?? 5.0 // Update RPE from cached activity
-            self.notes = cachedActivity.notes ?? "" // Update notes from cached activity
-            self.tag = cachedActivity.tag
-        }
+        // Update the UI with the merged activity
+        self.activity = finalActivity
+        self.rpe = finalActivity.rpe ?? 5.0
+        self.notes = finalActivity.notes ?? ""
+        self.tag = finalActivity.tag
 
-        // If the loaded activity (either from cache or initial) is missing dynamics, fetch them.
-        if self.activity.verticalOscillation == nil {
-            fetchAndEnrichWithHealthKit()
+        // Step 4: Enrich with HealthKit data only if necessary
+        if finalActivity.verticalOscillation == nil {
+            await fetchAndEnrichWithHealthKit()
         }
         
+        // Step 5: Save the fully merged and enriched activity
+        saveActivity()
+
+        // Step 6: Load all other data for the view
         loadCachedSummaries()
         await loadAndProcessStreams()
+    }
+
+    private func fetchStravaActivity(activityId: Int) async -> Result<Activity, Error> {
+        return await withCheckedContinuation { continuation in
+            stravaService.getActivity(activityId: activityId) { result in
+                continuation.resume(returning: result)
+            }
+        }
     }
 
     func prepareToAssociateRace() {
@@ -199,10 +226,11 @@ class ActivityDetailViewModel: ObservableObject {
     }
 
     func forceRefreshActivity() async {
-        // 1. Clear all caches for this specific activity
-        cacheManager.clearCache(for: self.activity.id)
+        // 1. Clear all caches for this specific activity to ensure a full reload.
+        cacheManager.clearCache(for: self.activity.id) // Deletes the summary folder (details, processed metrics, etc.)
+        cacheManager.deleteActivityStreams(activityId: self.activity.id) // Deletes the streams file
         
-        // 2. Reset all published properties to give immediate feedback to the user
+        // 2. Reset all published properties to give immediate feedback to the user.
         self.heartRateData = []
         self.cadenceData = []
         self.powerData = []
@@ -226,7 +254,7 @@ class ActivityDetailViewModel: ObservableObject {
         self.performanceByGrade = []
         self.aiCoachObservation = nil
         
-        // 3. Reload all data from the network
+        // 3. Reload all data from the network.
         await loadActivityDetails()
     }
 
@@ -662,33 +690,23 @@ class ActivityDetailViewModel: ObservableObject {
         return kpis
     }
     
-    private func fetchAndEnrichWithHealthKit() {
-        healthKitService.requestAuthorization { [weak self] (authorized, error) in
-            guard let self = self else { return }
-            
-            if let error = error {
-                print("[DEBUG] HealthKit authorization error: \(error.localizedDescription)")
-                return
-            }
-            
-            if authorized {
-                self.healthKitService.fetchRunningDynamics(for: self.activity) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let dynamics):
-                            self.activity.verticalOscillation = dynamics.verticalOscillation
-                            self.activity.groundContactTime = dynamics.groundContactTime
-                            self.activity.strideLength = dynamics.strideLength
-                            self.activity.verticalRatio = dynamics.verticalRatio
-                            
-                        case .failure(let error):
-                            print("[DEBUG] Failed to fetch running dynamics: \(error.localizedDescription)")
-                        }
-                    }
-                }
-            } else {
-                print("[DEBUG] HealthKit authorization was denied by the user.")
-            }
+    private func fetchAndEnrichWithHealthKit() async {
+        let authorized = await healthKitService.requestAuthorization()
+        guard authorized else {
+            print("[DEBUG] HealthKit authorization was denied or failed.")
+            return
+        }
+
+        let result = await healthKitService.fetchRunningDynamics(for: self.activity)
+        switch result {
+        case .success(let dynamics):
+            self.activity.verticalOscillation = dynamics.verticalOscillation
+            self.activity.groundContactTime = dynamics.groundContactTime
+            self.activity.strideLength = dynamics.strideLength
+            self.activity.verticalRatio = dynamics.verticalRatio
+            print("[DEBUG] Successfully fetched and enriched with HealthKit dynamics.")
+        case .failure(let error):
+            print("[DEBUG] Failed to fetch running dynamics: \(error.localizedDescription)")
         }
     }
 

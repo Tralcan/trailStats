@@ -343,6 +343,31 @@ class HealthKitService {
         
         healthStore.execute(query)
     }
+    
+    // MARK: - Async/Await Wrappers
+    
+    @available(iOS 15.0, *)
+    func requestAuthorization() async -> Bool {
+        await withCheckedContinuation { continuation in
+            requestAuthorization { success, error in
+                if let error = error {
+                    print("HealthKit authorization failed: \(error.localizedDescription)")
+                    continuation.resume(returning: false)
+                    return
+                }
+                continuation.resume(returning: success)
+            }
+        }
+    }
+    
+    @available(iOS 15.0, *)
+    func fetchRunningDynamics(for activity: Activity) async -> Result<RunningDynamics, Error> {
+        await withCheckedContinuation { continuation in
+            fetchRunningDynamics(for: activity) { result in
+                continuation.resume(returning: result)
+            }
+        }
+    }
 }
 
 // MARK: - HealthKitError Enum

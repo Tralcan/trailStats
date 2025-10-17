@@ -385,6 +385,21 @@ class CacheManager {
             return nil
         }
     }
+
+    /// Deletes activity streams for a given activity ID.
+    /// - Parameter activityId: The ID of the activity whose streams should be deleted.
+    func deleteActivityStreams(activityId: Int) {
+        guard let url = streamFileURL(for: activityId), FileManager.default.fileExists(atPath: url.path) else {
+            print("No streams cache file found for activity \(activityId) to delete.")
+            return
+        }
+        do {
+            try FileManager.default.removeItem(at: url)
+            print("Successfully deleted streams for activity \(activityId) from cache.")
+        } catch {
+            print("Error deleting streams for activity \(activityId) from cache: \(error.localizedDescription)")
+        }
+    }
     
     /// Deletes the local activities cache file.
     func clearCache() {

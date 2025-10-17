@@ -151,7 +151,6 @@ struct ActivityDetailView: View {
 
     
 
-    // Sección de KPIs rediseñada y robusta
     private var trailKPIsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(NSLocalizedString("Trail Analysis", comment: "Trail Analysis"))
