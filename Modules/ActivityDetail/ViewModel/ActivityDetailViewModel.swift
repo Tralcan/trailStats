@@ -568,7 +568,11 @@ class ActivityDetailViewModel: ObservableObject {
         aiCoachLoading = true
         aiCoachError = nil
         let kpis = gatherActivityKPIs(newTag: newTag)
-        GeminiCoachService.fetchObservation(kpis: kpis) { [weak self] result in
+        GeminiCoachService.fetchObservation(
+            activityId: String(self.activity.id),
+            kpis: kpis,
+            cacheManager: self.cacheManager
+        ) { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.aiCoachLoading = false

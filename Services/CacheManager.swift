@@ -3,6 +3,54 @@ import WidgetKit
 
 /// Manages caching of activities to the device's local storage.
 class CacheManager {
+
+    // MARK: - Coaching History
+
+    private var coachingHistoryURL: URL? {
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("Error: Could not find documents directory.")
+            return nil
+        }
+        return documentsDirectory.appendingPathComponent("coaching_history.json")
+    }
+
+    func saveCoachingHistory(_ newHistoryEntry: CoachingHistory) {
+        guard let url = coachingHistoryURL else { return }
+        
+        var history = loadCoachingHistory()
+        history.append(newHistoryEntry)
+        
+        // Mantiene solo las 5 entradas más recientes
+        if history.count > 5 {
+            history = Array(history.suffix(5))
+        }
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(history)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            print("Error saving coaching history: \(error.localizedDescription)")
+        }
+    }
+
+    func loadCoachingHistory() -> [CoachingHistory] {
+        guard let url = coachingHistoryURL, FileManager.default.fileExists(atPath: url.path) else {
+            return []
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode([CoachingHistory].self, from: data)
+        } catch {
+            print("Error loading coaching history: \(error.localizedDescription)")
+            return []
+        }
+    }
+
     // Devuelve la ruta del archivo de métricas para una actividad
     func metricsFileURL(for activityId: Int) -> URL? {
         guard let folder = summaryFolderURL(for: activityId) else { return nil }

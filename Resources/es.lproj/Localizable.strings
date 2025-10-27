@@ -269,3 +269,6 @@
 "Cancel" = "Cancelar";
 "Device" = "Dispositivo:";
 "OR" = "O";
+"PositiveFeedbackHeader" = "### Feedback Positivo";
+"RecommendationsToImproveHeader" = "### Recomendaciones para Mejorar";
+"ConcisenessInstruction" = "Tu análisis debe ser conciso, legible en 2-3 minutos (aproximadamente 600 palabras como máximo).";

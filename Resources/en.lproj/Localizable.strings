@@ -268,3 +268,6 @@
 "Cancel" = "Cancel";
 "Device" = "Device:";
 "OR" = "Or";
+"PositiveFeedbackHeader" = "### Positive Feedback";
+"RecommendationsToImproveHeader" = "### Recommendations to Improve";
+"ConcisenessInstruction" = "Your analysis should be concise, readable in 2-3 minutes (approximately 600 words maximum).";
