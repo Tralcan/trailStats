@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import MapKit
 
 /// Displays the detailed metrics and charts for a single activity.
 struct ActivityDetailView: View {
@@ -305,45 +306,12 @@ struct ActivityDetailView: View {
             if isReadOnly {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "flag.checkered.2.crossed")
-                                .font(.system(size: 40))
-                                .foregroundColor(.yellow)
-                            Text(viewModel.activity.name)
-                                .font(.title2).bold()
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.primary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top)
-
-                        headerView
-                            .padding(.horizontal)
-rpeSection
-                            .padding(.horizontal)
-tagSection
-trailKPIsSection
-                            .padding(.horizontal)
-RunningDynamicsView(
-                            verticalOscillationKPI: viewModel.verticalOscillationKPI,
-                            groundContactTimeKPI: viewModel.groundContactTimeKPI,
-                            strideLengthKPI: viewModel.strideLengthKPI,
-                            verticalRatioKPI: viewModel.verticalRatioKPI
-                        ) { kpiInfo in
-                            withAnimation {
-                                selectedKpiInfo = kpiInfo
-                            }
-                        }
-                        .padding(.horizontal)
-                        
-                        radarChartSection
-                        
-                        advancedAnalysisSection
-                            .padding(.horizontal)
-segmentsSection
-                            .padding(.horizontal)
 interactiveChartSection
                             .padding(.horizontal)
+                        if let polyline = viewModel.activity.polyline {
+                            MapView(polyline: polyline)
+                                .padding(.horizontal)
+                        }
 notesSection
                             .padding(.horizontal)
 aiCoachSection
@@ -443,6 +411,10 @@ segmentsSection
                             .padding(.horizontal)
 interactiveChartSection
                             .padding(.horizontal)
+                        if let polyline = viewModel.activity.polyline {
+                            MapView(polyline: polyline)
+                                .padding(.horizontal)
+                        }
 notesSection
                             .padding(.horizontal)
 aiCoachSection
