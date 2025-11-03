@@ -48,6 +48,7 @@ struct GeminiCoachService {
         Analyze the current activity in the context of the provided coaching history. Evaluate progress or changes in performance over time. Explicitly refer to past recommendations where relevant, and explain how they relate to the current performance and your new advice.
         Your response should include two sections: "\(localizedPositiveFeedbackHeader)" and "\(localizedRecommendationsHeader)", each followed by a bulleted list of points.
         \(NSLocalizedString("ConcisenessInstruction", tableName: "Prompts", comment: "Instruction for Gemini to keep its response concise"))
+        No escribas las respuestas completamente en mayúsculas. Usa mayúsculas solo donde sea apropiado.
 
         \(activityDataLabel)
         \(kpiString)
